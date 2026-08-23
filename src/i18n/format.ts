@@ -78,6 +78,46 @@ export function amountToParts(amount: string): AmountParts {
   };
 }
 
+// ============================================================================
+// `formatMoney` — display-only currency formatter (UC-04, PRD C9 / §7.6 / §11).
+//
+// Wire format is locked by PRD C9: dot-decimal in BOTH locales, exactly two
+// fractional digits. `formatMoney` mirrors that on the display side and
+// appends the currency label verbatim so the same string is reproducible in
+// either locale — this is the "no FX conversion, label only" requirement of
+// PRD UC-15. No grouping separator (it would force a locale decision here
+// and there is no requirement to introduce one yet).
+//
+// Negative amounts keep the leading minus (PRD §7.6). Zero renders as
+// `0.00 <LABEL>` — no sign.
+//
+// Throws on non-integer cents or on a non-3-letter label because both are
+// domain-contract violations (ADR-5, ARCH §8) — the call site should have
+// caught them already (Zod schema in `validators.ts`, `parseAmount` for
+// amounts).
+// ============================================================================
+
+const CURRENCY_LABEL_RE = /^[A-Z]{3}$/;
+
+export function formatMoney(cents: number, currency: string): string {
+  if (!Number.isInteger(cents)) {
+    throw new TypeError(
+      `formatMoney requires integer cents (ADR-5, ARCH §8); received ${cents}`,
+    );
+  }
+  if (typeof currency !== "string" || !CURRENCY_LABEL_RE.test(currency)) {
+    throw new TypeError(
+      `formatMoney requires a 3-letter ISO 4217 currency code; received ${JSON.stringify(currency)}`,
+    );
+  }
+  const negative = cents < 0;
+  const abs = Math.abs(cents);
+  const whole = Math.floor(abs / 100);
+  const frac = abs % 100;
+  const sign = negative ? "-" : "";
+  return `${sign}${whole}.${frac.toString().padStart(2, "0")} ${currency}`;
+}
+
 function localeOf(locale: AppLocale): string {
   return locale === "es" ? "es-ES" : "en-US";
 }

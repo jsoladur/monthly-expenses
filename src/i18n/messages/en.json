@@ -141,7 +141,20 @@
   "settings": {
     "title": "Profile settings",
     "currency": "Currency",
-    "help": "Labels show two decimals. No currency conversion."
+    "help": "Labels show two decimals. No currency conversion.",
+    "currentLabel": "Current currency",
+    "preview": {
+      "label": "Sample amount",
+      "positive": "1234.56",
+      "negative": "-20.00",
+      "zero": "0.00"
+    },
+    "actions": {
+      "save": "Save"
+    },
+    "status": {
+      "saved": "Currency saved."
+    }
   },
   "pwa": {
     "install": "Install app",

@@ -141,7 +141,20 @@
   "settings": {
     "title": "Ajustes del perfil",
     "currency": "Moneda",
-    "help": "Las etiquetas muestran dos decimales. Sin conversión de moneda."
+    "help": "Las etiquetas muestran dos decimales. Sin conversión de moneda.",
+    "currentLabel": "Moneda actual",
+    "preview": {
+      "label": "Importe de muestra",
+      "positive": "1234.56",
+      "negative": "-20.00",
+      "zero": "0.00"
+    },
+    "actions": {
+      "save": "Guardar"
+    },
+    "status": {
+      "saved": "Moneda guardada."
+    }
   },
   "pwa": {
     "install": "Instalar app",
