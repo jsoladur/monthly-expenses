@@ -16,8 +16,23 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
-const url = process.env.DATABASE_URL;
+let url = process.env.DATABASE_URL;
+if (!url) {
+  try {
+    const envPath = resolve(process.cwd(), ".env");
+    const envContent = readFileSync(envPath, "utf-8");
+    for (const line of envContent.split("\n")) {
+      const match = line.match(/^DATABASE_URL=(.+)$/);
+      if (match) {
+        url = match[1].trim();
+        break;
+      }
+    }
+  } catch {}
+}
 if (!url) {
   console.error("[migrate] DATABASE_URL is not set");
   process.exit(1);
@@ -32,6 +47,14 @@ try {
   process.stdout.write("[migrate] OK\n");
 } catch (err) {
   process.stderr.write(`[migrate] FAILED: ${err.message}\n`);
+  if (err.detail) process.stderr.write(`  Detail: ${err.detail}\n`);
+  if (err.hint) process.stderr.write(`  Hint: ${err.hint}\n`);
+  if (err.position) process.stderr.write(`  Position: ${err.position}\n`);
+  if (err.where) process.stderr.write(`  Where: ${err.where}\n`);
+  if (err.schema) process.stderr.write(`  Schema: ${err.schema}\n`);
+  if (err.table) process.stderr.write(`  Table: ${err.table}\n`);
+  if (err.column) process.stderr.write(`  Column: ${err.column}\n`);
+  if (err.constraint) process.stderr.write(`  Constraint: ${err.constraint}\n`);
   if (Array.isArray(err.cause?.issues)) {
     for (const issue of err.cause.issues) {
       process.stderr.write(`  - ${issue.message}\n`);
