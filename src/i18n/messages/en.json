@@ -50,7 +50,9 @@
     "nameTooLong": "Name is too long.",
     "monthInvalid": "Pick a year and month 1–12.",
     "yearOutOfRange": "Pick a year between 1970 and 9999.",
-    "currencyInvalid": "Currency must be a 3-letter ISO 4217 code."
+    "currencyInvalid": "Currency must be a 3-letter ISO 4217 code.",
+    "duplicateCategoryName": "A category with this name already exists.",
+    "categoryNotFound": "That category no longer exists. Reload the page."
   },
   "warnings": {
     "pastMonth": "This month is not the current calendar month. Changes are allowed.",
@@ -88,6 +90,11 @@
     "passToActual": "Move this commitment to actual spend. Estimates cannot be moved."
   },
   "categories": {
+    "title": "Categories",
+    "tabs": {
+      "expense": "Expense",
+      "income": "Income"
+    },
     "expense": {
       "title": "Expense categories",
       "new": "New expense category",
@@ -99,7 +106,23 @@
       "new": "New income category",
       "name": "Name",
       "inactive": "Inactive"
-    }
+    },
+    "empty": {
+      "expense": "No expense categories yet.",
+      "income": "No income categories yet."
+    },
+    "actions": {
+      "add": "Add",
+      "edit": "Rename",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "newName": "New name",
+      "placeholder": "e.g. Groceries",
+      "editing": "Editing"
+    },
+    "help": "Categories are global across every month. Deactivating a category keeps it visible on past months but hides it from new entries."
   },
   "templates": {
     "title": "Fixed and estimated templates",

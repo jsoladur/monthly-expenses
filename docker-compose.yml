@@ -17,6 +17,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-expenses}
       POSTGRES_USER: ${POSTGRES_USER:-expenses}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    # Expose 5432 to the host only when DB_PORT is set — local-dev integration
+    # tests (`pnpm test`) connect via localhost. Production / staging Compose
+    # overrides without DB_PORT to keep the DB unexposed.
+    ports:
+      - "${DB_PORT:-127.0.0.1:5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

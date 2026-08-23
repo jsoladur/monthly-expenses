@@ -50,7 +50,9 @@
     "nameTooLong": "El nombre es demasiado largo.",
     "monthInvalid": "Elige un año y un mes entre 1 y 12.",
     "yearOutOfRange": "Elige un año entre 1970 y 9999.",
-    "currencyInvalid": "La moneda debe ser un código ISO 4217 de 3 letras."
+    "currencyInvalid": "La moneda debe ser un código ISO 4217 de 3 letras.",
+    "duplicateCategoryName": "Ya existe una categoría con este nombre.",
+    "categoryNotFound": "Esa categoría ya no existe. Recarga la página."
   },
   "warnings": {
     "pastMonth": "Este mes no es el mes natural actual. Los cambios están permitidos.",
@@ -88,6 +90,11 @@
     "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover."
   },
   "categories": {
+    "title": "Categorías",
+    "tabs": {
+      "expense": "Gasto",
+      "income": "Ingreso"
+    },
     "expense": {
       "title": "Categorías de gasto",
       "new": "Nueva categoría de gasto",
@@ -99,7 +106,23 @@
       "new": "Nueva categoría de ingreso",
       "name": "Nombre",
       "inactive": "Inactiva"
-    }
+    },
+    "empty": {
+      "expense": "Aún no hay categorías de gasto.",
+      "income": "Aún no hay categorías de ingreso."
+    },
+    "actions": {
+      "add": "Añadir",
+      "edit": "Renombrar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "deactivate": "Desactivar",
+      "reactivate": "Reactivar",
+      "newName": "Nuevo nombre",
+      "placeholder": "p. ej. Supermercado",
+      "editing": "Editando"
+    },
+    "help": "Las categorías son globales en todos los meses. Desactivar una categoría la mantiene visible en meses pasados pero la oculta para nuevas entradas."
   },
   "templates": {
     "title": "Plantillas fijas y estimadas",
