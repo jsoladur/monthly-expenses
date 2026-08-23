@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Signed-in users landing on `/[locale]` were silently redirected back to `/[locale]/sign-in`, making the Google sign-in flow look broken. The home now renders a minimal signed-in confirmation (email + display name + sign-out) until UC-06 delivers the real month workspace.
+
+## [Unreleased]
+
 ### Added
 
 - Google sign-in, allowlist & tenancy (UC-01): Auth.js v5 with the Google provider and an `ALLOWED_EMAILS` allowlist enforced in the `signIn` callback (trim + lowercase normalization), JWT session strategy carrying the internal `app_user.id` (resolved from `google_sub` in the `jwt` callback, exposed via the `next-auth` module augmentation in `src/types/next-auth.d.ts`). First-time sign-in provisions `app_user` + `profile_settings(currency='EUR')` atomically via the `upsertUserOnSignIn` service; denied users get no session and no DB row and land on `/[locale]/403` through `pages.error = '/403'`. New `requireUserId()` primitive in `src/server/auth/require-user-id.ts` (cached with `React.cache`) reads the session in the data-access layer and redirects to the locale-prefixed sign-in when absent, so every repository keeps `userId` first per PRD §5.1. `userId`-first repositories `src/server/repositories/user.ts` and `src/server/repositories/profile-settings.ts`. Locale-aware sign-in and 403 screens at `/[locale]/sign-in` and `/[locale]/403` render `auth.signIn.*` / `auth.forbidden.*` copy from `src/i18n/messages/{en,es}.json` (minimal `loadMessages` helper — UC-02 swaps this for the full next-intl routing setup). `server-only` dependency + Vitest stub so the marker package resolves in Node test runs. PRD scenarios #1 (allowlist hit/miss → 403) and #2 (two users isolated) covered by `tests/unit/allowlist.test.ts` and `tests/integration/auth.test.ts`.

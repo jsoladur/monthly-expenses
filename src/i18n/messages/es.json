@@ -9,6 +9,13 @@
       "title": "Acceso denegado",
       "body": "Esta cuenta no tiene permiso para usar la aplicación.",
       "returnHome": "Volver a iniciar sesión"
+    },
+    "signedIn": {
+      "title": "Sesión iniciada",
+      "subtitle": "Has iniciado sesión como {email}.",
+      "displayName": "Nombre: {name}",
+      "comingNext": "El espacio de trabajo mensual llega en UC-06. Por ahora esta página confirma que el flujo de inicio de sesión funciona de principio a fin.",
+      "signOut": "Cerrar sesión"
     }
   }
 }

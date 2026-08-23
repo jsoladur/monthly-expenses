@@ -9,6 +9,13 @@
       "title": "Access denied",
       "body": "This account is not allowed to use the app.",
       "returnHome": "Back to sign in"
+    },
+    "signedIn": {
+      "title": "Signed in",
+      "subtitle": "You are signed in as {email}.",
+      "displayName": "Name: {name}",
+      "comingNext": "The month workspace ships in UC-06. For now this page confirms the sign-in flow works end to end.",
+      "signOut": "Sign out"
     }
   }
 }
