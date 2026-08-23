@@ -54,7 +54,11 @@
     "duplicateCategoryName": "A category with this name already exists.",
     "categoryNotFound": "That category no longer exists. Reload the page.",
     "incomeCategoryNotAllowed": "Templates can only target expense categories.",
-    "noActiveExpenseCategories": "Create an active expense category first."
+    "expenseCategoryNotAllowed": "Incomes can only target income categories.",
+    "noActiveExpenseCategories": "Create an active expense category first.",
+    "noActiveIncomeCategories": "Create an active income category first.",
+    "incomeNotFound": "That income no longer exists. Reload the page.",
+    "monthNotFound": "That month no longer exists. Reload the page."
   },
   "warnings": {
     "pastMonth": "This month is not the current calendar month. Changes are allowed.",
@@ -101,6 +105,26 @@
     "home": {
       "noMonths": "You have not created a month yet."
     }
+  },
+  "incomes": {
+    "title": "Incomes",
+    "new": "New income",
+    "name": "Name",
+    "amount": "Amount",
+    "category": "Category",
+    "empty": "No incomes yet.",
+    "actions": {
+      "add": "Add",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Delete this income?",
+      "placeholder": "e.g. Monthly salary",
+      "selectCategory": "Pick a category"
+    },
+    "noActiveCategories": "Create an active income category first.",
+    "historicalInactiveNote": "The category for this income is inactive. It still shows because the income was added earlier."
   },
   "categories": {
     "title": "Categories",

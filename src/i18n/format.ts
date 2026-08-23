@@ -118,6 +118,22 @@ export function formatMoney(cents: number, currency: string): string {
   return `${sign}${whole}.${frac.toString().padStart(2, "0")} ${currency}`;
 }
 
+// Inverse of `formatMoney` for the integer-cents part: turn the stored cents
+// back into the wire string the `AmountInput` expects (e.g. -2000 → "-20.00").
+// No FX, no rounding — same dot-decimal format in both locales (PRD C9).
+export function centsToInputString(cents: number): string {
+  if (!Number.isInteger(cents)) {
+    throw new TypeError(
+      `centsToInputString requires integer cents (ADR-5, ARCH §8); received ${cents}`,
+    );
+  }
+  const negative = cents < 0;
+  const abs = Math.abs(cents);
+  const whole = Math.floor(abs / 100);
+  const frac = abs % 100;
+  return `${negative ? "-" : ""}${whole}.${frac.toString().padStart(2, "0")}`;
+}
+
 function localeOf(locale: AppLocale): string {
   return locale === "es" ? "es-ES" : "en-US";
 }

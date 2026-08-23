@@ -54,7 +54,11 @@
     "duplicateCategoryName": "Ya existe una categoría con este nombre.",
     "categoryNotFound": "Esa categoría ya no existe. Recarga la página.",
     "incomeCategoryNotAllowed": "Las plantillas solo pueden usar categorías de gasto.",
-    "noActiveExpenseCategories": "Crea primero una categoría de gasto activa."
+    "expenseCategoryNotAllowed": "Los ingresos solo pueden usar categorías de ingreso.",
+    "noActiveExpenseCategories": "Crea primero una categoría de gasto activa.",
+    "noActiveIncomeCategories": "Crea primero una categoría de ingreso activa.",
+    "incomeNotFound": "Ese ingreso ya no existe. Recarga la página.",
+    "monthNotFound": "Ese mes ya no existe. Recarga la página."
   },
   "warnings": {
     "pastMonth": "Este mes no es el mes natural actual. Los cambios están permitidos.",
@@ -101,6 +105,26 @@
     "home": {
       "noMonths": "Todavía no has creado ningún mes."
     }
+  },
+  "incomes": {
+    "title": "Ingresos",
+    "new": "Nuevo ingreso",
+    "name": "Nombre",
+    "amount": "Importe",
+    "category": "Categoría",
+    "empty": "Aún no hay ingresos.",
+    "actions": {
+      "add": "Añadir",
+      "edit": "Editar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar este ingreso?",
+      "placeholder": "p. ej. Salario mensual",
+      "selectCategory": "Elige una categoría"
+    },
+    "noActiveCategories": "Crea primero una categoría de ingreso activa.",
+    "historicalInactiveNote": "La categoría de este ingreso está inactiva. Sigue mostrándose porque el ingreso se añadió antes."
   },
   "categories": {
     "title": "Categorías",

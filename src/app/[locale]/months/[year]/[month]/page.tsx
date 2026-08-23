@@ -9,9 +9,15 @@ import {
   MonthNotFoundError,
 } from "@/server/services/months";
 import { getProfileSettings } from "@/server/services/settings";
+import { listActiveCategoriesForPicker } from "@/server/services/categories";
+import { listCategoriesForManagement } from "@/server/services/categories";
 import { formatMoney, isAppLocale, monthYear } from "@/i18n/format";
 import { parseAmount } from "@/server/money";
 import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-touch-client";
+import {
+  IncomesScreen,
+  type IncomeRowData,
+} from "@/app/[locale]/months/[year]/[month]/incomes-screen";
 
 // ============================================================================
 // Month workspace — UC-06 screen 4 skeleton.
@@ -68,6 +74,28 @@ export default async function MonthWorkspacePage({
   const currency = settings?.currency ?? "EUR";
   const committedLines = workspace.lines.filter((l) => l.kind === "committed");
   const estimatedLines = workspace.lines.filter((l) => l.kind === "estimated");
+
+  // Income categories: ACTIVE for the picker (PRD §6.5) + ALL for the
+  // historical-row lookup (so an income whose category was later deactivated
+  // still renders the category name + an inactive note).
+  const [activeIncomeCategories, allIncomeCategories] = await Promise.all([
+    listActiveCategoriesForPicker(userId, "income"),
+    listCategoriesForManagement(userId, "income"),
+  ]);
+  const incomeCategoryMap = new Map(
+    allIncomeCategories.map((c) => [c.id, { name: c.name, active: c.active }]),
+  );
+  const incomeRows: IncomeRowData[] = workspace.incomes.map((income) => {
+    const meta = incomeCategoryMap.get(income.categoryId);
+    return {
+      id: income.id,
+      categoryId: income.categoryId,
+      categoryName: meta?.name ?? "—",
+      categoryActive: meta?.active ?? false,
+      name: income.name,
+      amountCents: parseAmount(income.amount),
+    };
+  });
 
   return (
     <main
@@ -139,12 +167,17 @@ export default async function MonthWorkspacePage({
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">{"Incomes"}</h2>
-        <p className="text-muted-foreground text-sm">
-          {t("incomesComingNext")}
-        </p>
-      </section>
+      <IncomesScreen
+        monthId={workspace.month.id}
+        year={workspace.month.year}
+        month={workspace.month.month}
+        currency={currency}
+        initialIncomes={incomeRows}
+        incomeCategories={activeIncomeCategories.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }))}
+      />
 
       <section className="flex flex-col gap-2">
         <h2 className="text-base font-semibold">{"Actuals"}</h2>

@@ -49,6 +49,19 @@ export async function findMonthByPeriod(
   return rows[0] ?? null;
 }
 
+export async function findMonthById(
+  userId: string,
+  id: string,
+  tx: Tx | typeof db = db,
+): Promise<Month | null> {
+  const rows = await tx
+    .select()
+    .from(month)
+    .where(and(eq(month.userId, userId), eq(month.id, id)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function insertMonth(
   row: NewMonth,
   tx: Tx | typeof db = db,
