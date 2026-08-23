@@ -1,4 +1,4 @@
-import { redirect } from "@/i18n/navigation";
+import { redirect, Link } from "@/i18n/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserId } from "@/server/auth/require-user-id";
@@ -39,10 +39,11 @@ export default async function CategoriesPage({
   setRequestLocale(locale);
 
   const userId = await requireUserId(locale);
-  const [expenseCategories, incomeCategories, t] = await Promise.all([
+  const [expenseCategories, incomeCategories, t, tn] = await Promise.all([
     listCategoriesForManagement(userId, "expense"),
     listCategoriesForManagement(userId, "income"),
     getTranslations({ locale, namespace: "categories" }),
+    getTranslations({ locale, namespace: "nav" }),
   ]);
 
   return (
@@ -51,9 +52,12 @@ export default async function CategoriesPage({
       className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-6 px-4 py-8"
     >
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <Link href="/" className="text-muted-foreground text-sm">
+          ← {tn("home")}
+        </Link>
         <LanguageSwitcher />
       </div>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
       <p className="text-muted-foreground text-sm leading-relaxed">
         {t("help")}
       </p>

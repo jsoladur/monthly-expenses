@@ -58,10 +58,6 @@ export default async function TemplatesPage({
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <LanguageSwitcher />
       </div>
-      <p className="text-muted-foreground text-sm leading-relaxed">{t("help")}</p>
-      <p className="bg-muted/40 border-border/40 rounded-md border px-3 py-2 text-xs leading-relaxed">
-        {t("cloneCopy")}
-      </p>
       <nav className="flex flex-wrap gap-3 text-sm">
         <a className="text-muted-foreground underline-offset-4 hover:underline" href={`/${locale}`}>
           {tn("home")}

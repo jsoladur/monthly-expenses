@@ -48,14 +48,26 @@ export const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      authorization: {
+        params: {
+          prompt: "select_account",
+        },
+      },
     }),
   ],
   callbacks: {
     async signIn({ profile }) {
+      console.log("[auth] signIn callback - profile:", JSON.stringify({
+        email: profile?.email,
+        name: profile?.name,
+        sub: profile?.sub,
+        email_verified: profile?.email_verified,
+      }, null, 2));
       const allowlist = getAllowedEmails();
+      console.log("[auth] allowlist:", Array.from(allowlist));
+      console.log("[auth] isAllowlisted:", isAllowlisted(profile?.email, allowlist));
       if (!isAllowlisted(profile?.email, allowlist)) {
-        // Denied users get NO session and NO database rows (PRD C3,
-        // ARCH §3.2 rule 2). The user upsert has not run yet.
+        console.log("[auth] DENIED: email not in allowlist");
         return false;
       }
       const googleSub = profile?.sub;

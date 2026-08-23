@@ -7,8 +7,7 @@ import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { Link } from "@/i18n/navigation";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { getMonthList } from "@/server/services/months";
-import { readLastOpenedMonthCookie } from "@/server/cookies/last-opened-month";
-import { isAppLocale, monthYear } from "@/i18n/format";
+import { isAppLocale, monthYear, monthName } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { MonthCreateForm } from "@/app/[locale]/month-create-form";
 
@@ -47,26 +46,12 @@ export default async function LocaleHome({
   const tm = await getTranslations({ locale, namespace: "months" });
   const tv = await getTranslations({ locale, namespace: "validation" });
 
-  // Cookie resume (PRD UC-14). We re-validate against the DB — a cookie
-  // pointing at a deleted month or a different tenant's month is ignored.
-  const cookie = await readLastOpenedMonthCookie();
-  if (cookie) {
-    const months = await getMonthList(userId);
-    const hit = months.find(
-      (m) => m.year === cookie.year && m.month === cookie.month,
-    );
-    if (hit) {
-      redirect({
-        href: `/months/${cookie.year}/${cookie.month}`,
-        locale,
-      });
-    }
-  }
-
   const months = await getMonthList(userId);
   const session = await auth();
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
+  const monthNames = Array.from({ length: 12 }, (_, i) => monthName(locale as AppLocale, i + 1));
+  const existingMonths = months.map((m) => ({ year: m.year, month: m.month }));
 
   async function startSignOut() {
     "use server";
@@ -118,6 +103,8 @@ export default async function LocaleHome({
               validationMonth: tv("monthInvalid"),
               validationYear: tv("yearOutOfRange"),
             }}
+            monthNames={monthNames}
+            existingMonths={existingMonths}
           />
         </section>
       ) : (
@@ -154,6 +141,8 @@ export default async function LocaleHome({
                   validationMonth: tv("monthInvalid"),
                   validationYear: tv("yearOutOfRange"),
                 }}
+                monthNames={monthNames}
+                existingMonths={existingMonths}
               />
             </div>
           </details>

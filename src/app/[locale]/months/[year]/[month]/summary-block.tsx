@@ -44,9 +44,6 @@ export async function SummaryBlock({ summary, currency }: SummaryBlockProps) {
       >
         {formatMoney(summary.potentialSavings, currency)}
       </p>
-      <p className="text-muted-foreground text-xs leading-relaxed">
-        {t("savingsHelp")}
-      </p>
       <dl className="grid grid-cols-3 gap-2 text-sm">
         <SummaryCell label={t("income")} cents={summary.incomesTotal} currency={currency} testId="summary-income" />
         <SummaryCell label={t("actuals")} cents={summary.actualsTotal} currency={currency} testId="summary-actuals" />

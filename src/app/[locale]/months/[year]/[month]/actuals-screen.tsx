@@ -12,11 +12,13 @@ import {
 } from "@/actions/actuals";
 import {
   undoPassToActualAction,
+  passToActualAction,
   type PassToActualActionResult,
 } from "@/actions/pass-to-actual";
 import { OverspendBadge } from "@/app/[locale]/months/[year]/[month]/overspend-badge";
 import type { OverspendWarning } from "@/server/services/summary";
 import { Button } from "@/components/ui/button";
+import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
 
 // ============================================================================
 // Actuals screen (UC-08) — interactive part of the workspace's actuals block.
@@ -65,6 +67,7 @@ export function ActualsScreen({
   initialActuals,
   expenseCategories,
   overspendWarnings = [],
+  committedReservedLines = [],
 }: {
   monthId: string;
   year: number;
@@ -73,6 +76,7 @@ export function ActualsScreen({
   initialActuals: ActualRowData[];
   expenseCategories: CategoryOption[];
   overspendWarnings?: OverspendWarning[];
+  committedReservedLines?: ReservedLineRowData[];
 }) {
   const t = useTranslations("actuals");
 
@@ -98,7 +102,7 @@ export function ActualsScreen({
         expenseCategories={expenseCategories}
       />
 
-      {initialActuals.length === 0 ? (
+      {initialActuals.length === 0 && committedReservedLines.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("empty")}</p>
       ) : (
         <>
@@ -113,19 +117,40 @@ export function ActualsScreen({
               ))}
             </div>
           )}
-          <ul className="flex flex-col gap-1">
-            {initialActuals.map((row) => (
-              <ActualRow
-                key={row.id}
-                row={row}
-                monthId={monthId}
-                year={year}
-                month={month}
-                currency={currency}
-                expenseCategories={expenseCategories}
-              />
-            ))}
-          </ul>
+          {committedReservedLines.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {t("committedReserved")}
+              </h3>
+              <ul className="flex flex-col gap-1">
+                {committedReservedLines.map((row) => (
+                  <CommittedReservedRow
+                    key={row.id}
+                    row={row}
+                    monthId={monthId}
+                    year={year}
+                    month={month}
+                    currency={currency}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
+          {initialActuals.length > 0 && (
+            <ul className="flex flex-col gap-1">
+              {initialActuals.map((row) => (
+                <ActualRow
+                  key={row.id}
+                  row={row}
+                  monthId={monthId}
+                  year={year}
+                  month={month}
+                  currency={currency}
+                  expenseCategories={expenseCategories}
+                />
+              ))}
+            </ul>
+          )}
         </>
       )}
     </section>
@@ -630,6 +655,122 @@ function errorToMessageUndo(
       return tv("reservedLineNotFound");
     case "estimatedLineCannotPass":
       return tv("estimatedLineCannotPassToActual");
+    case "validation":
+      return tv("required");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Committed reserved line row (display + pass to actual)
+// ---------------------------------------------------------------------------
+
+function CommittedReservedRow({
+  row,
+  monthId,
+  year,
+  month,
+  currency,
+}: {
+  row: ReservedLineRowData;
+  monthId: string;
+  year: number;
+  month: number;
+  currency: string;
+}) {
+  const t = useTranslations("actuals");
+  const tv = useTranslations("validation");
+  const [pending, setPending] = useState(false);
+  const [passError, setPassError] = useState<string | null>(null);
+
+  const handlePass = async () => {
+    if (pending) return;
+    if (!window.confirm(t("actions.confirmPassToActual"))) return;
+    setPending(true);
+    setPassError(null);
+    const result = await passToActualAction({ lineId: row.id, monthId, year, month });
+    setPending(false);
+    if (!result.ok) {
+      setPassError(errorToMessagePass(result, tv));
+    }
+  };
+
+  const isDirty = row.remainingCents !== row.originalCents;
+
+  return (
+    <li className="bg-card text-card-foreground flex flex-col gap-1 rounded-md border px-4 py-2 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex flex-col">
+          <span>{row.name}</span>
+          <span className="text-muted-foreground text-xs">
+            {row.categoryName} · {t(`origin.${row.origin}`)}
+          </span>
+          {row.observations && (
+            <span className="text-muted-foreground text-xs italic">
+              {row.observations}
+            </span>
+          )}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="flex flex-col items-end">
+            <span
+              className={
+                isDirty
+                  ? "tabular-nums font-medium"
+                  : "tabular-nums"
+              }
+              aria-label={t("remaining")}
+            >
+              {formatMoney(row.remainingCents, currency)}
+            </span>
+            {isDirty && (
+              <span className="text-muted-foreground text-xs">
+                {t("amount")} {formatMoney(row.originalCents, currency)}
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={handlePass}
+            disabled={pending}
+            className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
+          >
+            {t("actions.passToActual")}
+          </button>
+        </span>
+      </div>
+      {!row.categoryActive && (
+        <p className="text-muted-foreground text-xs">
+          {t("historicalInactiveNote")}
+        </p>
+      )}
+      {passError && (
+        <span
+          role="alert"
+          aria-live="polite"
+          className="text-destructive text-xs"
+        >
+          {passError}
+        </span>
+      )}
+    </li>
+  );
+}
+
+function errorToMessagePass(
+  state: Extract<PassToActualActionResult, { ok: false }>,
+  tv: ReturnType<typeof useTranslations<"validation">>,
+): string {
+  switch (state.error) {
+    case "monthLineNotFound":
+      return tv("reservedLineNotFound");
+    case "estimatedLineCannotPass":
+      return tv("estimatedLineCannotPassToActual");
+    case "actualNotFound":
+      return tv("actualNotFound");
+    case "notUndoable":
+      return tv("notUndoable");
+    case "undoForbiddenAfterEdit":
+      return tv("cannotUndoPass");
     case "validation":
       return tv("required");
   }

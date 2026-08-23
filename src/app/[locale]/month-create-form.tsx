@@ -1,24 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useMemo } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { createMonthAction } from "@/actions/months";
-
-// ============================================================================
-// Create-month form — UC-06 client island.
-//
-// Wraps the server action with `useActionState` so duplicate / validation
-// errors render inline (PRD §11). On success the action also sets the
-// `last_opened_month` cookie and revalidates the home — we then navigate
-// straight into the workspace so the user sees the cloned reserved lines
-// (PRD C17, §7.8).
-//
-// Year + month are stored as plain text in state (rather than pre-coerced
-// numbers) so the user can erase and retype without the form snapping back.
-// The server action runs the Zod `yearSchema` / `monthSchema` which require
-// integers in 1970..9999 / 1..12.
-// ============================================================================
 
 interface MonthCreateFormProps {
   locale: string;
@@ -31,14 +16,17 @@ interface MonthCreateFormProps {
     validationMonth: string;
     validationYear: string;
   };
+  monthNames: string[];
+  existingMonths: Array<{ year: number; month: number }>;
 }
 
 type FormState = { ok: true } | { ok: false; error: "duplicate" | "validation" } | null;
 
-export function MonthCreateForm({ labels }: MonthCreateFormProps) {
+export function MonthCreateForm({ labels, monthNames, existingMonths }: MonthCreateFormProps) {
   const router = useRouter();
-  const [year, setYear] = useState("");
-  const [month, setMonth] = useState("");
+  const now = new Date();
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [state, action, pending] = useActionState<FormState, FormData>(
     async (_prev, formData) => {
       const result = await createMonthAction({
@@ -53,6 +41,13 @@ export function MonthCreateForm({ labels }: MonthCreateFormProps) {
     },
     null,
   );
+
+  const isDuplicate = useMemo(() => {
+    const y = Number.parseInt(year, 10);
+    const m = Number.parseInt(month, 10);
+    if (Number.isNaN(y) || Number.isNaN(m)) return false;
+    return existingMonths.some((em) => em.year === y && em.month === m);
+  }, [year, month, existingMonths]);
 
   return (
     <form action={action} className="flex flex-col gap-3" data-testid="create-month-form">
@@ -75,24 +70,32 @@ export function MonthCreateForm({ labels }: MonthCreateFormProps) {
         </label>
         <label className="flex flex-1 flex-col gap-1 text-sm">
           <span className="text-muted-foreground">{labels.month}</span>
-          <input
-            type="number"
-            inputMode="numeric"
+          <select
             name="month"
             required
-            min={1}
-            max={12}
-            step={1}
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="border-input bg-background rounded-md border px-3 py-2 text-base"
-            autoComplete="off"
-          />
+          >
+            {monthNames.map((name, index) => (
+              <option key={index + 1} value={index + 1}>
+                {name}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
-      <Button type="submit" disabled={pending} size="lg">
+      <Button type="submit" disabled={pending || isDuplicate} size="lg">
         {labels.submit}
       </Button>
+      {isDuplicate && (
+        <p
+          aria-live="polite"
+          className="text-muted-foreground text-sm leading-relaxed"
+        >
+          {labels.duplicate}
+        </p>
+      )}
       {state && !state.ok ? (
         <p
           role="alert"

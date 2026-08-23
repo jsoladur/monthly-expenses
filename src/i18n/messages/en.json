@@ -18,7 +18,7 @@
       "returnHome": "Back to sign in"
     },
     "signedIn": {
-      "title": "Signed in",
+      "title": "Home",
       "subtitle": "You are signed in as {email}.",
       "displayName": "Name: {name}",
       "comingNext": "The month workspace ships in UC-06. For now this page confirms the sign-in flow works end to end.",
@@ -142,6 +142,12 @@
     "amount": "Amount",
     "category": "Category",
     "empty": "No expense tickets yet.",
+    "committedReserved": "Committed reserved lines",
+    "remaining": "Remaining",
+    "origin": {
+      "cloned": "Cloned from template",
+      "monthOnly": "One-off this month"
+    },
     "actions": {
       "add": "Add",
       "edit": "Edit",
@@ -153,7 +159,9 @@
       "observationsPlaceholder": "Optional notes",
       "selectCategory": "Pick a category",
       "undoPass": "Undo pass",
-      "confirmUndoPass": "Undo the pass? The committed line returns as a reserved line."
+      "confirmUndoPass": "Undo the pass? The committed line returns as a reserved line.",
+      "passToActual": "Pass to actual",
+      "confirmPassToActual": "Pass this line to actuals? The reserved line becomes an expense ticket."
     },
     "noActiveCategories": "Create an active expense category first.",
     "historicalInactiveNote": "The category for this ticket is inactive. It still shows because the ticket was added earlier."

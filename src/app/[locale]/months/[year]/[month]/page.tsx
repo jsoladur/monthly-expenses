@@ -20,7 +20,6 @@ import { isAppLocale, monthYear } from "@/i18n/format";
 import { parseAmount } from "@/server/money";
 import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-touch-client";
 import {
-  ReservedLinesScreen,
   type ReservedLineGroup,
   type ReservedLineRowData,
 } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
@@ -34,6 +33,7 @@ import {
 } from "@/app/[locale]/months/[year]/[month]/actuals-screen";
 import { SummaryBlock } from "@/app/[locale]/months/[year]/[month]/summary-block";
 import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month-banner";
+import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
 
 // ============================================================================
 // Month workspace — UC-06 screen 4 (full) + UC-11 summary header.
@@ -214,19 +214,6 @@ export default async function MonthWorkspacePage({
 
       <SummaryBlock summary={summary} currency={currency} />
 
-      <ReservedLinesScreen
-        monthId={workspace.month.id}
-        year={workspace.month.year}
-        month={workspace.month.month}
-        currency={currency}
-        groups={reservedLineGroups}
-        expenseCategories={activeExpenseCategories.map((c) => ({
-          id: c.id,
-          name: c.name,
-        }))}
-        overspendWarnings={overspendWarnings}
-      />
-
       <IncomesScreen
         monthId={workspace.month.id}
         year={workspace.month.year}
@@ -250,6 +237,19 @@ export default async function MonthWorkspacePage({
           name: c.name,
         }))}
         overspendWarnings={overspendWarnings}
+        committedReservedLines={reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? []}
+      />
+
+      <EstimatedReservedLinesScreen
+        monthId={workspace.month.id}
+        year={workspace.month.year}
+        month={workspace.month.month}
+        currency={currency}
+        rows={reservedLineGroups.find((g) => g.kind === "estimated")?.rows ?? []}
+        expenseCategories={activeExpenseCategories.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }))}
       />
     </main>
   );

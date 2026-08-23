@@ -18,7 +18,7 @@
       "returnHome": "Volver a iniciar sesión"
     },
     "signedIn": {
-      "title": "Sesión iniciada",
+      "title": "Inicio",
       "subtitle": "Has iniciado sesión como {email}.",
       "displayName": "Nombre: {name}",
       "comingNext": "El espacio de trabajo mensual llega en UC-06. Por ahora esta página confirma que el flujo de inicio de sesión funciona de principio a fin.",
@@ -142,6 +142,12 @@
     "amount": "Importe",
     "category": "Categoría",
     "empty": "Aún no hay tickets de gasto.",
+    "committedReserved": "Líneas reservadas comprometidas",
+    "remaining": "Restante",
+    "origin": {
+      "cloned": "Copiada de plantilla",
+      "monthOnly": "Solo para este mes"
+    },
     "actions": {
       "add": "Añadir",
       "edit": "Editar",
@@ -153,7 +159,9 @@
       "observationsPlaceholder": "Notas opcionales",
       "selectCategory": "Elige una categoría",
       "undoPass": "Deshacer pase",
-      "confirmUndoPass": "¿Deshacer el pase? La línea comprometida vuelve como línea reservada."
+      "confirmUndoPass": "¿Deshacer el pase? La línea comprometida vuelve como línea reservada.",
+      "passToActual": "Pasar a real",
+      "confirmPassToActual": "¿Pasar esta línea a reales? La línea reservada se convierte en un ticket de gasto."
     },
     "noActiveCategories": "Crea primero una categoría de gasto activa.",
     "historicalInactiveNote": "La categoría de este ticket está inactiva. Sigue mostrándose porque el ticket se añadió antes."
