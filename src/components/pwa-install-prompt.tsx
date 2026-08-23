@@ -72,21 +72,22 @@ export function PwaInstallPrompt() {
     return (
       <div
         role="status"
-        className="bg-card text-card-foreground flex items-start gap-3 rounded-md border p-4"
+        className="flex items-start gap-3 rounded-lg border p-4"
+        style={{ background: "var(--brand-gradient)" }}
       >
-        <Download className="mt-0.5 size-5 shrink-0 text-primary" />
-        <div className="flex flex-col gap-2">
-          <p className="text-sm leading-relaxed">
+        <Download className="mt-0.5 size-5 shrink-0 text-white" />
+        <div className="flex flex-col gap-1 flex-1">
+          <p className="text-sm leading-relaxed text-white">
             {t("install.iosInstructions")}
           </p>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-white/70 text-xs">
             {t("offlineNote")}
           </p>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-muted-foreground hover:text-foreground -mt-1 -mr-1 shrink-0 rounded p-1 transition-colors"
+          className="text-white/70 hover:text-white -mt-1 -mr-1 shrink-0 rounded p-1 transition-colors"
           aria-label={t("install.dismiss")}
         >
           <X className="size-4" />
@@ -99,20 +100,26 @@ export function PwaInstallPrompt() {
     return (
       <div
         role="status"
-        className="bg-card text-card-foreground flex items-center gap-3 rounded-md border p-4"
+        className="flex items-center gap-3 rounded-lg border p-4"
+        style={{ background: "var(--brand-gradient)" }}
       >
-        <Download className="size-5 shrink-0 text-primary" />
-        <p className="text-sm leading-relaxed flex-1">
+        <Download className="size-5 shrink-0 text-white" />
+        <p className="text-sm leading-relaxed text-white flex-1">
           {t("install.prompt")}
         </p>
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" onClick={handleInstall}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleInstall}
+            className="bg-white text-primary hover:bg-white/90"
+          >
             {t("install.button")}
           </Button>
           <button
             type="button"
             onClick={handleDismiss}
-            className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
+            className="text-white/70 hover:text-white rounded p-1 transition-colors"
             aria-label={t("install.dismiss")}
           >
             <X className="size-4" />

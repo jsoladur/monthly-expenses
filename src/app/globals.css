@@ -4,6 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Pilat Wide Bold";
+  src: url("/fonts/PilatWide-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pilat Wide Bold Fallback";
+  src: local("Arial Bold"), local("Helvetica Bold");
+  size-adjust: 105%;
+  font-weight: 700;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -39,6 +54,12 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-committed: hsl(var(--committed));
+  --color-estimated: hsl(var(--estimated));
+  --color-one-off: hsl(var(--one-off));
+  --color-income: hsl(var(--income));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,72 +70,91 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+  --background: 216 38% 97%;
+  --foreground: 215 55% 13%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 55% 13%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 55% 13%;
+  --primary: 217 60% 26%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 206 84% 95%;
+  --secondary-foreground: 217 60% 26%;
+  --muted: 214 32% 91%;
+  --muted-foreground: 213 17% 43%;
+  --accent: 206 84% 95%;
+  --accent-foreground: 217 60% 26%;
+  --success: 89 46% 48%;
+  --success-foreground: 90 59% 30%;
+  --warning: 26 90% 37%;
+  --warning-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 204 59% 44%;
+  --committed: 217 60% 26%;
+  --estimated: 175 59% 40%;
+  --one-off: 204 66% 55%;
+  --income: 89 46% 48%;
+  --brand-gradient: linear-gradient(135deg, #3E9BD8 0%, #7CB342 100%);
+  --chart-1: 217 60% 26%;
+  --chart-2: 204 59% 44%;
+  --chart-3: 175 59% 40%;
+  --chart-4: 89 46% 48%;
+  --chart-5: 204 66% 55%;
+  --sidebar: 217 50% 20%;
+  --sidebar-foreground: 214 44% 94%;
+  --sidebar-primary: 205 70% 59%;
+  --sidebar-primary-foreground: 218 55% 10%;
+  --sidebar-accent: 217 46% 22%;
+  --sidebar-accent-foreground: 214 44% 94%;
+  --sidebar-border: 217 46% 22%;
+  --sidebar-ring: 205 70% 59%;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: 218 55% 10%;
+  --foreground: 214 44% 94%;
+  --card: 216 52% 13%;
+  --card-foreground: 214 44% 94%;
+  --popover: 216 52% 13%;
+  --popover-foreground: 214 44% 94%;
+  --primary: 205 70% 59%;
+  --primary-foreground: 218 55% 10%;
+  --secondary: 217 46% 22%;
+  --secondary-foreground: 214 44% 94%;
+  --muted: 217 46% 22%;
+  --muted-foreground: 213 25% 65%;
+  --accent: 217 46% 22%;
+  --accent-foreground: 214 44% 94%;
+  --success: 89 46% 48%;
+  --success-foreground: 84 56% 93%;
+  --warning: 32 95% 44%;
+  --warning-foreground: 218 55% 10%;
+  --destructive: 0 72% 61%;
+  --destructive-foreground: 218 55% 10%;
+  --border: 217 46% 22%;
+  --input: 217 46% 22%;
+  --ring: 205 70% 59%;
+  --committed: 205 70% 59%;
+  --estimated: 175 55% 55%;
+  --one-off: 204 66% 65%;
+  --income: 89 46% 55%;
+  --chart-1: 205 70% 59%;
+  --chart-2: 175 55% 55%;
+  --chart-3: 204 66% 65%;
+  --chart-4: 89 46% 55%;
+  --chart-5: 32 95% 44%;
+  --sidebar: 218 55% 8%;
+  --sidebar-foreground: 214 44% 94%;
+  --sidebar-primary: 205 70% 59%;
+  --sidebar-primary-foreground: 218 55% 10%;
+  --sidebar-accent: 217 46% 18%;
+  --sidebar-accent-foreground: 214 44% 94%;
+  --sidebar-border: 217 46% 22%;
+  --sidebar-ring: 205 70% 59%;
 }
 
 @layer base {
@@ -123,8 +163,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Pilat Wide Bold", "Pilat Wide Bold Fallback", -apple-system,
+      BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    letter-spacing: -0.01em;
   }
   html {
     @apply font-sans;
   }
+}
+
+@utility amount {
+  font-variant-numeric: tabular-nums;
 }

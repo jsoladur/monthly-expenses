@@ -3,20 +3,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { routing } from "@/i18n/routing";
-
-// ============================================================================
-// Forbidden screen (UC-01, screen 2; UC-02).
-//
-// Lands here:
-//   • The Auth.js `signIn` callback returning `false` for a non-allowlisted
-//     Google account (PRD C3, ARCH §3.2 rule 1).
-//   • Any other auth error redirected via `pages.error = '/403'` in
-//     `src/auth.ts`.
-//
-// Copy follows PRD §19: "This account is not allowed to use the app."
-// No database row was ever created for the denied user (PRD C3,
-// ARCH §3.2 rule 2).
-// ============================================================================
+import Image from "next/image";
 
 export default async function ForbiddenPage({
   params,
@@ -33,23 +20,32 @@ export default async function ForbiddenPage({
   return (
     <main
       lang={locale}
-      className="mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center gap-6 px-6 py-12"
+      className="bg-background flex min-h-svh flex-col items-center justify-center gap-8 px-6"
     >
-      <div className="flex justify-end">
+      <div className="flex justify-end self-stretch">
         <LanguageSwitcher />
       </div>
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          {t("body")}
-        </p>
-      </header>
-      <Link
-        href="/sign-in"
-        className="text-primary text-sm underline-offset-4 hover:underline"
-      >
-        {t("returnHome")}
-      </Link>
+      <div className="flex flex-col items-center gap-6 text-center">
+        <Image
+          src="/images/logo.png"
+          alt="Monthly Expenses"
+          width={80}
+          height={80}
+          className="rounded-2xl"
+        />
+        <header className="flex flex-col gap-2">
+          <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
+            {t("body")}
+          </p>
+        </header>
+        <Link
+          href="/sign-in"
+          className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+        >
+          {t("returnHome")}
+        </Link>
+      </div>
     </main>
   );
 }

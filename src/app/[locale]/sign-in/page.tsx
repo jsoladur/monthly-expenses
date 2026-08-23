@@ -4,18 +4,7 @@ import { Button } from "@/components/ui/button";
 import { signIn } from "@/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { routing } from "@/i18n/routing";
-
-// ============================================================================
-// Sign-in screen (UC-01, screen 1; UC-02).
-//
-// The Google sign-in button submits to the Auth.js `signIn` server action
-// (UC-01 / ADR-2). The `signIn` callback runs the `ALLOWED_EMAILS` check
-// after Google verifies the account (PRD C2 / C3). Denied users are bounced
-// to `/[locale]/403` automatically by Auth.js via `pages.error = '/403'`.
-//
-// Locale routing lives in the middleware + `[locale]/layout.tsx`; this page
-// only calls `setRequestLocale` so server-side `getTranslations()` works.
-// ============================================================================
+import Image from "next/image";
 
 export default async function SignInPage({
   params,
@@ -24,7 +13,6 @@ export default async function SignInPage({
 }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
-    // Middleware should have caught this; treat as 404 if it slipped through.
     throw new Error("Unsupported locale segment");
   }
   setRequestLocale(locale);
@@ -38,22 +26,33 @@ export default async function SignInPage({
   return (
     <main
       lang={locale}
-      className="mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center gap-8 px-6 py-12"
+      className="bg-background flex min-h-svh flex-col items-center justify-center gap-8 px-6"
     >
-      <div className="flex justify-end">
+      <div className="flex justify-end self-stretch">
         <LanguageSwitcher />
       </div>
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {t("subtitle")}
-        </p>
-      </header>
-      <form action={startGoogleSignIn}>
-        <Button type="submit" className="w-full" size="lg">
-          {t("googleButton")}
-        </Button>
-      </form>
+      <div className="flex flex-col items-center gap-8 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <Image
+            src="/images/logo.png"
+            alt="Monthly Expenses"
+            width={80}
+            height={80}
+            className="rounded-2xl"
+          />
+          <header className="flex flex-col gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+              {t("subtitle")}
+            </p>
+          </header>
+        </div>
+        <form action={startGoogleSignIn} className="w-full max-w-xs">
+          <Button type="submit" className="w-full" size="lg">
+            {t("googleButton")}
+          </Button>
+        </form>
+      </div>
     </main>
   );
 }

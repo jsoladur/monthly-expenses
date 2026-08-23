@@ -2,21 +2,6 @@ import { getTranslations } from "next-intl/server";
 import { formatMoney } from "@/i18n/format";
 import type { MonthSummary } from "@/server/services/summary";
 
-// ============================================================================
-// Month summary block (UC-11, PRD §7.1, §19).
-//
-// Renders the workspace summary header: income / actuals / reserved /
-// potential savings. Pure presentation — the RSC parent (workspace page) has
-// already loaded `MonthSummary` from `getMonthSummary(userId, monthId)`.
-//
-// The four amounts come in as integer cents (ADR-5, ARCH §8) and are
-// formatted with `formatMoney` so the display mirrors the wire format
-// (dot decimal in BOTH locales, no grouping separator — PRD C9).
-//
-// Negative values (refunds, payouts) render with a leading minus, and a
-// tiny footnote reminds the user they count (PRD §7.6).
-// ============================================================================
-
 export interface SummaryBlockProps {
   summary: MonthSummary;
   currency: string;
@@ -29,22 +14,27 @@ export async function SummaryBlock({ summary, currency }: SummaryBlockProps) {
   return (
     <section
       aria-labelledby="summary-heading"
-      className="bg-card text-card-foreground flex flex-col gap-3 rounded-md border p-4"
+      className="flex flex-col gap-4"
     >
-      <h2 id="summary-heading" className="text-base font-semibold">
-        {t("savings")}
-      </h2>
-      <p
+      <div
         className={
           negative
-            ? "tabular-nums text-2xl font-semibold text-destructive"
-            : "tabular-nums text-2xl font-semibold"
+            ? "bg-destructive rounded-lg p-5"
+            : "rounded-lg p-5"
         }
-        data-testid="summary-savings"
+        style={!negative ? { background: "var(--brand-gradient)" } : undefined}
       >
-        {formatMoney(summary.potentialSavings, currency)}
-      </p>
-      <dl className="grid grid-cols-3 gap-2 text-sm">
+        <h2 id="summary-heading" className="text-white/80 text-sm font-medium">
+          {t("savings")}
+        </h2>
+        <p
+          className="amount text-4xl font-semibold text-white md:text-5xl"
+          data-testid="summary-savings"
+        >
+          {formatMoney(summary.potentialSavings, currency)}
+        </p>
+      </div>
+      <dl className="bg-card text-card-foreground grid grid-cols-3 gap-3 rounded-lg border p-4 text-sm">
         <SummaryCell label={t("income")} cents={summary.incomesTotal} currency={currency} testId="summary-income" />
         <SummaryCell label={t("actuals")} cents={summary.actualsTotal} currency={currency} testId="summary-actuals" />
         <SummaryCell label={t("reserved")} cents={summary.reservedRemainingTotal} currency={currency} testId="summary-reserved" />
@@ -65,9 +55,9 @@ function SummaryCell({
   testId: string;
 }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-0.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>
-      <dd className="tabular-nums text-sm" data-testid={testId}>
+      <dd className="amount text-sm font-medium" data-testid={testId}>
         {formatMoney(cents, currency)}
       </dd>
     </div>
