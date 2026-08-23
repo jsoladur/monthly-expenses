@@ -18,6 +18,10 @@ import {
   IncomesScreen,
   type IncomeRowData,
 } from "@/app/[locale]/months/[year]/[month]/incomes-screen";
+import {
+  ActualsScreen,
+  type ActualRowData,
+} from "@/app/[locale]/months/[year]/[month]/actuals-screen";
 
 // ============================================================================
 // Month workspace — UC-06 screen 4 skeleton.
@@ -78,12 +82,23 @@ export default async function MonthWorkspacePage({
   // Income categories: ACTIVE for the picker (PRD §6.5) + ALL for the
   // historical-row lookup (so an income whose category was later deactivated
   // still renders the category name + an inactive note).
-  const [activeIncomeCategories, allIncomeCategories] = await Promise.all([
+  // Expense categories: same shape, for the actuals block (UC-08, PRD §6.7).
+  const [
+    activeIncomeCategories,
+    allIncomeCategories,
+    activeExpenseCategories,
+    allExpenseCategories,
+  ] = await Promise.all([
     listActiveCategoriesForPicker(userId, "income"),
     listCategoriesForManagement(userId, "income"),
+    listActiveCategoriesForPicker(userId, "expense"),
+    listCategoriesForManagement(userId, "expense"),
   ]);
   const incomeCategoryMap = new Map(
     allIncomeCategories.map((c) => [c.id, { name: c.name, active: c.active }]),
+  );
+  const expenseCategoryMap = new Map(
+    allExpenseCategories.map((c) => [c.id, { name: c.name, active: c.active }]),
   );
   const incomeRows: IncomeRowData[] = workspace.incomes.map((income) => {
     const meta = incomeCategoryMap.get(income.categoryId);
@@ -94,6 +109,18 @@ export default async function MonthWorkspacePage({
       categoryActive: meta?.active ?? false,
       name: income.name,
       amountCents: parseAmount(income.amount),
+    };
+  });
+  const actualRows: ActualRowData[] = workspace.actuals.map((actual) => {
+    const meta = expenseCategoryMap.get(actual.categoryId);
+    return {
+      id: actual.id,
+      categoryId: actual.categoryId,
+      categoryName: meta?.name ?? "—",
+      categoryActive: meta?.active ?? false,
+      name: actual.name,
+      observations: actual.observations,
+      amountCents: parseAmount(actual.amount),
     };
   });
 
@@ -179,12 +206,17 @@ export default async function MonthWorkspacePage({
         }))}
       />
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">{"Actuals"}</h2>
-        <p className="text-muted-foreground text-sm">
-          {t("actualsComingNext")}
-        </p>
-      </section>
+      <ActualsScreen
+        monthId={workspace.month.id}
+        year={workspace.month.year}
+        month={workspace.month.month}
+        currency={currency}
+        initialActuals={actualRows}
+        expenseCategories={activeExpenseCategories.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }))}
+      />
     </main>
   );
 }

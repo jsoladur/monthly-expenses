@@ -58,7 +58,8 @@
     "noActiveExpenseCategories": "Create an active expense category first.",
     "noActiveIncomeCategories": "Create an active income category first.",
     "incomeNotFound": "That income no longer exists. Reload the page.",
-    "monthNotFound": "That month no longer exists. Reload the page."
+    "monthNotFound": "That month no longer exists. Reload the page.",
+    "actualNotFound": "That expense no longer exists. Reload the page."
   },
   "warnings": {
     "pastMonth": "This month is not the current calendar month. Changes are allowed.",
@@ -99,8 +100,7 @@
       "reservedCommitted": "Committed reserved lines",
       "reservedEstimated": "Estimated reserved lines",
       "noLines": "No reserved lines cloned. Add actual spend or incomes below to start tracking this month.",
-      "incomesComingNext": "Incomes ship in UC-07.",
-      "actualsComingNext": "Actuals ship in UC-08."
+      "incomesComingNext": "Incomes ship in UC-07."
     },
     "home": {
       "noMonths": "You have not created a month yet."
@@ -125,6 +125,28 @@
     },
     "noActiveCategories": "Create an active income category first.",
     "historicalInactiveNote": "The category for this income is inactive. It still shows because the income was added earlier."
+  },
+  "actuals": {
+    "title": "Actuals",
+    "new": "New expense ticket",
+    "name": "Name",
+    "observations": "Observations",
+    "amount": "Amount",
+    "category": "Category",
+    "empty": "No expense tickets yet.",
+    "actions": {
+      "add": "Add",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Delete this expense ticket?",
+      "placeholder": "e.g. Bread",
+      "observationsPlaceholder": "Optional notes",
+      "selectCategory": "Pick a category"
+    },
+    "noActiveCategories": "Create an active expense category first.",
+    "historicalInactiveNote": "The category for this ticket is inactive. It still shows because the ticket was added earlier."
   },
   "categories": {
     "title": "Categories",

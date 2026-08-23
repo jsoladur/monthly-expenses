@@ -58,7 +58,8 @@
     "noActiveExpenseCategories": "Crea primero una categoría de gasto activa.",
     "noActiveIncomeCategories": "Crea primero una categoría de ingreso activa.",
     "incomeNotFound": "Ese ingreso ya no existe. Recarga la página.",
-    "monthNotFound": "Ese mes ya no existe. Recarga la página."
+    "monthNotFound": "Ese mes ya no existe. Recarga la página.",
+    "actualNotFound": "Ese gasto ya no existe. Recarga la página."
   },
   "warnings": {
     "pastMonth": "Este mes no es el mes natural actual. Los cambios están permitidos.",
@@ -99,8 +100,7 @@
       "reservedCommitted": "Líneas reservadas comprometidas",
       "reservedEstimated": "Líneas reservadas estimadas",
       "noLines": "No se copiaron líneas reservadas. Añade gastos reales o ingresos más abajo para empezar este mes.",
-      "incomesComingNext": "Los ingresos llegan en UC-07.",
-      "actualsComingNext": "Los gastos reales llegan en UC-08."
+      "incomesComingNext": "Los ingresos llegan en UC-07."
     },
     "home": {
       "noMonths": "Todavía no has creado ningún mes."
@@ -125,6 +125,28 @@
     },
     "noActiveCategories": "Crea primero una categoría de ingreso activa.",
     "historicalInactiveNote": "La categoría de este ingreso está inactiva. Sigue mostrándose porque el ingreso se añadió antes."
+  },
+  "actuals": {
+    "title": "Gastos reales",
+    "new": "Nuevo ticket de gasto",
+    "name": "Nombre",
+    "observations": "Observaciones",
+    "amount": "Importe",
+    "category": "Categoría",
+    "empty": "Aún no hay tickets de gasto.",
+    "actions": {
+      "add": "Añadir",
+      "edit": "Editar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar este ticket de gasto?",
+      "placeholder": "p. ej. Pan",
+      "observationsPlaceholder": "Notas opcionales",
+      "selectCategory": "Elige una categoría"
+    },
+    "noActiveCategories": "Crea primero una categoría de gasto activa.",
+    "historicalInactiveNote": "La categoría de este ticket está inactiva. Sigue mostrándose porque el ticket se añadió antes."
   },
   "categories": {
     "title": "Categorías",
