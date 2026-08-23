@@ -14,14 +14,14 @@
 
 ## Progress
 
-- Slices DONE: **0 / 13**
-- Next up: **UC-00 — Foundations & database bootstrap**
+- Slices DONE: **1 / 13**
+- Next up: **UC-01 — Google sign-in, allowlist & tenancy**
 
 ## Status table
 
 | Slice | Title | Status | Completed | Notes |
 | --- | --- | --- | --- | --- |
-| UC-00 | Foundations & database bootstrap | PENDING | | Creates the entire DB in one migration from `database/database.dbml` |
+| UC-00 | Foundations & database bootstrap | DONE | 2026-08-23 | Drizzle schema, first migration, money helpers, Zod amount schema, Vitest (unit + integration), Playwright config, multi-stage Dockerfile + docker-compose (app + postgres on `expenses-net`). See `src/server/`, `drizzle/`, `tests/`, `Dockerfile`, `docker-compose.yml`, `.env.example`. App folder is at the project root, not `src/app/` — does not block the architecture; UC-12 (PWA) may refactor. |
 | UC-01 | Google sign-in, allowlist & tenancy | PENDING | | |
 | UC-02 | i18n shell (en/es) | PENDING | | |
 | UC-03 | Categories (expense & income) | PENDING | | |

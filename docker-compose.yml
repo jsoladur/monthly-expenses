@@ -1,0 +1,57 @@
+# Local development stack — Monthly Expenses (ARCH §9, PRD C5).
+# One app container (Next.js BFF) + one Postgres 16 container, both on the
+# default compose network so `app` can reach `db` by hostname.
+#
+# Usage:
+#   cp .env.example .env  &&  fill in the values
+#   docker compose up --build
+#
+# Migrations run on container start (see app.command) before the server boots.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: expenses-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-expenses}
+      POSTGRES_USER: ${POSTGRES_USER:-expenses}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-expenses} -d ${POSTGRES_DB:-expenses}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - expenses-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expenses-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      # Inside the compose network the DB hostname is the service name `db`.
+      DATABASE_URL: postgres://${POSTGRES_USER:-expenses}:${DB_PASSWORD}@db:5432/${POSTGRES_DB:-expenses}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - expenses-net
+
+networks:
+  expenses-net:
+    name: expenses-net
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: expenses-pgdata
