@@ -5,6 +5,7 @@ import {
   profileSettings,
   type NewProfileSettings,
   type ProfileSettings,
+  type ThemePreference,
 } from "@/server/db/schema";
 import type { Tx } from "@/server/repositories/user";
 
@@ -55,6 +56,19 @@ export async function updateCurrency(
   const [updated] = await tx
     .update(profileSettings)
     .set({ currency, updatedAt: sql`now()` })
+    .where(eq(profileSettings.userId, userId))
+    .returning();
+  return updated ?? null;
+}
+
+export async function updateTheme(
+  userId: string,
+  theme: ThemePreference,
+  tx: Tx | typeof db = db,
+): Promise<ProfileSettings | null> {
+  const [updated] = await tx
+    .update(profileSettings)
+    .set({ theme, updatedAt: sql`now()` })
     .where(eq(profileSettings.userId, userId))
     .returning();
   return updated ?? null;

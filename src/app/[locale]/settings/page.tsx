@@ -7,6 +7,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { formatMoney } from "@/i18n/format";
 import { SettingsForm } from "./settings-form";
 import { routing } from "@/i18n/routing";
+import type { ThemePreference } from "@/server/db/schema";
 
 // ============================================================================
 // Settings screen (UC-04, PRD §5.3 / UC-15 / screen 8, ARCH §4).
@@ -49,6 +50,7 @@ export default async function SettingsPage({
   const userId = await requireUserId(locale);
   const settings = await getProfileSettings(userId);
   const currency = settings?.currency ?? FALLBACK_CURRENCY;
+  const theme = (settings?.theme ?? "auto") as ThemePreference;
   const [t, tn] = await Promise.all([
     getTranslations({ locale, namespace: "settings" }),
     getTranslations({ locale, namespace: "nav" }),
@@ -94,7 +96,11 @@ export default async function SettingsPage({
         </ul>
       </section>
 
-      <SettingsForm currentCurrency={currency} supportedCurrencies={SUPPORTED_CURRENCIES} />
+      <SettingsForm
+        currentCurrency={currency}
+        supportedCurrencies={SUPPORTED_CURRENCIES}
+        currentTheme={theme}
+      />
     </main>
   );
 }

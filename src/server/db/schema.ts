@@ -24,6 +24,8 @@ export const lineKindEnum = pgEnum("line_kind", ["committed", "estimated"]);
 
 export const lineOriginEnum = pgEnum("line_origin", ["cloned", "month_only"]);
 
+export const themePreferenceEnum = pgEnum("theme_preference", ["auto", "light", "dark"]);
+
 // ============================================================================
 // Identity and profile (1:1)
 //
@@ -46,6 +48,7 @@ export const profileSettings = pgTable("profile_settings", {
     .primaryKey()
     .references(() => appUser.id, { onDelete: "cascade" }),
   currency: char("currency", { length: 3 }).notNull().default("EUR"),
+  theme: themePreferenceEnum("theme").notNull().default("auto"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -233,3 +236,4 @@ export type NewMonthActualExpense = typeof monthActualExpense.$inferInsert;
 export type CategoryKind = (typeof categoryKindEnum.enumValues)[number];
 export type LineKind = (typeof lineKindEnum.enumValues)[number];
 export type LineOrigin = (typeof lineOriginEnum.enumValues)[number];
+export type ThemePreference = (typeof themePreferenceEnum.enumValues)[number];

@@ -30,6 +30,12 @@ Enum line_origin {
   month_only [note: 'One-off line added directly on the month (PRD UC-18)']
 }
 
+Enum theme_preference {
+  auto  [note: 'Follow system preference (prefers-color-scheme)']
+  light [note: 'Force light theme']
+  dark  [note: 'Force dark theme']
+}
+
 // --------------------- Identity and profile (1:1) ---------------------------
 
 Table app_user {
@@ -46,10 +52,11 @@ Table app_user {
 Table profile_settings {
   user_id uuid [pk, ref: > app_user.id]
   currency char(3) [not null, default: 'EUR', note: 'PRD C9: label only, always 2 decimals, NO FX conversion']
+  theme theme_preference [not null, default: 'auto', note: 'Theme preference: auto follows system, light/dark force specific theme']
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
 
-  Note: '1:1 with app_user. Inserted with currency = EUR on first login (PRD UC-01, §5.3).'
+  Note: '1:1 with app_user. Inserted with currency = EUR and theme = auto on first login (PRD UC-01, §5.3).'
 }
 
 // ------------- Global per-user catalogs (SOFT delete, PRD §13) --------------

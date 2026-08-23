@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { isAppLocale } from "@/i18n/format";
+import { auth } from "@/auth";
+import { getProfileSettings } from "@/server/services/settings";
+import { ThemeProvider } from "@/components/theme-provider";
+import { themeInitScript } from "@/lib/theme-init-script";
+import type { ThemePreference } from "@/server/db/schema";
 import "./globals.css";
 
 // ============================================================================
@@ -29,9 +34,27 @@ export default async function RootLayout({
   const headerLocale = headerStore.get("x-next-intl-locale");
   const lang = isAppLocale(headerLocale) ? headerLocale : "en";
 
+  let theme: ThemePreference = "auto";
+  try {
+    const session = await auth();
+    if (session?.user?.id) {
+      const settings = await getProfileSettings(session.user.id);
+      if (settings?.theme) {
+        theme = settings.theme as ThemePreference;
+      }
+    }
+  } catch {
+    // Unauthenticated or DB unavailable — use default
+  }
+
   return (
-    <html lang={lang} className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang={lang} className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider initialPreference={theme}>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

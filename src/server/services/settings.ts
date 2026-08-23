@@ -4,9 +4,10 @@ import { db } from "@/server/db/client";
 import { appUser, profileSettings } from "@/server/db/schema";
 import {
   getProfileSettings as repoGet,
-  updateCurrency as repoUpdate,
+  updateCurrency as repoUpdateCurrency,
+  updateTheme as repoUpdateTheme,
 } from "@/server/repositories/profile-settings";
-import type { ProfileSettings } from "@/server/db/schema";
+import type { ProfileSettings, ThemePreference } from "@/server/db/schema";
 import type { Tx } from "@/server/repositories/user";
 
 // ============================================================================
@@ -86,7 +87,7 @@ export async function updateCurrency(
   if (tenantExists.length === 0) {
     throw new ProfileSettingsNotFoundError(userId);
   }
-  const updated = await repoUpdate(userId, currency, tx);
+  const updated = await repoUpdateCurrency(userId, currency, tx);
   if (!updated) {
     // The repo WHERE filters on `user_id`; a null return means the row
     // disappeared between the tenant check and the update — treat as
@@ -98,3 +99,40 @@ export async function updateCurrency(
 
 // Re-export so tests don't need a second import to reach the schema.
 export { profileSettings };
+
+export class InvalidThemeError extends Error {
+  readonly code = "invalid_theme" as const;
+  constructor(received: unknown) {
+    super(`Invalid theme preference: ${JSON.stringify(received)} (expected auto, light, or dark)`);
+    this.name = "InvalidThemeError";
+  }
+}
+
+const VALID_THEMES: ReadonlySet<ThemePreference> = new Set(["auto", "light", "dark"]);
+
+function assertTheme(theme: unknown): asserts theme is ThemePreference {
+  if (typeof theme !== "string" || !VALID_THEMES.has(theme as ThemePreference)) {
+    throw new InvalidThemeError(theme);
+  }
+}
+
+export async function updateTheme(
+  userId: string,
+  theme: string,
+  tx: Tx | typeof db = db,
+): Promise<ProfileSettings> {
+  assertTheme(theme);
+  const tenantExists = await tx
+    .select({ id: appUser.id })
+    .from(appUser)
+    .where(eq(appUser.id, userId))
+    .limit(1);
+  if (tenantExists.length === 0) {
+    throw new ProfileSettingsNotFoundError(userId);
+  }
+  const updated = await repoUpdateTheme(userId, theme, tx);
+  if (!updated) {
+    throw new ProfileSettingsNotFoundError(userId);
+  }
+  return updated;
+}

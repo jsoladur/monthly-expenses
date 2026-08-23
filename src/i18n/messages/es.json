@@ -262,6 +262,13 @@
     "currency": "Moneda",
     "help": "Las etiquetas muestran dos decimales. Sin conversión de moneda.",
     "currentLabel": "Moneda actual",
+    "theme": "Tema",
+    "themeHelp": "Elige cómo se ve la aplicación. Auto sigue los ajustes de tu dispositivo.",
+    "themeOptions": {
+      "auto": "Auto (sistema)",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
     "preview": {
       "label": "Importe de muestra",
       "positive": "1234.56",
@@ -272,7 +279,8 @@
       "save": "Guardar"
     },
     "status": {
-      "saved": "Moneda guardada."
+      "saved": "Moneda guardada.",
+      "themeSaved": "Tema guardado."
     }
   },
   "pwa": {

@@ -7,10 +7,13 @@ import { currencySchema } from "@/server/validators";
 import { requireUserId } from "@/server/auth/require-user-id";
 import {
   InvalidCurrencyError,
+  InvalidThemeError,
   ProfileSettingsNotFoundError,
   getProfileSettings as serviceGet,
-  updateCurrency as serviceUpdate,
+  updateCurrency as serviceUpdateCurrency,
+  updateTheme as serviceUpdateTheme,
 } from "@/server/services/settings";
+import type { ThemePreference } from "@/server/db/schema";
 
 // ============================================================================
 // Settings server actions (UC-04, ADR-6).
@@ -51,7 +54,7 @@ export async function updateCurrencyAction(input: {
   }
   const userId = await requireUserId(await getLocaleFromHeaders());
   try {
-    await serviceUpdate(userId, parsed.data.currency);
+    await serviceUpdateCurrency(userId, parsed.data.currency);
   } catch (err) {
     if (err instanceof InvalidCurrencyError) {
       return { ok: false, error: "currencyInvalid" };
@@ -82,4 +85,36 @@ async function getLocaleFromHeaders(): Promise<string> {
   const headerList = await headers();
   const locale = headerList.get("x-next-intl-locale");
   return locale && locale.length > 0 ? locale : "en";
+}
+
+const themeSchema = z.object({ theme: z.enum(["auto", "light", "dark"]) });
+
+export type ThemeActionError = "validation" | "invalidTheme" | "notFound";
+
+export type ThemeActionResult =
+  | { ok: true }
+  | { ok: false; error: ThemeActionError };
+
+export async function updateThemeAction(input: {
+  theme: string;
+}): Promise<ThemeActionResult> {
+  const parsed = themeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "validation" };
+  }
+  const userId = await requireUserId(await getLocaleFromHeaders());
+  try {
+    await serviceUpdateTheme(userId, parsed.data.theme as ThemePreference);
+  } catch (err) {
+    if (err instanceof InvalidThemeError) {
+      return { ok: false, error: "invalidTheme" };
+    }
+    if (err instanceof ProfileSettingsNotFoundError) {
+      return { ok: false, error: "notFound" };
+    }
+    throw err;
+  }
+  revalidatePath("/[locale]/settings", "page");
+  revalidatePath("/[locale]", "page");
+  return { ok: true };
 }

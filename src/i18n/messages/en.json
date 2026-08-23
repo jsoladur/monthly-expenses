@@ -262,6 +262,13 @@
     "currency": "Currency",
     "help": "Labels show two decimals. No currency conversion.",
     "currentLabel": "Current currency",
+    "theme": "Theme",
+    "themeHelp": "Choose how the app looks. Auto follows your device settings.",
+    "themeOptions": {
+      "auto": "Auto (system)",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "preview": {
       "label": "Sample amount",
       "positive": "1234.56",
@@ -272,7 +279,8 @@
       "save": "Save"
     },
     "status": {
-      "saved": "Currency saved."
+      "saved": "Currency saved.",
+      "themeSaved": "Theme saved."
     }
   },
   "pwa": {
