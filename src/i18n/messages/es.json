@@ -1,4 +1,11 @@
 {
+  "language": {
+    "label": "Idioma",
+    "option": {
+      "en": "EN",
+      "es": "ES"
+    }
+  },
   "auth": {
     "signIn": {
       "title": "Iniciar sesión",
@@ -17,5 +24,105 @@
       "comingNext": "El espacio de trabajo mensual llega en UC-06. Por ahora esta página confirma que el flujo de inicio de sesión funciona de principio a fin.",
       "signOut": "Cerrar sesión"
     }
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "back": "Volver",
+    "loading": "Cargando…",
+    "error": "Algo salió mal.",
+    "yes": "Sí",
+    "no": "No",
+    "optional": "Opcional"
+  },
+  "nav": {
+    "home": "Inicio",
+    "categories": "Categorías",
+    "templates": "Plantillas",
+    "settings": "Ajustes",
+    "signOut": "Cerrar sesión"
+  },
+  "validation": {
+    "required": "Obligatorio.",
+    "amountFormat": "Usa el formato 1234.56 (punto decimal, dos decimales, puede ser negativo).",
+    "positiveAmount": "El importe no puede ser negativo.",
+    "nameTooLong": "El nombre es demasiado largo.",
+    "monthInvalid": "Elige un año y un mes entre 1 y 12.",
+    "yearOutOfRange": "Elige un año entre 1970 y 9999.",
+    "currencyInvalid": "La moneda debe ser un código ISO 4217 de 3 letras."
+  },
+  "warnings": {
+    "pastMonth": "Este mes no es el mes natural actual. Los cambios están permitidos.",
+    "overspend": "Los tickets reales en esta categoría superan el plan definido en tus plantillas.",
+    "inactiveCategory": "Esta categoría está inactiva. No puede elegirse para entradas nuevas."
+  },
+  "months": {
+    "empty": {
+      "title": "Crea un mes para empezar",
+      "body": "Nada se crea automáticamente. Elige un mes y un año para comenzar.",
+      "create": "Crear mes"
+    },
+    "list": {
+      "title": "Tus meses",
+      "open": "Abrir",
+      "createNew": "Crear mes"
+    },
+    "create": {
+      "title": "Crear mes",
+      "year": "Año",
+      "month": "Mes",
+      "duplicate": "Ese mes ya existe.",
+      "submit": "Crear",
+      "cancel": "Cancelar"
+    },
+    "clone": "Las líneas fijas y estimadas se copian al crear el mes. Este mes es independiente a partir de ahí.",
+    "summary": {
+      "income": "Ingresos",
+      "actuals": "Gastos reales",
+      "reserved": "Reservado",
+      "savings": "Ahorro potencial",
+      "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas."
+    },
+    "estimateHelp": "Los tickets no reducen este número. Redúcelo tú mismo cuando quieras que baje la reserva.",
+    "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover."
+  },
+  "categories": {
+    "expense": {
+      "title": "Categorías de gasto",
+      "new": "Nueva categoría de gasto",
+      "name": "Nombre",
+      "inactive": "Inactiva"
+    },
+    "income": {
+      "title": "Categorías de ingreso",
+      "new": "Nueva categoría de ingreso",
+      "name": "Nombre",
+      "inactive": "Inactiva"
+    }
+  },
+  "templates": {
+    "title": "Plantillas fijas y estimadas",
+    "new": "Nueva plantilla",
+    "kind": {
+      "committed": "Comprometida",
+      "estimated": "Estimada"
+    },
+    "category": "Categoría",
+    "name": "Nombre",
+    "observations": "Observaciones",
+    "amount": "Importe",
+    "active": "Activa",
+    "help": "Las plantillas se copian en un mes nuevo una sola vez al crearlo. Las plantillas inactivas no se clonan."
+  },
+  "settings": {
+    "title": "Ajustes del perfil",
+    "currency": "Moneda",
+    "help": "Las etiquetas muestran dos decimales. Sin conversión de moneda."
+  },
+  "pwa": {
+    "install": "Instalar app",
+    "installed": "Instalada",
+    "offlineNote": "Los datos son solo en línea. La aplicación funciona sin conexión una vez instalada."
   }
 }

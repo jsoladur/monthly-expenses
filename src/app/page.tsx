@@ -1,14 +1,14 @@
-import { redirect } from "next/navigation";
-import { DEFAULT_LOCALE } from "@/i18n/load-messages";
+import { redirect } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 
 // ============================================================================
-// Bare `/` — redirects to the default locale (UC-01, UC-02).
+// Bare `/` — belt-and-suspenders redirect to the default locale.
 //
-// The locale prefix is required because every app route lives under
-// `[locale]`. UC-02 replaces this with the full next-intl middleware that
-// resolves locale from the cookie and `Accept-Language` header.
+// The middleware in `src/middleware.ts` already rewrites `/` to `/<locale>`
+// for any browser request; this page is the fallback for any path that
+// bypasses the middleware (e.g. an internal fetch).
 // ============================================================================
 
 export default function RootPage() {
-  redirect(`/${DEFAULT_LOCALE}`);
+  redirect({ href: "/", locale: routing.defaultLocale });
 }

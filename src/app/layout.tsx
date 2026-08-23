@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
+import { isAppLocale } from "@/i18n/format";
 import "./globals.css";
 
 // ============================================================================
-// Root layout (UC-01).
+// Root layout.
 //
 // Renders `<html>`/`<body>` because Next.js requires them at the top of the
-// `app/` tree. All app routes live under `[locale]` (UC-01 screens 1 + 2);
-// the `lang` attribute is updated inside `[locale]/layout.tsx` once UC-02
-// wires next-intl. UC-01 keeps the root minimal so the slice has no font
-// dependency and no assumptions about user-facing chrome.
+// `app/` tree. The `lang` attribute is derived from the
+// `x-next-intl-locale` request header that next-intl's middleware sets on
+// every locale-prefixed URL (`/en/...`, `/es/...`). Falling back to `en`
+// keeps build-phase renders (where middleware never runs) and edge cases
+// where the header is missing on a non-locale path.
 // ============================================================================
 
 export const metadata: Metadata = {
@@ -17,9 +20,17 @@ export const metadata: Metadata = {
   description: "Personal monthly expense tracking.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const headerStore = await headers();
+  const headerLocale = headerStore.get("x-next-intl-locale");
+  const lang = isAppLocale(headerLocale) ? headerLocale : "en";
+
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang={lang} className="h-full antialiased">
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

@@ -1,4 +1,11 @@
 {
+  "language": {
+    "label": "Language",
+    "option": {
+      "en": "EN",
+      "es": "ES"
+    }
+  },
   "auth": {
     "signIn": {
       "title": "Sign in",
@@ -17,5 +24,105 @@
       "comingNext": "The month workspace ships in UC-06. For now this page confirms the sign-in flow works end to end.",
       "signOut": "Sign out"
     }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "back": "Back",
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional"
+  },
+  "nav": {
+    "home": "Home",
+    "categories": "Categories",
+    "templates": "Templates",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "validation": {
+    "required": "Required.",
+    "amountFormat": "Use the format 1234.56 (dot decimal, two places, may be negative).",
+    "positiveAmount": "Amount cannot be negative.",
+    "nameTooLong": "Name is too long.",
+    "monthInvalid": "Pick a year and month 1–12.",
+    "yearOutOfRange": "Pick a year between 1970 and 9999.",
+    "currencyInvalid": "Currency must be a 3-letter ISO 4217 code."
+  },
+  "warnings": {
+    "pastMonth": "This month is not the current calendar month. Changes are allowed.",
+    "overspend": "Actual tickets in this category are higher than the plan in your templates.",
+    "inactiveCategory": "This category is inactive. It cannot be chosen for new entries."
+  },
+  "months": {
+    "empty": {
+      "title": "Create a month to start",
+      "body": "Nothing is created automatically. Pick a month and year to begin.",
+      "create": "Create month"
+    },
+    "list": {
+      "title": "Your months",
+      "open": "Open",
+      "createNew": "Create month"
+    },
+    "create": {
+      "title": "Create month",
+      "year": "Year",
+      "month": "Month",
+      "duplicate": "That month already exists.",
+      "submit": "Create",
+      "cancel": "Cancel"
+    },
+    "clone": "Fixed and estimated lines are copied when the month is created. This month is independent after that.",
+    "summary": {
+      "income": "Income",
+      "actuals": "Actuals",
+      "reserved": "Reserved",
+      "savings": "Potential savings",
+      "savingsHelp": "Income minus actual spend minus money still reserved in fixed/estimated lines."
+    },
+    "estimateHelp": "Tickets do not reduce this number. Decrease it yourself when you want the reserve to drop.",
+    "passToActual": "Move this commitment to actual spend. Estimates cannot be moved."
+  },
+  "categories": {
+    "expense": {
+      "title": "Expense categories",
+      "new": "New expense category",
+      "name": "Name",
+      "inactive": "Inactive"
+    },
+    "income": {
+      "title": "Income categories",
+      "new": "New income category",
+      "name": "Name",
+      "inactive": "Inactive"
+    }
+  },
+  "templates": {
+    "title": "Fixed and estimated templates",
+    "new": "New template",
+    "kind": {
+      "committed": "Committed",
+      "estimated": "Estimated"
+    },
+    "category": "Category",
+    "name": "Name",
+    "observations": "Observations",
+    "amount": "Amount",
+    "active": "Active",
+    "help": "Templates are copied into a new month exactly once when that month is created. Inactive templates are not cloned."
+  },
+  "settings": {
+    "title": "Profile settings",
+    "currency": "Currency",
+    "help": "Labels show two decimals. No currency conversion."
+  },
+  "pwa": {
+    "install": "Install app",
+    "installed": "Installed",
+    "offlineNote": "Data is online only. The app shell works offline once installed."
   }
 }

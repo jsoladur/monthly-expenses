@@ -1,21 +1,20 @@
-import { redirect } from "next/navigation";
+import { redirect } from "@/i18n/navigation";
+import { hasLocale } from "next-intl";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/auth";
-import { DEFAULT_LOCALE, isSupportedLocale, loadMessages } from "@/i18n/load-messages";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { routing } from "@/i18n/routing";
 
 // ============================================================================
 // Home — UC-01 minimal stub (signed-in landing).
 //
 // For now the home only confirms the sign-in flow is observable end to end:
 // it greets the signed-in user by email and offers sign-out. The real month
-// workspace (current month + month list + dashboard) ships in UC-06. The
-// routing logic for the locale segment (cookie + Accept-Language + middleware)
-// ships in UC-02 — for now we just trust the URL prefix.
+// workspace (current month + month list + dashboard) ships in UC-06.
 //
-// Branches:
-//   - Unknown locale segment → /{DEFAULT_LOCALE}
-//   - No session           → /{locale}/sign-in
-//   - Session present      → render the stub below
+// Locale routing is handled by the middleware + `[locale]/layout.tsx`; this
+// page just calls `setRequestLocale` and validates the segment.
 // ============================================================================
 
 export default async function LocaleHome({
@@ -23,21 +22,25 @@ export default async function LocaleHome({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale: rawLocale } = await params;
-  if (!isSupportedLocale(rawLocale)) {
-    redirect(`/${DEFAULT_LOCALE}`);
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) {
+    redirect({ href: "/", locale: routing.defaultLocale });
   }
-  const locale = rawLocale;
+  setRequestLocale(locale);
 
   const session = await auth();
   if (!session?.user?.id) {
-    redirect(`/${locale}/sign-in`);
+    redirect({ href: "/sign-in", locale });
   }
+  // `redirect` returns `never` but TS still widens `session` back to nullable
+  // after the explicit guard when called via the next-intl wrapper. Narrow
+  // explicitly: if we got here, `session.user.id` is a non-empty string and
+  // `session.user` is a defined object.
+  const { user } = session!;
 
-  const messages = loadMessages(locale);
-  const email = session.user.email ?? "";
-  const displayName = session.user.name ?? null;
-  const t = messages.auth.signedIn;
+  const t = await getTranslations({ locale, namespace: "auth.signedIn" });
+  const email = user.email ?? "";
+  const displayName = user.name ?? null;
 
   async function startSignOut() {
     "use server";
@@ -49,21 +52,26 @@ export default async function LocaleHome({
       lang={locale}
       className="mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center gap-6 px-6 py-12"
     >
+      <div className="flex justify-end">
+        <LanguageSwitcher />
+      </div>
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t.title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          {t.subtitle.replace("{email}", email)}
+          {t("subtitle", { email })}
         </p>
       </header>
       {displayName && (
         <p className="text-muted-foreground text-sm leading-relaxed">
-          {t.displayName.replace("{name}", displayName)}
+          {t("displayName", { name: displayName })}
         </p>
       )}
-      <p className="text-muted-foreground text-sm leading-relaxed">{t.comingNext}</p>
+      <p className="text-muted-foreground text-sm leading-relaxed">
+        {t("comingNext")}
+      </p>
       <form action={startSignOut}>
         <Button type="submit" variant="outline" className="w-full" size="lg">
-          {t.signOut}
+          {t("signOut")}
         </Button>
       </form>
     </main>
