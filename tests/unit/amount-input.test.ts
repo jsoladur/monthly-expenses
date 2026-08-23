@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyAmount } from "@/components/amount-input";
+import { classifyAmount } from "@/components/amount-input-helpers";
 
 // ============================================================================
 // AmountInput classifier (UC-02, PRD C9, PRD §11).

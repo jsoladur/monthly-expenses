@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { routing } from "@/i18n/routing";
+import { Link } from "@/i18n/navigation";
 
 // ============================================================================
 // Home — UC-01 minimal stub (signed-in landing).
@@ -39,6 +40,7 @@ export default async function LocaleHome({
   const { user } = session!;
 
   const t = await getTranslations({ locale, namespace: "auth.signedIn" });
+  const tn = await getTranslations({ locale, namespace: "nav" });
   const email = user.email ?? "";
   const displayName = user.name ?? null;
 
@@ -69,6 +71,26 @@ export default async function LocaleHome({
       <p className="text-muted-foreground text-sm leading-relaxed">
         {t("comingNext")}
       </p>
+      <nav className="flex flex-col gap-2">
+        <Link
+          href="/templates"
+          className="bg-card text-foreground hover:bg-muted/50 rounded-md border px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {tn("templates")}
+        </Link>
+        <Link
+          href="/categories"
+          className="bg-card text-foreground hover:bg-muted/50 rounded-md border px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {tn("categories")}
+        </Link>
+        <Link
+          href="/settings"
+          className="bg-card text-foreground hover:bg-muted/50 rounded-md border px-4 py-2 text-sm font-medium transition-colors"
+        >
+          {tn("settings")}
+        </Link>
+      </nav>
       <form action={startSignOut}>
         <Button type="submit" variant="outline" className="w-full" size="lg">
           {t("signOut")}

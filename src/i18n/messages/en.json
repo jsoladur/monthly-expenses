@@ -52,7 +52,9 @@
     "yearOutOfRange": "Pick a year between 1970 and 9999.",
     "currencyInvalid": "Currency must be a 3-letter ISO 4217 code.",
     "duplicateCategoryName": "A category with this name already exists.",
-    "categoryNotFound": "That category no longer exists. Reload the page."
+    "categoryNotFound": "That category no longer exists. Reload the page.",
+    "incomeCategoryNotAllowed": "Templates can only target expense categories.",
+    "noActiveExpenseCategories": "Create an active expense category first."
   },
   "warnings": {
     "pastMonth": "This month is not the current calendar month. Changes are allowed.",
@@ -136,7 +138,20 @@
     "observations": "Observations",
     "amount": "Amount",
     "active": "Active",
-    "help": "Templates are copied into a new month exactly once when that month is created. Inactive templates are not cloned."
+    "inactive": "Inactive",
+    "empty": "No templates yet.",
+    "actions": {
+      "add": "Add",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "placeholder": "e.g. Rent",
+      "selectCategory": "Pick a category"
+    },
+    "help": "Templates are copied into a new month exactly once when that month is created. Inactive templates are not cloned.",
+    "cloneCopy": "Fixed and estimated lines are copied when the month is created. This month is independent after that."
   },
   "settings": {
     "title": "Profile settings",

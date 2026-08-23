@@ -2,7 +2,7 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
-import { classifyAmount, type AmountValidity } from "@/components/amount-input";
+import { classifyAmount, type AmountValidity } from "@/components/amount-input-helpers";
 
 // ============================================================================
 // Amount input (UC-02, PRD C9, PRD §11, ADR-5, ARCH §8).
@@ -19,6 +19,7 @@ import { classifyAmount, type AmountValidity } from "@/components/amount-input";
 interface AmountInputProps {
   value: string;
   onChange: (next: string) => void;
+  id?: string;
   name?: string;
   required?: boolean;
   disabled?: boolean;
@@ -31,6 +32,7 @@ interface AmountInputProps {
 export function AmountInput({
   value,
   onChange,
+  id,
   name,
   required = false,
   disabled = false,
@@ -55,6 +57,7 @@ export function AmountInput({
       <input
         type="text"
         inputMode="decimal"
+        id={id}
         autoComplete={autoComplete}
         name={name}
         value={value}
