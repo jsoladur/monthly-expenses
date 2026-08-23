@@ -3,6 +3,13 @@
 //
 // Plain ESM JS so the runtime image needs no TypeScript toolchain. Uses the
 // bundled Drizzle migrator (no drizzle-kit needed in production).
+//
+// Why this looks simple: Drizzle's `migrate()` already wraps each migration in
+// its own Postgres transaction (see drizzle-orm/postgres-js/migrator). If a
+// migration is interrupted (container killed, OOM, connection drop), Postgres
+// rolls the partial state back so the schema and the __drizzle_migrations
+// journal row commit together or not at all.
+//
 // Exits 0 on success, 1 on failure.
 // ============================================================================
 
@@ -25,6 +32,11 @@ try {
   process.stdout.write("[migrate] OK\n");
 } catch (err) {
   process.stderr.write(`[migrate] FAILED: ${err.message}\n`);
+  if (Array.isArray(err.cause?.issues)) {
+    for (const issue of err.cause.issues) {
+      process.stderr.write(`  - ${issue.message}\n`);
+    }
+  }
   process.exitCode = 1;
 } finally {
   await client.end({ timeout: 5 });
