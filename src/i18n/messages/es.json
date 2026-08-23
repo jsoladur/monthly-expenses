@@ -89,7 +89,18 @@
       "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas."
     },
     "estimateHelp": "Los tickets no reducen este número. Redúcelo tú mismo cuando quieras que baje la reserva.",
-    "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover."
+    "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover.",
+    "workspace": {
+      "title": "Mes",
+      "reservedCommitted": "Líneas reservadas comprometidas",
+      "reservedEstimated": "Líneas reservadas estimadas",
+      "noLines": "No se copiaron líneas reservadas. Añade gastos reales o ingresos más abajo para empezar este mes.",
+      "incomesComingNext": "Los ingresos llegan en UC-07.",
+      "actualsComingNext": "Los gastos reales llegan en UC-08."
+    },
+    "home": {
+      "noMonths": "Todavía no has creado ningún mes."
+    }
   },
   "categories": {
     "title": "Categorías",

@@ -1,21 +1,32 @@
 import { redirect } from "@/i18n/navigation";
-import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { routing } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
+import { requireUserId } from "@/server/auth/require-user-id";
+import { getMonthList } from "@/server/services/months";
+import { readLastOpenedMonthCookie } from "@/server/cookies/last-opened-month";
+import { isAppLocale, monthYear } from "@/i18n/format";
+import { routing, type AppLocale } from "@/i18n/routing";
+import { MonthCreateForm } from "@/app/[locale]/month-create-form";
 
 // ============================================================================
-// Home — UC-01 minimal stub (signed-in landing).
+// Home — UC-06 month list + create (screens 3 / 4 entrypoint).
 //
-// For now the home only confirms the sign-in flow is observable end to end:
-// it greets the signed-in user by email and offers sign-out. The real month
-// workspace (current month + month list + dashboard) ships in UC-06.
+// Flow (PRD UC-14, C6, C12):
+//   1. Resolve tenant via `requireUserId(locale)` (the canonical check —
+//      ARCH §3.2 rule 4). Unauthenticated callers land on the locale-
+//      prefixed sign-in URL.
+//   2. If the `last_opened_month` cookie points at a month the user
+//      actually owns, redirect straight into that month's workspace.
+//   3. Otherwise, render the month list (newest first) + a create-month
+//      form. The empty state shows the create form only — nothing is
+//      auto-created (PRD C6/C12).
 //
-// Locale routing is handled by the middleware + `[locale]/layout.tsx`; this
-// page just calls `setRequestLocale` and validates the segment.
+// Everything below the heading is a Server Component; the create form is a
+// small client island so the server action returns a typed result and the
+// form can surface validation / duplicate errors inline.
 // ============================================================================
 
 export default async function LocaleHome({
@@ -24,25 +35,37 @@ export default async function LocaleHome({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) {
+  if (!isAppLocale(locale)) {
     redirect({ href: "/", locale: routing.defaultLocale });
   }
   setRequestLocale(locale);
 
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect({ href: "/sign-in", locale });
-  }
-  // `redirect` returns `never` but TS still widens `session` back to nullable
-  // after the explicit guard when called via the next-intl wrapper. Narrow
-  // explicitly: if we got here, `session.user.id` is a non-empty string and
-  // `session.user` is a defined object.
-  const { user } = session!;
-
+  const userId = await requireUserId(locale);
   const t = await getTranslations({ locale, namespace: "auth.signedIn" });
   const tn = await getTranslations({ locale, namespace: "nav" });
-  const email = user.email ?? "";
-  const displayName = user.name ?? null;
+  const tm = await getTranslations({ locale, namespace: "months" });
+  const tv = await getTranslations({ locale, namespace: "validation" });
+
+  // Cookie resume (PRD UC-14). We re-validate against the DB — a cookie
+  // pointing at a deleted month or a different tenant's month is ignored.
+  const cookie = await readLastOpenedMonthCookie();
+  if (cookie) {
+    const months = await getMonthList(userId);
+    const hit = months.find(
+      (m) => m.year === cookie.year && m.month === cookie.month,
+    );
+    if (hit) {
+      redirect({
+        href: `/months/${cookie.year}/${cookie.month}`,
+        locale,
+      });
+    }
+  }
+
+  const months = await getMonthList(userId);
+  const session = await auth();
+  const email = session?.user?.email ?? "";
+  const displayName = session?.user?.name ?? null;
 
   async function startSignOut() {
     "use server";
@@ -52,25 +75,89 @@ export default async function LocaleHome({
   return (
     <main
       lang={locale}
-      className="mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center gap-6 px-6 py-12"
+      className="mx-auto flex min-h-svh w-full max-w-sm flex-col gap-6 px-6 py-12"
     >
       <div className="flex justify-end">
         <LanguageSwitcher />
       </div>
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {t("title")}
+        </h1>
         <p className="text-muted-foreground text-sm leading-relaxed">
           {t("subtitle", { email })}
         </p>
+        {displayName && (
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {t("displayName", { name: displayName })}
+          </p>
+        )}
       </header>
-      {displayName && (
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          {t("displayName", { name: displayName })}
-        </p>
+
+      {months.length === 0 ? (
+        <section
+          aria-labelledby="empty-months"
+          className="bg-card text-card-foreground flex flex-col gap-3 rounded-md border p-4"
+        >
+          <h2 id="empty-months" className="text-base font-semibold">
+            {tm("empty.title")}
+          </h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {tm("empty.body")}
+          </p>
+          <MonthCreateForm
+            locale={locale}
+            labels={{
+              year: tm("create.year"),
+              month: tm("create.month"),
+              submit: tm("create.submit"),
+              duplicate: tm("create.duplicate"),
+              validationRequired: tv("required"),
+              validationMonth: tv("monthInvalid"),
+              validationYear: tv("yearOutOfRange"),
+            }}
+          />
+        </section>
+      ) : (
+        <section aria-labelledby="month-list" className="flex flex-col gap-4">
+          <h2 id="month-list" className="text-base font-semibold">
+            {tm("list.title")}
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {months.map((m) => (
+              <li key={m.id}>
+                <Link
+                  href={`/months/${m.year}/${m.month}`}
+                  className="bg-card text-card-foreground hover:bg-muted/50 flex items-center justify-between rounded-md border px-4 py-3 text-sm font-medium transition-colors"
+                >
+                  <span>{monthYear(locale as AppLocale, m.year, m.month)}</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <details className="bg-card text-card-foreground rounded-md border">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+              {tm("list.createNew")}
+            </summary>
+            <div className="border-t p-4">
+              <MonthCreateForm
+                locale={locale}
+                labels={{
+                  year: tm("create.year"),
+                  month: tm("create.month"),
+                  submit: tm("create.submit"),
+                  duplicate: tm("create.duplicate"),
+                  validationRequired: tv("required"),
+                  validationMonth: tv("monthInvalid"),
+                  validationYear: tv("yearOutOfRange"),
+                }}
+              />
+            </div>
+          </details>
+        </section>
       )}
-      <p className="text-muted-foreground text-sm leading-relaxed">
-        {t("comingNext")}
-      </p>
+
       <nav className="flex flex-col gap-2">
         <Link
           href="/templates"
