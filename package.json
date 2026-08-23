@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
-    "start": "next start",
+    "dev": "node scripts/migrate.mjs && next dev --webpack",
+    "build": "node scripts/migrate.mjs && next build --webpack",
+    "start": "node scripts/migrate.mjs && next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
