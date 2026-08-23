@@ -1,0 +1,174 @@
+// ============================================================================
+// Monthly Expenses — Database schema (dbdiagram.io DBML)
+// Behavior source of truth: docs/prd.md  §6 (model), §7 (money rules), §13 (deletes)
+// Tech source of truth:     docs/architecture.md §4 (physical model, ADR-4, ADR-5)
+// Target: PostgreSQL 16 · money = numeric(14,2) · tenancy = user-scoped rows
+// Paste at https://dbdiagram.io/d to visualize.
+// The WHOLE schema ships in the first migration (UC-00). Use-case files never
+// alter the schema — they only use these tables.
+// ============================================================================
+
+Project monthly_expenses {
+  database_type: 'PostgreSQL'
+  Note: 'Multi-tenant PWA (expenses.jmsola.dev). All money data isolated by user (PRD C1 / §5.1). Soft delete for catalogs; hard delete for month-scoped money rows (PRD §13).'
+}
+
+// ------------------------------ Enums ---------------------------------------
+
+Enum category_kind {
+  expense [note: 'Expense category (PRD §6.2)']
+  income  [note: 'Income category (PRD §6.2)']
+}
+
+Enum line_kind {
+  committed [note: 'Fixed recurring commitment, e.g. mortgage. Can be passed to actuals (PRD §7.5).']
+  estimated [note: 'Envelope / plan, e.g. groceries. CANNOT be passed to actuals (PRD §7.5).']
+}
+
+Enum line_origin {
+  cloned     [note: 'Copied from templates at month creation (PRD C17)']
+  month_only [note: 'One-off line added directly on the month (PRD UC-18)']
+}
+
+// --------------------- Identity and profile (1:1) ---------------------------
+
+Table app_user {
+  id uuid [pk, default: `gen_random_uuid()`]
+  google_sub text [not null, unique, note: 'Google OIDC subject = external identity (ARCH §3.2 rule 3)']
+  email text [not null, note: 'Normalized trim + lowercase before the allowlist check (PRD §5.2)']
+  display_name text
+  avatar_url text [note: 'Optional, from Google profile (PRD §6.1)']
+  created_at timestamptz [not null, default: `now()`]
+
+  Note: 'Row created ONLY after the allowlist check passes — blocked Google users get HTTP 403 and zero rows (PRD C3, UC-02; ARCH §3.2 rule 2). Session JWT carries app_user.id; no Auth.js adapter tables (ADR-3). Named app_user because "user" is reserved in PostgreSQL.'
+}
+
+Table profile_settings {
+  user_id uuid [pk, ref: > app_user.id]
+  currency char(3) [not null, default: 'EUR', note: 'PRD C9: label only, always 2 decimals, NO FX conversion']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: '1:1 with app_user. Inserted with currency = EUR on first login (PRD UC-01, §5.3).'
+}
+
+// ------------- Global per-user catalogs (SOFT delete, PRD §13) --------------
+
+Table category {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > app_user.id]
+  name text [not null]
+  kind category_kind [not null, note: 'Single table for expense + income categories (PRD §6.2)']
+  active boolean [not null, default: true, note: 'false = soft-deleted: hidden from NEW pickers; existing rows keep the id and still display the name (PRD C10 / §6.2)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz [note: 'Set on soft delete; NULL when active. Reactivation allowed (PRD §6.2)']
+
+  indexes {
+    (user_id, kind, name) [unique, name: 'category_active_name_uk', note: 'MUST be a PARTIAL unique index (WHERE active = true): names are unique per user+kind among ACTIVE rows only (PRD §6.2). DBML cannot express WHERE — add it in the Drizzle migration SQL.']
+  }
+
+  Note: 'Per-user global catalog — never cloned into months (PRD C10). Never physically deleted (PRD §13).'
+}
+
+Table template {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > app_user.id]
+  category_id uuid [not null, ref: > category.id, note: 'Expense category (templates are always expenses)']
+  name text [not null]
+  observations text
+  amount numeric(14,2) [not null, note: 'May be negative (PRD §7.6). ADR-5: numeric(14,2) in DB, integer cents in domain code']
+  kind line_kind [not null, note: 'committed | estimated (PRD §6.3)']
+  active boolean [not null, default: true, note: 'Inactive templates are NOT cloned into new months; existing months stay unchanged (PRD §6.3 / §7.8)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
+
+  indexes {
+    (user_id, active, kind) [name: 'template_clone_idx', note: 'Clone source at month creation = ACTIVE templates of the user (PRD C17). Overspend baseline = SUM(amount) of active ESTIMATED templates per category (PRD §7.4).']
+    category_id [name: 'template_category_idx']
+  }
+
+  Note: 'Reusable fixed/estimated definitions (management form). CLONE SOURCE ONLY at month creation — never updated from month edits (PRD §6.3). Soft delete (PRD §13).'
+}
+
+// -------------------- Month instance (HARD delete children) -----------------
+
+Table month {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > app_user.id]
+  year int [not null]
+  month int [not null, note: '1-12. Add CHECK (month BETWEEN 1 AND 12) in the migration SQL.']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (user_id, year, month) [unique, name: 'month_user_period_uk', note: 'Duplicate month creation is REJECTED (PRD UC-08). List query orders (year, month) DESC — newest first (PRD UC-14).']
+  }
+
+  Note: 'Month instance = isolated working copy (PRD §4). Created ONLY manually — never auto-created (PRD C6 / C12). On creation, active templates are cloned ONCE into month_fixed_line (PRD C17); afterwards the month never syncs with templates or other months (PRD §7.8). No rollover of unused remainings (PRD C7). Header delete not required in V1; if added later, cascade hard-deletes children (PRD §13).'
+}
+
+Table month_income {
+  id uuid [pk, default: `gen_random_uuid()`]
+  month_id uuid [not null, ref: > month.id]
+  category_id uuid [not null, ref: > category.id, note: 'Income category; must be ACTIVE at creation (PRD §6.5)']
+  name text [not null]
+  amount numeric(14,2) [not null, note: 'May be negative (PRD UC-16)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    month_id [name: 'month_income_month_idx']
+  }
+
+  Note: 'Money in for one month. NO observations field (PRD §6.5). NOT cloned from templates (PRD §7.8). HARD delete (PRD C15 / §13). Tenancy enforced by joining month.user_id (ARCH §4).'
+}
+
+Table month_fixed_line {
+  id uuid [pk, default: `gen_random_uuid()`]
+  month_id uuid [not null, ref: > month.id]
+  category_id uuid [not null, ref: > category.id, note: 'Copied from template or chosen for month-only lines']
+  name text [not null]
+  observations text
+  remaining_amount numeric(14,2) [not null, note: 'Starts = cloned/inserted amount; user edits it MANUALLY — tickets never auto-reduce it (PRD §7.3). May be zero or negative (PRD §7.4).']
+  original_amount numeric(14,2) [not null, note: 'Amount at clone/insert time (PRD §6.6)']
+  kind line_kind [not null, note: 'Only committed lines allow pass-to-actual (PRD §7.5)']
+  origin line_origin [not null, default: 'cloned', note: 'cloned | month_only (PRD §6.6, UC-18)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    month_id [name: 'month_fixed_line_month_idx']
+    (month_id, kind) [name: 'month_fixed_line_kind_idx']
+  }
+
+  Note: 'Reserved lines of one month instance (clone result + one-offs). HARD delete — never touches templates (PRD §6.6). Feeds potential savings via SUM(remaining_amount) (PRD §7.1).'
+}
+
+Table month_actual_expense {
+  id uuid [pk, default: `gen_random_uuid()`]
+  month_id uuid [not null, ref: > month.id]
+  category_id uuid [not null, ref: > category.id, note: 'Expense category; must be ACTIVE at creation (PRD §6.7)']
+  name text [not null, note: 'Free text; autocomplete is NOT MVP (PRD C13)']
+  observations text
+  amount numeric(14,2) [not null, note: 'May be negative (PRD UC-16); totals are algebraic sums']
+  converted_from_line_id uuid [note: 'Id of the month_fixed_line row this actual was converted from (PRD §7.5). LOGICAL reference ONLY — no DB-level FK: pass-to-actual hard-deletes the source line in the same transaction. Undo re-inserts the line reusing this id.']
+  converted_line_original_amount numeric(14,2) [note: 'Snapshot of the source line original_amount so undo restores it faithfully. NULL for normal tickets.']
+  converted_line_origin line_origin [note: 'Snapshot of the source line origin (cloned | month_only). NULL for normal tickets.']
+  edited_after_conversion boolean [not null, default: false, note: 'Gates undo: allowed only while FALSE (PRD §7.5). Set TRUE on the first edit of any actual.']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    month_id [name: 'month_actual_expense_month_idx']
+    (month_id, category_id) [name: 'month_actual_expense_overspend_idx', note: 'Overspend warning: SUM(amount) of actuals per category for the open month (PRD §7.4)']
+  }
+
+  Note: 'Real tickets. Unlimited per month (PRD UC-10). HARD delete (PRD C15). Never cloned. A money row lives EITHER here OR in month_fixed_line — never both (PRD §7.2 no double-count).'
+}
+
+// ---- Documentation-only relationship (undo link, ARCH §4) ------------------
+// Drawn for the diagram. Implement WITHOUT a foreign-key constraint:
+// pass-to-actual deletes the source line; undo re-creates it with the same id.
+
+Ref: month_actual_expense.converted_from_line_id > month_fixed_line.id
