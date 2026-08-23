@@ -22,8 +22,8 @@ services:
     # overrides without DB_PORT to keep the DB unexposed.
     ports:
       - "${DB_PORT:-127.0.0.1:5432}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    # volumes:
+    #   - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-expenses} -d ${POSTGRES_DB:-expenses}"]
       interval: 5s
@@ -33,30 +33,30 @@ services:
     networks:
       - expenses-net
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: expenses-app
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT:-3000}:3000"
-    env_file:
-      - .env
-    environment:
-      # Inside the compose network the DB hostname is the service name `db`.
-      DATABASE_URL: postgres://${POSTGRES_USER:-expenses}:${DB_PASSWORD}@db:5432/${POSTGRES_DB:-expenses}
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - expenses-net
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: expenses-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${APP_PORT:-3000}:3000"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     # Inside the compose network the DB hostname is the service name `db`.
+  #     DATABASE_URL: postgres://${POSTGRES_USER:-expenses}:${DB_PASSWORD}@db:5432/${POSTGRES_DB:-expenses}
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   networks:
+  #     - expenses-net
 
 networks:
   expenses-net:
     name: expenses-net
     driver: bridge
 
-volumes:
-  pgdata:
-    name: expenses-pgdata
+# volumes:
+#   pgdata:
+#     name: expenses-pgdata

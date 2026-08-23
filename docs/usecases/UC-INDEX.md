@@ -1,8 +1,8 @@
 # Monthly Expenses — Use-case index
 
 > **App:** Monthly Expenses PWA (`https://expenses.jmsola.dev`)
-> **Behavior source of truth:** `docs/prd.md` (GLOBAL.md) · **Tech source of truth:** `docs/architecture.md`
-> **Database:** defined once in `database.dbml` → created in a single first migration in **UC-00**. No other use-case file changes the schema; they only consume the 8 tables.
+> **Behavior source of truth:** `docs/prds/GLOBAL.md` · **Tech source of truth:** `docs/architecture/ARCHITECTURE.md`
+> **Database:** defined once in `docs/database/database.dbml` → created in a single first migration in **UC-00**. No other use-case file changes the schema; they only consume the 8 tables.
 
 ## How to work with these files
 
@@ -14,7 +14,7 @@
 
 - **Tenancy:** every repository function takes `userId` as first argument and filters by it in every `WHERE` (PRD §5.1 — a missing filter is a P0 bug; ARCH §5 rule 1).
 - **Money:** amounts cross the wire as strings matching `^-?\d{1,12}\.\d{2}$`; domain code uses integer cents; DB uses `numeric(14,2)`; never floats (ADR-5, ARCH §8).
-- **Deletes:** soft delete for catalogs (categories, templates); hard delete for month-scoped money rows (PRD §13).
+- **Deletes:** soft delete for catalogs (`category`, `template`); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12).
 
@@ -35,6 +35,7 @@
 | UC-10 | Pass to actual & undo | UC-12, §7.5 | UC-08, UC-09 |
 | UC-11 | Summary, savings & warnings | UC-13, UC-14, §7.1, §7.4, C8, C18 | UC-07, UC-08, UC-09 |
 | UC-12 | PWA install | UC-04, C11 | UC-00 (slot anywhere) |
+| UC-13 | One-off month expenses (special occasions) | UC-18, §6.6, §7.8 | UC-09 (reuses its `addMonthOnlyLine`; no new backend) |
 
 ```mermaid
 flowchart TD
@@ -44,6 +45,7 @@ flowchart TD
     UC06 --> UC07 & UC08 & UC09
     UC08 & UC09 --> UC10
     UC07 & UC08 & UC09 --> UC11
+    UC09 --> UC13
     UC00 --> UC12
 ```
 
@@ -67,6 +69,6 @@ flowchart TD
 | 14 Actual −20 increases savings by 20 | UC-08 + UC-11 |
 | 15 Hard-delete actual → gone from sums | UC-08 |
 | 16 Soft-delete category → hidden from pickers; history intact | UC-03 |
-| 17 One-off August 30 → September has no 30 | UC-09 + UC-06 |
+| 17 One-off August 30 → September has no 30 | UC-09 + UC-06 (E2E flow in UC-13) |
 | 18 August remaining 100 → September remaining is template 400 | UC-09 + UC-06 |
 | 19 Overspend: templates 400+50, actuals 500 → warning | UC-11 |
