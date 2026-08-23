@@ -5,20 +5,6 @@ import { useTranslations } from "next-intl";
 import { AddTemplateForm } from "./add-template-form";
 import { TemplateRow } from "./template-row";
 
-// ============================================================================
-// Templates screen — interactive part (UC-05).
-//
-// Client component because it owns the kind-tab state. Reads are RSC
-// (page.tsx) so this component stays purely presentational + tab switching;
-// mutations happen via the per-row form actions rendered in `TemplateRow`.
-//
-// The screen receives:
-//   - `initialTemplates`: serialised rows with `amountCents` (integer, never
-//     raw wire strings — keeps ADR-5 / ARCH §8 on the domain side).
-//   - `expenseCategories`: ACTIVE expense categories for the picker.
-//   - `currency`: the user's display label (PRD UC-15).
-// ============================================================================
-
 type Kind = "committed" | "estimated";
 
 export interface TemplateRowData {
@@ -56,7 +42,7 @@ export function TemplatesScreen({
       <div
         role="tablist"
         aria-label={t("title")}
-        className="bg-muted/40 inline-flex w-full rounded-md p-1 text-sm"
+        className="bg-muted/40 inline-flex w-full rounded-lg p-1 text-sm"
       >
         {(["committed", "estimated"] as const).map((option) => {
           const isActive = option === kind;
@@ -68,12 +54,11 @@ export function TemplatesScreen({
               aria-selected={isActive}
               aria-current={isActive ? "page" : undefined}
               onClick={() => setKind(option)}
-              className={
-                "flex-1 rounded-sm px-3 py-1.5 font-medium transition-colors " +
-                (isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground")
-              }
+              className={`flex-1 rounded-md px-3 py-2 font-medium transition-all cursor-pointer ${
+                isActive
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
             >
               {t(`kind.${option}`)}
             </button>

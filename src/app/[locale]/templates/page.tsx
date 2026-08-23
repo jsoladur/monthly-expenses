@@ -4,11 +4,11 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { listTemplatesForManagement } from "@/server/services/templates";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { getProfileSettings } from "@/server/services/settings";
 import { TemplatesScreen } from "./templates-screen";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
+import { auth, signOut } from "@/auth";
 
 export default async function TemplatesPage({
   params,
@@ -22,22 +22,27 @@ export default async function TemplatesPage({
   setRequestLocale(locale);
 
   const userId = await requireUserId(locale);
-  const [templates, expenseCategories, profileSettings, t] = await Promise.all([
+  const [templates, expenseCategories, profileSettings, t, session] = await Promise.all([
     listTemplatesForManagement(userId, undefined),
     listActiveCategoriesForPicker(userId, "expense"),
     getProfileSettings(userId),
     getTranslations({ locale, namespace: "templates" }),
+    auth(),
   ]);
 
   const currency = profileSettings?.currency ?? "EUR";
+  const email = session?.user?.email ?? "";
+  const displayName = session?.user?.name ?? null;
+
+  async function startSignOut() {
+    "use server";
+    await signOut({ redirectTo: `/${locale}/sign-in` });
+  }
 
   return (
-    <AppShell>
+    <AppShell email={email} displayName={displayName} signOutAction={startSignOut}>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <LanguageSwitcher />
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <TemplatesScreen
           locale={locale}
           currency={currency}

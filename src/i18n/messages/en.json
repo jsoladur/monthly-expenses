@@ -6,9 +6,18 @@
       "es": "ES"
     }
   },
+  "profile": {
+    "language": "Language",
+    "signOut": "Sign out",
+    "noName": "User",
+    "option": {
+      "en": "English",
+      "es": "Español"
+    }
+  },
   "auth": {
     "signIn": {
-      "title": "Sign in",
+      "title": "Monthly Expenses",
       "subtitle": "Track one month at a time. Sign in with the Google account on the allowlist.",
       "googleButton": "Continue with Google"
     },

@@ -6,9 +6,18 @@
       "es": "ES"
     }
   },
+  "profile": {
+    "language": "Idioma",
+    "signOut": "Cerrar sesión",
+    "noName": "Usuario",
+    "option": {
+      "en": "English",
+      "es": "Español"
+    }
+  },
   "auth": {
     "signIn": {
-      "title": "Iniciar sesión",
+      "title": "Gastos mensuales",
       "subtitle": "Controla un mes cada vez. Inicia sesión con la cuenta de Google que está en la lista permitida.",
       "googleButton": "Continuar con Google"
     },

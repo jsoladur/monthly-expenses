@@ -6,9 +6,13 @@ import { useTranslations } from "next-intl";
 import { Calendar, Tags, Layers, Settings } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { ProfileMenu } from "./profile-menu";
 
 interface AppShellProps {
   children: ReactNode;
+  email: string;
+  displayName?: string | null;
+  signOutAction: () => Promise<void>;
 }
 
 interface NavItem {
@@ -31,14 +35,14 @@ function isActiveRoute(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, email, displayName, signOutAction }: AppShellProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
 
   return (
     <div className="flex min-h-svh">
       <aside className="bg-sidebar text-sidebar-foreground fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border lg:flex">
-        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
+        <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
           <Image
             src="/images/logo.png"
             alt="Monthly Expenses"
@@ -74,6 +78,13 @@ export function AppShell({ children }: AppShellProps) {
 
       <main className="flex-1 pb-20 lg:pb-0 lg:pl-60">
         <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-8">
+          <div className="mb-4 flex justify-end">
+            <ProfileMenu
+              email={email}
+              displayName={displayName}
+              signOutAction={signOutAction}
+            />
+          </div>
           {children}
         </div>
       </main>

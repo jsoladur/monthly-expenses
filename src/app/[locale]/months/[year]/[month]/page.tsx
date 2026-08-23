@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { requireUserId } from "@/server/auth/require-user-id";
 import {
@@ -35,6 +34,7 @@ import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month
 import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
 import { AppShell } from "@/components/app-shell";
 import { redirect } from "@/i18n/navigation";
+import { auth, signOut } from "@/auth";
 
 export default async function MonthWorkspacePage({
   params,
@@ -148,16 +148,22 @@ export default async function MonthWorkspacePage({
     now,
   );
 
+  const session = await auth();
+  const email = session?.user?.email ?? "";
+  const displayName = session?.user?.name ?? null;
+
+  async function startSignOut() {
+    "use server";
+    await signOut({ redirectTo: `/${locale}/sign-in` });
+  }
+
   return (
-    <AppShell>
+    <AppShell email={email} displayName={displayName} signOutAction={startSignOut}>
       <MonthTouchClient year={workspace.month.year} month={workspace.month.month} />
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
-          </h1>
-          <LanguageSwitcher />
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
+        </h1>
 
         {showPastMonthBanner && <PastMonthBanner />}
 

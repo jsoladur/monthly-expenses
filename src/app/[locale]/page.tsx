@@ -1,8 +1,6 @@
 import { redirect } from "@/i18n/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/auth";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { getMonthList } from "@/server/services/months";
@@ -41,25 +39,12 @@ export default async function LocaleHome({
   }
 
   return (
-    <AppShell>
+    <AppShell email={email} displayName={displayName} signOutAction={startSignOut}>
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("title")}
-          </h1>
-          <LanguageSwitcher />
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("title")}
+        </h1>
         <PwaInstallPrompt />
-        <div className="flex flex-col gap-1">
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {t("subtitle", { email })}
-          </p>
-          {displayName && (
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              {t("displayName", { name: displayName })}
-            </p>
-          )}
-        </div>
 
         {months.length === 0 ? (
           <section
@@ -130,12 +115,6 @@ export default async function LocaleHome({
             </details>
           </section>
         )}
-
-        <form action={startSignOut}>
-          <Button type="submit" variant="outline" className="w-full" size="lg">
-            {t("signOut")}
-          </Button>
-        </form>
       </div>
     </AppShell>
   );

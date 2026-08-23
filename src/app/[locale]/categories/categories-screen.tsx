@@ -5,15 +5,6 @@ import { useTranslations } from "next-intl";
 import { AddCategoryForm } from "./add-category-form";
 import { CategoryRow } from "./category-row";
 
-// ============================================================================
-// Categories screen — interactive part (UC-03).
-//
-// Client component because it owns the tab state and renders one of two
-// column lists. Reads are RSC (page.tsx) so this component stays purely
-// presentational + tab-switching — mutations happen via the per-row form
-// actions rendered in `CategoryRow`.
-// ============================================================================
-
 type Kind = "expense" | "income";
 
 export interface CategoryRowData {
@@ -40,7 +31,7 @@ export function CategoriesScreen({
       <div
         role="tablist"
         aria-label={t("title")}
-        className="bg-muted/40 inline-flex w-full rounded-md p-1 text-sm"
+        className="bg-muted/40 inline-flex w-full rounded-lg p-1 text-sm"
       >
         {(["expense", "income"] as const).map((option) => {
           const isActive = option === kind;
@@ -52,12 +43,11 @@ export function CategoriesScreen({
               aria-selected={isActive}
               aria-current={isActive ? "page" : undefined}
               onClick={() => setKind(option)}
-              className={
-                "flex-1 rounded-sm px-3 py-1.5 font-medium transition-colors " +
-                (isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground")
-              }
+              className={`flex-1 rounded-md px-3 py-2 font-medium transition-all cursor-pointer ${
+                isActive
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
             >
               {t(`tabs.${option}`)}
             </button>
