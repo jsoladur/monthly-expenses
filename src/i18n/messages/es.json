@@ -59,11 +59,17 @@
     "noActiveIncomeCategories": "Crea primero una categoría de ingreso activa.",
     "incomeNotFound": "Ese ingreso ya no existe. Recarga la página.",
     "monthNotFound": "Ese mes ya no existe. Recarga la página.",
-    "actualNotFound": "Ese gasto ya no existe. Recarga la página."
+    "actualNotFound": "Ese gasto ya no existe. Recarga la página.",
+    "reservedLineNotFound": "Esa línea reservada ya no existe. Recarga la página.",
+    "estimatedLineCannotPassToActual": "Las líneas estimadas no pueden pasarse a gastos reales.",
+    "cannotUndoPass": "No se puede deshacer después de editar el gasto.",
+    "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer."
   },
   "warnings": {
     "pastMonth": "Este mes no es el mes natural actual. Los cambios están permitidos.",
     "overspend": "Los tickets reales en esta categoría superan el plan definido en tus plantillas.",
+    "overspendPlan": "Plan en plantillas: {plan}",
+    "overspendOver": "Excedido por {amount}",
     "inactiveCategory": "Esta categoría está inactiva. No puede elegirse para entradas nuevas."
   },
   "months": {
@@ -91,7 +97,9 @@
       "actuals": "Gastos reales",
       "reserved": "Reservado",
       "savings": "Ahorro potencial",
-      "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas."
+      "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas.",
+      "negativeNote": "Los importes negativos cuentan (reembolsos, devoluciones).",
+      "pastMonthBanner": "Este mes no es el mes natural actual. Los cambios están permitidos."
     },
     "estimateHelp": "Los tickets no reducen este número. Redúcelo tú mismo cuando quieras que baje la reserva.",
     "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover.",
@@ -143,10 +151,49 @@
       "confirmDelete": "¿Eliminar este ticket de gasto?",
       "placeholder": "p. ej. Pan",
       "observationsPlaceholder": "Notas opcionales",
-      "selectCategory": "Elige una categoría"
+      "selectCategory": "Elige una categoría",
+      "undoPass": "Deshacer pase",
+      "confirmUndoPass": "¿Deshacer el pase? La línea comprometida vuelve como línea reservada."
     },
     "noActiveCategories": "Crea primero una categoría de gasto activa.",
     "historicalInactiveNote": "La categoría de este ticket está inactiva. Sigue mostrándose porque el ticket se añadió antes."
+  },
+  "reservedLines": {
+    "committedTitle": "Líneas reservadas comprometidas",
+    "estimatedTitle": "Líneas reservadas estimadas",
+    "empty": "Aún no hay líneas reservadas.",
+    "noCommitted": "No hay líneas comprometidas para este mes.",
+    "noEstimated": "No hay líneas estimadas para este mes.",
+    "kind": {
+      "committed": "Comprometida",
+      "estimated": "Estimada"
+    },
+    "origin": {
+      "cloned": "Copiada de plantilla",
+      "monthOnly": "Solo para este mes"
+    },
+    "amount": "Importe",
+    "remaining": "Restante",
+    "remainingHelp": "Los tickets no reducen este número. Redúcelo tú mismo cuando quieras que baje la reserva.",
+    "category": "Categoría",
+    "name": "Nombre",
+    "new": "Nueva línea solo de este mes",
+    "actions": {
+      "add": "Añadir",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar esta línea reservada?",
+      "edit": "Editar restante",
+      "placeholder": "p. ej. Seguro único",
+      "selectCategory": "Elige una categoría",
+      "selectKind": "Elige un tipo",
+      "passToActual": "Pasar a gastos reales",
+      "passToActualHelp": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover.",
+      "confirmPassToActual": "¿Pasar esta línea comprometida a gasto real?"
+    },
+    "noActiveCategories": "Crea primero una categoría de gasto activa.",
+    "historicalInactiveNote": "La categoría de esta línea está inactiva. Sigue mostrándose porque la línea se añadió antes."
   },
   "categories": {
     "title": "Categorías",
@@ -229,8 +276,12 @@
     }
   },
   "pwa": {
-    "install": "Instalar app",
-    "installed": "Instalada",
-    "offlineNote": "Los datos son solo en línea. La aplicación funciona sin conexión una vez instalada."
+    "install": {
+      "button": "Instalar app",
+      "prompt": "Instala Monthly Expenses en tu dispositivo para un acceso rápido.",
+      "iosInstructions": "Toca el botón de compartir y luego \"Añadir a la pantalla de inicio\" para instalar.",
+      "dismiss": "Ahora no"
+    },
+    "offlineNote": "Los datos son solo en línea. La aplicación se carga al instante una vez instalada."
   }
 }

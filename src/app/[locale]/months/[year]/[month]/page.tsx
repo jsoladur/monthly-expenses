@@ -8,12 +8,22 @@ import {
   getMonthWorkspace,
   MonthNotFoundError,
 } from "@/server/services/months";
+import {
+  getMonthSummary,
+  getOverspendWarnings,
+  isPastMonth,
+} from "@/server/services/summary";
 import { getProfileSettings } from "@/server/services/settings";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
-import { formatMoney, isAppLocale, monthYear } from "@/i18n/format";
+import { isAppLocale, monthYear } from "@/i18n/format";
 import { parseAmount } from "@/server/money";
 import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-touch-client";
+import {
+  ReservedLinesScreen,
+  type ReservedLineGroup,
+  type ReservedLineRowData,
+} from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
 import {
   IncomesScreen,
   type IncomeRowData,
@@ -22,14 +32,26 @@ import {
   ActualsScreen,
   type ActualRowData,
 } from "@/app/[locale]/months/[year]/[month]/actuals-screen";
+import { SummaryBlock } from "@/app/[locale]/months/[year]/[month]/summary-block";
+import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month-banner";
 
 // ============================================================================
-// Month workspace — UC-06 screen 4 skeleton.
+// Month workspace — UC-06 screen 4 (full) + UC-11 summary header.
 //
-// Renders the month header + the cloned reserved lines grouped by kind
-// (PRD §7.8: months never sync with templates). Incomes (UC-07) and actuals
-// (UC-08) ship in their own slices; this page surfaces their
-// "coming next" placeholders so the skeleton is visible end to end.
+// Renders the month header + summary header (UC-11) + past-month banner
+// (PRD §7.7) + reserved lines (UC-09) grouped by kind, then incomes
+// (UC-07), then actuals (UC-08). Months never sync with templates or
+// other months after creation (PRD §7.8); the `month_fixed_line` rows
+// this page reads are the snapshot UC-06 cloned at create time, plus any
+// month-only lines the user has added since (UC-09).
+//
+// The summary block (UC-11) reads `month_income`, `month_actual_expense`
+// and `month_fixed_line.remaining_amount` via `getMonthSummary(userId,
+// monthId)` — integer-cents algebra per ADR-5 / ARCH §8. The overspend
+// warnings are computed from the user's ACTIVE estimated templates and
+// the open month's actual tickets (PRD §7.4 / C18). Warnings are passed
+// into the actuals + reserved-lines screens so the badge surfaces inline
+// on the affected category rows.
 //
 // Opening a month sets the `last_opened_month` cookie (PRD §5.4, ARCH §7)
 // so the home page can resume it on next visit (PRD UC-14). The cookie is
@@ -59,7 +81,6 @@ export default async function MonthWorkspacePage({
   if (!Number.isInteger(month) || month < 1 || month > 12) notFound();
 
   const userId = await requireUserId(locale);
-  const t = await getTranslations({ locale, namespace: "months.workspace" });
   const tn = await getTranslations({ locale, namespace: "nav" });
 
   let workspace;
@@ -76,13 +97,12 @@ export default async function MonthWorkspacePage({
 
   const settings = await getProfileSettings(userId);
   const currency = settings?.currency ?? "EUR";
-  const committedLines = workspace.lines.filter((l) => l.kind === "committed");
-  const estimatedLines = workspace.lines.filter((l) => l.kind === "estimated");
 
   // Income categories: ACTIVE for the picker (PRD §6.5) + ALL for the
   // historical-row lookup (so an income whose category was later deactivated
   // still renders the category name + an inactive note).
-  // Expense categories: same shape, for the actuals block (UC-08, PRD §6.7).
+  // Expense categories: same shape, for the actuals block (UC-08, PRD §6.7)
+  // AND the reserved-lines block (UC-09, PRD §6.6).
   const [
     activeIncomeCategories,
     allIncomeCategories,
@@ -121,8 +141,56 @@ export default async function MonthWorkspacePage({
       name: actual.name,
       observations: actual.observations,
       amountCents: parseAmount(actual.amount),
+      convertedFromLineId: actual.convertedFromLineId,
+      editedAfterConversion: actual.editedAfterConversion,
     };
   });
+  const reservedLineRows: ReservedLineRowData[] = workspace.lines.map((line) => {
+    const meta = expenseCategoryMap.get(line.categoryId);
+    return {
+      id: line.id,
+      categoryId: line.categoryId,
+      categoryName: meta?.name ?? "—",
+      categoryActive: meta?.active ?? false,
+      name: line.name,
+      observations: line.observations,
+      remainingCents: parseAmount(line.remainingAmount),
+      originalCents: parseAmount(line.originalAmount),
+      kind: line.kind,
+      origin: line.origin,
+    };
+  });
+  // Group rows by kind (committed / estimated) and order clones before
+  // month-only lines so the snapshot reads as "what the template said"
+  // followed by "what I added on top" (PRD §7.8 / §6.6).
+  const orderRows = (rows: ReservedLineRowData[]): ReservedLineRowData[] => {
+    return [...rows].sort((a, b) => {
+      if (a.origin !== b.origin) {
+        return a.origin === "cloned" ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  };
+  const reservedLineGroups: ReservedLineGroup[] = (
+    ["committed", "estimated"] as const
+  ).map((kind) => ({
+    kind,
+    rows: orderRows(reservedLineRows.filter((r) => r.kind === kind)),
+  }));
+
+  // UC-11: load the savings algebra + per-category overspend warnings. Both
+  // are pure reads (no transactions, no mutation), so we run them in parallel
+  // with each other and with the workspace data we already loaded above.
+  const [summary, overspendWarnings] = await Promise.all([
+    getMonthSummary(userId, workspace.month.id),
+    getOverspendWarnings(userId, workspace.month.id),
+  ]);
+  const now = new Date();
+  const showPastMonthBanner = isPastMonth(
+    workspace.month.year,
+    workspace.month.month,
+    now,
+  );
 
   return (
     <main
@@ -142,57 +210,22 @@ export default async function MonthWorkspacePage({
         </h1>
       </header>
 
-      <section
-        aria-labelledby="reserved-committed"
-        className="flex flex-col gap-2"
-      >
-        <h2 id="reserved-committed" className="text-base font-semibold">
-          {t("reservedCommitted")}
-        </h2>
-        {committedLines.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("noLines")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {committedLines.map((line) => (
-              <li
-                key={line.id}
-                className="bg-card text-card-foreground flex items-center justify-between rounded-md border px-4 py-2 text-sm"
-              >
-                <span>{line.name}</span>
-                <span className="tabular-nums">
-                  {formatMoney(parseAmount(line.remainingAmount), currency)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {showPastMonthBanner && <PastMonthBanner />}
 
-      <section
-        aria-labelledby="reserved-estimated"
-        className="flex flex-col gap-2"
-      >
-        <h2 id="reserved-estimated" className="text-base font-semibold">
-          {t("reservedEstimated")}
-        </h2>
-        {estimatedLines.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("noLines")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {estimatedLines.map((line) => (
-              <li
-                key={line.id}
-                className="bg-card text-card-foreground flex items-center justify-between rounded-md border px-4 py-2 text-sm"
-              >
-                <span>{line.name}</span>
-                <span className="tabular-nums">
-                  {formatMoney(parseAmount(line.remainingAmount), currency)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <SummaryBlock summary={summary} currency={currency} />
+
+      <ReservedLinesScreen
+        monthId={workspace.month.id}
+        year={workspace.month.year}
+        month={workspace.month.month}
+        currency={currency}
+        groups={reservedLineGroups}
+        expenseCategories={activeExpenseCategories.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }))}
+        overspendWarnings={overspendWarnings}
+      />
 
       <IncomesScreen
         monthId={workspace.month.id}
@@ -216,6 +249,7 @@ export default async function MonthWorkspacePage({
           id: c.id,
           name: c.name,
         }))}
+        overspendWarnings={overspendWarnings}
       />
     </main>
   );

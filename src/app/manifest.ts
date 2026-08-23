@@ -1,19 +1,17 @@
-// ============================================================================
-// PWA web manifest (ADR-7). Served at /manifest.webmanifest.
-// Final icon set, theme colour, and install-prompt affordance land in UC-12.
-// ============================================================================
-
 import type { MetadataRoute } from "next";
 
 const APP_NAME = "Monthly Expenses";
 const APP_DESCRIPTION = "Personal monthly expense tracking.";
 
 export default function manifest(): MetadataRoute.Manifest {
+  const startUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://expenses.jmsola.dev";
+
   return {
     name: APP_NAME,
     short_name: "Expenses",
     description: APP_DESCRIPTION,
-    start_url: "/",
+    start_url: startUrl,
+    scope: startUrl,
     display: "standalone",
     orientation: "portrait",
     background_color: "#ffffff",

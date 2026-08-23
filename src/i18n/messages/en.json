@@ -59,11 +59,17 @@
     "noActiveIncomeCategories": "Create an active income category first.",
     "incomeNotFound": "That income no longer exists. Reload the page.",
     "monthNotFound": "That month no longer exists. Reload the page.",
-    "actualNotFound": "That expense no longer exists. Reload the page."
+    "actualNotFound": "That expense no longer exists. Reload the page.",
+    "reservedLineNotFound": "That reserved line no longer exists. Reload the page.",
+    "estimatedLineCannotPassToActual": "Estimated lines cannot be passed to actuals.",
+    "cannotUndoPass": "Cannot undo after the actual has been edited.",
+    "notUndoable": "This expense was not created by pass-to-actual."
   },
   "warnings": {
     "pastMonth": "This month is not the current calendar month. Changes are allowed.",
     "overspend": "Actual tickets in this category are higher than the plan in your templates.",
+    "overspendPlan": "Plan in templates: {plan}",
+    "overspendOver": "Over by {amount}",
     "inactiveCategory": "This category is inactive. It cannot be chosen for new entries."
   },
   "months": {
@@ -91,7 +97,9 @@
       "actuals": "Actuals",
       "reserved": "Reserved",
       "savings": "Potential savings",
-      "savingsHelp": "Income minus actual spend minus money still reserved in fixed/estimated lines."
+      "savingsHelp": "Income minus actual spend minus money still reserved in fixed/estimated lines.",
+      "negativeNote": "Negative amounts count (refunds, payouts).",
+      "pastMonthBanner": "This month is not the current calendar month. Changes are allowed."
     },
     "estimateHelp": "Tickets do not reduce this number. Decrease it yourself when you want the reserve to drop.",
     "passToActual": "Move this commitment to actual spend. Estimates cannot be moved.",
@@ -143,10 +151,49 @@
       "confirmDelete": "Delete this expense ticket?",
       "placeholder": "e.g. Bread",
       "observationsPlaceholder": "Optional notes",
-      "selectCategory": "Pick a category"
+      "selectCategory": "Pick a category",
+      "undoPass": "Undo pass",
+      "confirmUndoPass": "Undo the pass? The committed line returns as a reserved line."
     },
     "noActiveCategories": "Create an active expense category first.",
     "historicalInactiveNote": "The category for this ticket is inactive. It still shows because the ticket was added earlier."
+  },
+  "reservedLines": {
+    "committedTitle": "Committed reserved lines",
+    "estimatedTitle": "Estimated reserved lines",
+    "empty": "No reserved lines yet.",
+    "noCommitted": "No committed lines for this month.",
+    "noEstimated": "No estimated lines for this month.",
+    "kind": {
+      "committed": "Committed",
+      "estimated": "Estimated"
+    },
+    "origin": {
+      "cloned": "Cloned from template",
+      "monthOnly": "One-off this month"
+    },
+    "amount": "Amount",
+    "remaining": "Remaining",
+    "remainingHelp": "Tickets do not reduce this number. Decrease it yourself when you want the reserve to drop.",
+    "category": "Category",
+    "name": "Name",
+    "new": "New month-only line",
+    "actions": {
+      "add": "Add",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Delete this reserved line?",
+      "edit": "Edit remaining",
+      "placeholder": "e.g. One-off insurance",
+      "selectCategory": "Pick a category",
+      "selectKind": "Pick a kind",
+      "passToActual": "Pass to actual",
+      "passToActualHelp": "Move this commitment to actual spend. Estimates cannot be moved.",
+      "confirmPassToActual": "Pass this committed line to actual spend?"
+    },
+    "noActiveCategories": "Create an active expense category first.",
+    "historicalInactiveNote": "The category for this line is inactive. It still shows because the line was added earlier."
   },
   "categories": {
     "title": "Categories",
@@ -229,8 +276,12 @@
     }
   },
   "pwa": {
-    "install": "Install app",
-    "installed": "Installed",
-    "offlineNote": "Data is online only. The app shell works offline once installed."
+    "install": {
+      "button": "Install app",
+      "prompt": "Install Monthly Expenses on your device for quick access.",
+      "iosInstructions": "Tap the share button and then \"Add to Home Screen\" to install.",
+      "dismiss": "Not now"
+    },
+    "offlineNote": "Data is online only. The app shell loads instantly once installed."
   }
 }

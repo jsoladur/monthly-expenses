@@ -10,6 +10,12 @@ import {
   editActualAction,
   type ActualActionResult,
 } from "@/actions/actuals";
+import {
+  undoPassToActualAction,
+  type PassToActualActionResult,
+} from "@/actions/pass-to-actual";
+import { OverspendBadge } from "@/app/[locale]/months/[year]/[month]/overspend-badge";
+import type { OverspendWarning } from "@/server/services/summary";
 import { Button } from "@/components/ui/button";
 
 // ============================================================================
@@ -38,6 +44,12 @@ export interface ActualRowData {
   name: string;
   observations: string | null;
   amountCents: number;
+  // Pass-to-actual (UC-10, PRD §7.5): `convertedFromLineId` is non-null when
+  // the actual was created by `passToActual` (not by `addActual`). Undo is
+  // allowed only while `editedAfterConversion` is false; the moment a user
+  // edits this actual, the gate closes.
+  convertedFromLineId: string | null;
+  editedAfterConversion: boolean;
 }
 
 export interface CategoryOption {
@@ -52,6 +64,7 @@ export function ActualsScreen({
   currency,
   initialActuals,
   expenseCategories,
+  overspendWarnings = [],
 }: {
   monthId: string;
   year: number;
@@ -59,8 +72,19 @@ export function ActualsScreen({
   currency: string;
   initialActuals: ActualRowData[];
   expenseCategories: CategoryOption[];
+  overspendWarnings?: OverspendWarning[];
 }) {
   const t = useTranslations("actuals");
+
+  // Surface one badge per overspending category that has at least one
+  // ticket in the open month (PRD §7.4). Same dedup rule as
+  // ReservedLinesScreen — never repeat a badge for the same category.
+  const warningByCategoryId = new Map<string, OverspendWarning>();
+  for (const warning of overspendWarnings) {
+    if (initialActuals.some((row) => row.categoryId === warning.categoryId)) {
+      warningByCategoryId.set(warning.categoryId, warning);
+    }
+  }
 
   return (
     <section className="flex flex-col gap-3">
@@ -77,19 +101,32 @@ export function ActualsScreen({
       {initialActuals.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("empty")}</p>
       ) : (
-        <ul className="flex flex-col gap-1">
-          {initialActuals.map((row) => (
-            <ActualRow
-              key={row.id}
-              row={row}
-              monthId={monthId}
-              year={year}
-              month={month}
-              currency={currency}
-              expenseCategories={expenseCategories}
-            />
-          ))}
-        </ul>
+        <>
+          {warningByCategoryId.size > 0 && (
+            <div className="flex flex-col gap-1">
+              {Array.from(warningByCategoryId.values()).map((warning) => (
+                <OverspendBadge
+                  key={warning.categoryId}
+                  warning={warning}
+                  currency={currency}
+                />
+              ))}
+            </div>
+          )}
+          <ul className="flex flex-col gap-1">
+            {initialActuals.map((row) => (
+              <ActualRow
+                key={row.id}
+                row={row}
+                monthId={monthId}
+                year={year}
+                month={month}
+                currency={currency}
+                expenseCategories={expenseCategories}
+              />
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );
@@ -314,6 +351,7 @@ function ActualRow({
           </span>
           <RowActions
             rowId={row.id}
+            canUndoPass={row.convertedFromLineId !== null && !row.editedAfterConversion}
             monthId={monthId}
             year={year}
             month={month}
@@ -332,45 +370,83 @@ function ActualRow({
 
 function RowActions({
   rowId,
+  canUndoPass,
   monthId,
   year,
   month,
   onEdit,
 }: {
   rowId: string;
+  canUndoPass: boolean;
   monthId: string;
   year: number;
   month: number;
   onEdit: () => void;
 }) {
   const t = useTranslations("actuals");
+  const tv = useTranslations("validation");
   const [pending, setPending] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+
+  const handleUndo = async () => {
+    if (pending) return;
+    if (!window.confirm(t("actions.confirmUndoPass"))) return;
+    setPending(true);
+    setUndoError(null);
+    const result = await undoPassToActualAction({ actualId: rowId, monthId, year, month });
+    setPending(false);
+    if (!result.ok) {
+      setUndoError(errorToMessageUndo(result, tv));
+    }
+  };
+
   return (
-    <span className="flex items-center gap-1">
-      <button
-        type="button"
-        onClick={onEdit}
-        className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
-      >
-        {t("actions.edit")}
-      </button>
-      <form
-        action={async () => {
-          if (pending) return;
-          if (!window.confirm(t("actions.confirmDelete"))) return;
-          setPending(true);
-          await deleteActualAction({ id: rowId, monthId, year, month });
-          setPending(false);
-        }}
-      >
+    <span className="flex flex-col items-end gap-1">
+      <span className="flex items-center gap-1">
         <button
-          type="submit"
-          disabled={pending}
-          className="text-muted-foreground hover:text-destructive px-2 text-xs underline-offset-4 hover:underline"
+          type="button"
+          onClick={onEdit}
+          className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
         >
-          {t("actions.delete")}
+          {t("actions.edit")}
         </button>
-      </form>
+        {canUndoPass && (
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={pending}
+            className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
+          >
+            {t("actions.undoPass")}
+          </button>
+        )}
+        <form
+          action={async () => {
+            if (pending) return;
+            if (!window.confirm(t("actions.confirmDelete"))) return;
+            setPending(true);
+            await deleteActualAction({ id: rowId, monthId, year, month });
+            setPending(false);
+          }}
+        >
+          <button
+            type="submit"
+            disabled={pending}
+            className="text-muted-foreground hover:text-destructive px-2 text-xs underline-offset-4 hover:underline"
+          >
+            {t("actions.delete")}
+          </button>
+        </form>
+      </span>
+      {undoError && (
+        <span
+          role="alert"
+          aria-live="polite"
+          className="text-destructive text-xs"
+        >
+          {undoError}
+        </span>
+      )}
     </span>
   );
 }
@@ -537,4 +613,24 @@ function readObservations(formData: FormData): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed.length === 0 ? null : trimmed;
+}
+
+function errorToMessageUndo(
+  state: Extract<PassToActualActionResult, { ok: false }>,
+  tv: ReturnType<typeof useTranslations<"validation">>,
+): string {
+  switch (state.error) {
+    case "actualNotFound":
+      return tv("actualNotFound");
+    case "notUndoable":
+      return tv("notUndoable");
+    case "undoForbiddenAfterEdit":
+      return tv("cannotUndoPass");
+    case "monthLineNotFound":
+      return tv("reservedLineNotFound");
+    case "estimatedLineCannotPass":
+      return tv("estimatedLineCannotPassToActual");
+    case "validation":
+      return tv("required");
+  }
 }

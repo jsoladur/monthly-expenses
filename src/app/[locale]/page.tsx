@@ -3,6 +3,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { auth, signOut } from "@/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { Link } from "@/i18n/navigation";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { getMonthList } from "@/server/services/months";
@@ -80,6 +81,7 @@ export default async function LocaleHome({
       <div className="flex justify-end">
         <LanguageSwitcher />
       </div>
+      <PwaInstallPrompt />
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight">
           {t("title")}
