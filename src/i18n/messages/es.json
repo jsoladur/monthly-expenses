@@ -1,0 +1,14 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Iniciar sesión",
+      "subtitle": "Controla un mes cada vez. Inicia sesión con la cuenta de Google que está en la lista permitida.",
+      "googleButton": "Continuar con Google"
+    },
+    "forbidden": {
+      "title": "Acceso denegado",
+      "body": "Esta cuenta no tiene permiso para usar la aplicación.",
+      "returnHome": "Volver a iniciar sesión"
+    }
+  }
+}

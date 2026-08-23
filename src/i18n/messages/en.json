@@ -1,0 +1,14 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "subtitle": "Track one month at a time. Sign in with the Google account on the allowlist.",
+      "googleButton": "Continue with Google"
+    },
+    "forbidden": {
+      "title": "Access denied",
+      "body": "This account is not allowed to use the app.",
+      "returnHome": "Back to sign in"
+    }
+  }
+}

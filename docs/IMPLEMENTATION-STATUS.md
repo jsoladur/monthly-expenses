@@ -14,15 +14,15 @@
 
 ## Progress
 
-- Slices DONE: **1 / 13**
-- Next up: **UC-01 — Google sign-in, allowlist & tenancy**
+- Slices DONE: **2 / 13**
+- Next up: **UC-02 — i18n shell (en/es)**
 
 ## Status table
 
 | Slice | Title | Status | Completed | Notes |
 | --- | --- | --- | --- | --- |
 | UC-00 | Foundations & database bootstrap | DONE | 2026-08-23 | Drizzle schema, first migration, money helpers, Zod amount schema, Vitest (unit + integration), Playwright config, multi-stage Dockerfile + docker-compose (app + postgres on `expenses-net`), full ARCH §10 scaffolding (src/app layout, shadcn init with base-nova, next-auth@beta, next-intl, Serwist `manifest.ts` + `sw.ts`). Build runs with `--webpack` so the Serwist plugin works (Next 16 Turbopack is opt-in). |
-| UC-01 | Google sign-in, allowlist & tenancy | PENDING | | |
+| UC-01 | Google sign-in, allowlist & tenancy | DONE | 2026-08-23 | Auth.js v5 with Google provider + `ALLOWED_EMAILS` allowlist (`signIn` callback normalizes trim + lowercase), JWT session carrying the internal `app_user.id` (`jwt` resolves it by `google_sub`, `session` exposes it via the `next-auth` module augmentation in `src/types/next-auth.d.ts`). New `app_user` + `profile_settings(currency='EUR')` created in one transaction via the `upsertUserOnSignIn` service. `requireUserId()` lives in the data-access layer (`src/server/auth/require-user-id.ts`), wrapped in `React.cache`. Sign-in (`/[locale]/sign-in`) and 403 (`/[locale]/403`) pages render `auth.signIn.*` / `auth.forbidden.*` copy from `src/i18n/messages/{en,es}.json`; UC-02 will replace the minimal `loadMessages` helper with the full next-intl `defineRouting` + middleware setup. Denied users land on `/[locale]/403` via `pages.error = '/403'`. PRD scenarios #1 (allowlist hit/miss) + #2 (two users isolated) covered by `tests/unit/allowlist.test.ts` and `tests/integration/auth.test.ts`. Added `server-only` dep + Vitest alias stub so RSC markers resolve cleanly in Node test runs. |
 | UC-02 | i18n shell (en/es) | PENDING | | |
 | UC-03 | Categories (expense & income) | PENDING | | |
 | UC-04 | Profile settings (currency) | PENDING | | |
