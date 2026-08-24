@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-08-24
+
+### Fixed
+- Google sign-in failing with `invalid_grant` ("Access Denied") in browsers with a registered service worker: `navigationPreload` is now disabled in the Serwist service worker (`src/app/sw.ts`). With it enabled, a service-worker lifecycle race could make the OAuth callback reach the server twice, consuming the single-use Google authorization code twice and breaking sign-in for users with an active Google session (serwist/serwist#150).
+
 ## [0.1.2]
 
 ### Added
