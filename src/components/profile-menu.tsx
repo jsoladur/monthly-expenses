@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { routing, type AppLocale } from "@/i18n/routing";
-import { User, LogOut, ChevronDown } from "lucide-react";
+import { User, LogOut, ChevronDown, Download } from "lucide-react";
 import Image from "next/image";
 
 interface ProfileMenuProps {
@@ -14,12 +14,29 @@ interface ProfileMenuProps {
   signOutAction: () => Promise<void>;
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: ProfileMenuProps) {
   const t = useTranslations("profile");
+  const tPwa = useTranslations("pwa");
   const current = useLocale() as AppLocale;
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installState, setInstallState] = useState<"hidden" | "ios" | "prompt">(() => {
+    if (typeof window === "undefined") return "hidden";
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (isStandalone) return "hidden";
+    const ua = window.navigator.userAgent;
+    const ios = /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
+    return ios ? "ios" : "prompt";
+  });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -30,6 +47,31 @@ export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: Pr
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (installState !== "prompt") return;
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, [installState]);
+
+  const handleInstall = useCallback(async () => {
+    if (installState === "ios") {
+      return;
+    }
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setInstallState("hidden");
+    }
+    setDeferredPrompt(null);
+  }, [deferredPrompt, installState]);
 
   const handleSignOut = async () => {
     setIsOpen(false);
@@ -90,6 +132,19 @@ export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: Pr
               );
             })}
           </div>
+
+          {installState !== "hidden" && (
+            <div className="border-border flex flex-col gap-1 border-b p-2">
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="hover:bg-muted flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer"
+              >
+                <Download className="size-4" />
+                {installState === "ios" ? tPwa("install.iosInstructions") : tPwa("install.button")}
+              </button>
+            </div>
+          )}
 
           <div className="p-2">
             <button

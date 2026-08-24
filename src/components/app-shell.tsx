@@ -42,6 +42,7 @@ function isActiveRoute(pathname: string, href: string): boolean {
 
 export function AppShell({ children, email, displayName, avatarUrl, signOutAction }: AppShellProps) {
   const t = useTranslations("nav");
+  const tApp = useTranslations("app");
   const pathname = usePathname();
 
   return (
@@ -50,13 +51,13 @@ export function AppShell({ children, email, displayName, avatarUrl, signOutActio
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
           <Image
             src="/images/logo.png"
-            alt="Monthly Expenses"
+            alt={tApp("name")}
             width={32}
             height={32}
             className="rounded-lg"
           />
           <span className="text-sidebar-foreground text-lg font-semibold">
-            Monthly Expenses
+            {tApp("name")}
           </span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-4">

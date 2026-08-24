@@ -3,7 +3,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { auth, signOut } from "@/auth";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { getMonthsByYear } from "@/server/services/months";
-import { isAppLocale, monthName } from "@/i18n/format";
+import { isAppLocale, monthYear } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
 import { Link } from "@/i18n/navigation";
@@ -78,7 +78,7 @@ export default async function HistoryYearPage({
                     href={`/months/${m.year}/${m.month}`}
                     className="bg-card text-card-foreground hover:bg-accent flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
                   >
-                    <span>{monthName(locale as AppLocale, m.month)}</span>
+                    <span>{monthYear(locale as AppLocale, m.year, m.month)}</span>
                     <span className="text-muted-foreground" aria-hidden="true">→</span>
                   </Link>
                 </li>

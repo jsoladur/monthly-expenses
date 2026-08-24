@@ -56,3 +56,19 @@ export async function insertUser(
   }
   return created;
 }
+
+export async function upsertUser(
+  row: NewAppUser,
+  tx: Tx | typeof db = db,
+): Promise<AppUser | null> {
+  const [inserted] = await tx
+    .insert(appUser)
+    .values(row)
+    .onConflictDoNothing({ target: appUser.googleSub })
+    .returning();
+
+  if (!inserted) {
+    return null;
+  }
+  return inserted;
+}

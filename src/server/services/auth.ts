@@ -3,7 +3,7 @@ import { db } from "@/server/db/client";
 import { profileSettings } from "@/server/db/schema";
 import {
   findUserByGoogleSub,
-  insertUser,
+  upsertUser,
   type Tx,
 } from "@/server/repositories/user";
 import { insertProfileSettings } from "@/server/repositories/profile-settings";
@@ -32,13 +32,8 @@ export interface GoogleIdentity {
 }
 
 export async function upsertUserOnSignIn(identity: GoogleIdentity): Promise<AppUser> {
-  const existing = await findUserByGoogleSub(identity.googleSub);
-  if (existing) {
-    return existing;
-  }
-
   return db.transaction(async (tx: Tx) => {
-    const created = await insertUser(
+    const upserted = await upsertUser(
       {
         googleSub: identity.googleSub,
         email: identity.email,
@@ -47,8 +42,17 @@ export async function upsertUserOnSignIn(identity: GoogleIdentity): Promise<AppU
       },
       tx,
     );
-    await insertProfileSettings({ userId: created.id, currency: "EUR" }, tx);
-    return created;
+
+    if (upserted) {
+      await insertProfileSettings({ userId: upserted.id, currency: "EUR" }, tx);
+      return upserted;
+    }
+
+    const existing = await findUserByGoogleSub(identity.googleSub, tx);
+    if (!existing) {
+      throw new Error("User not found after upsert conflict");
+    }
+    return existing;
   });
 }
 

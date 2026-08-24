@@ -1,4 +1,7 @@
 {
+  "app": {
+    "name": "Monthly Expenses"
+  },
   "language": {
     "label": "Language",
     "option": {
