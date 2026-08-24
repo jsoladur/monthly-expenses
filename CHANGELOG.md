@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4]
+
+### Fixed
+- Google sign-in still failing for browsers that had the pre-0.1.3 service worker registered: navigation preload is a registration-level flag that SURVIVES service-worker updates, so the fixed worker inherited the enabled preload from older versions and the OAuth callback could still reach the server twice (`invalid_grant` → `/403`). The service worker now explicitly `disable()`s navigation preload on `activate` (first update past 0.1.3 turns it off for good), and `public/sw.js` is regenerated — the shipped 0.1.3 artifact still contained the buggy `navigationPreload: true` build because dev builds skip the Serwist plugin.
+
 ## [0.1.3] - 2026-08-24
 
 ### Fixed

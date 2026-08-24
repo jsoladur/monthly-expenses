@@ -14,6 +14,12 @@
 // exchange with `invalid_grant` (CallbackRouteError → "Access Denied"), which
 // only reproduces in browsers that actually run the SW (never in incognito).
 // See serwist/serwist#150 and serwist/serwist discussion #28.
+//
+// Navigation preload is a REGISTRATION-level flag: versions <= 0.1.2 called
+// `enable()` and the flag SURVIVES service-worker updates. A new worker that
+// merely omits the option would inherit the enabled preload, so the activate
+// handler below explicitly `disable()`s it — the first update past 0.1.3
+// turns it off for good.
 // ============================================================================
 
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
@@ -35,3 +41,9 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    self.registration?.navigationPreload?.disable().catch(() => undefined),
+  );
+});
