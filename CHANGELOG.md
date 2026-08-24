@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.2]
+
+### Added
+- GitHub Actions CI/CD pipeline: reusable `common.yml` workflow with `lint`, `tests`, and `deploy` jobs; `main.yml` triggers on `main` branch and `v*` tags with Docker push enabled; `non-main-ci.yml` triggers on non-main branches and PRs with build-only (no push). Version extracted from `package.json` for Docker image tagging.
+- Production `deploy/docker-compose.yml` with `pull_policy: always`, postgres 16-alpine with bind-mounted `./data/postgres` volume, healthcheck-gated `depends_on`, and app service pulling from Docker Hub. Accompanied by `deploy/.env.example` template.
+- Real 512x512 PWA icons (`icon-512.png`, `icon-maskable-512.png`) generated from the app logo, replacing the solid-color placeholders.
+
+### Fixed
+- PWA installability: manifest now uses relative `start_url: "/"` and `scope: "/"` (previously absolute URLs from `NEXT_PUBLIC_APP_URL`), adds `id: "/"` field, and includes required 512x512 icon entries. Removed reference to non-existent `favicon.ico` from root layout metadata.
+- `.gitignore` pattern `Icon?` (macOS Finder icon) was matching `public/icons/icon-512.png` and `icon-maskable-512.png` on case-insensitive filesystems, preventing them from being committed. Anchored to `/Icon?` (root-only).
+- Dockerfile build stage no longer runs database migrations (`pnpm run build` → `npx next build --webpack`), fixing CI/Docker builds that failed with `DATABASE_URL is not set`.
 
 ### Added
 - Theme preference (dark/light/auto): users can now choose their preferred theme in Settings. New `theme_preference` enum (`auto` / `light` / `dark`) with `profile_settings.theme` column defaulting to `auto`. Auto mode follows the system's `prefers-color-scheme` setting. Theme provider applies the `dark` class to `<html>` and persists the resolved theme to a cookie for instant application on subsequent loads. Inline script in root layout prevents flash of wrong theme. Settings page includes a theme selector alongside the existing currency picker. i18n keys added under `settings.theme*` in both locales.

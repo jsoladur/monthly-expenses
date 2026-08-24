@@ -67,7 +67,7 @@ next-env.d.ts
 ._*
 .Spotlight-V100
 .Trashes
-Icon?
+/Icon?
 
 
 # Windows (kept minimal, common alongside macOS/Linux teams)
