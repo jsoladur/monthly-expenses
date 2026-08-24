@@ -1,0 +1,16 @@
+name: monthly-expenses-ci (non-main)
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches-ignore:
+      - main
+jobs:
+  run-tests-and-build-no-push:
+    uses: ./.github/workflows/common.yml
+    with:
+      should_push: false
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
