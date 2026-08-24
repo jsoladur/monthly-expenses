@@ -84,6 +84,31 @@ export async function listMonths(
     .orderBy(desc(month.year), desc(month.month));
 }
 
+export async function listMonthYears(
+  userId: string,
+  tx: Tx | typeof db = db,
+): Promise<number[]> {
+  const rows = await tx
+    .select({ year: month.year })
+    .from(month)
+    .where(eq(month.userId, userId))
+    .groupBy(month.year)
+    .orderBy(desc(month.year));
+  return rows.map((r) => r.year);
+}
+
+export async function listMonthsByYear(
+  userId: string,
+  year: number,
+  tx: Tx | typeof db = db,
+): Promise<Month[]> {
+  return tx
+    .select()
+    .from(month)
+    .where(and(eq(month.userId, userId), eq(month.year, year)))
+    .orderBy(desc(month.month));
+}
+
 export async function insertClonedLines(
   rows: NewMonthFixedLine[],
   tx: Tx | typeof db = db,

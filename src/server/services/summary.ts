@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, sum } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import {
+  category,
   month,
   monthActualExpense,
   monthFixedLine,
@@ -124,6 +125,7 @@ export async function getMonthSummary(
 
 export interface OverspendWarning {
   categoryId: string;
+  categoryName: string;
   actualsTotal: number;
   estimatedTemplateTotal: number;
   overrunCents: number;
@@ -141,14 +143,17 @@ export async function getOverspendWarnings(
   // LEFT side: per-category actuals. Group by category_id so we return one
   // warning per overspending category. The sum is computed in PG so the
   // result set is small (one row per category that has any actuals).
+  // We also fetch the category name for display in the warning badge.
   const actualSums = await db
     .select({
       categoryId: monthActualExpense.categoryId,
+      categoryName: category.name,
       total: sum(monthActualExpense.amount).as("total"),
     })
     .from(monthActualExpense)
+    .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
     .where(eq(monthActualExpense.monthId, monthId))
-    .groupBy(monthActualExpense.categoryId);
+    .groupBy(monthActualExpense.categoryId, category.name);
 
   if (actualSums.length === 0) {
     return [];
@@ -188,6 +193,7 @@ export async function getOverspendWarnings(
     if (overrunCents > 0) {
       warnings.push({
         categoryId: row.categoryId,
+        categoryName: row.categoryName,
         actualsTotal,
         estimatedTemplateTotal,
         overrunCents,

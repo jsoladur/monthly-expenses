@@ -15,6 +15,8 @@ import {
   listMonthFixedLines,
   listMonthIncomes,
   listMonths,
+  listMonthYears,
+  listMonthsByYear,
 } from "@/server/repositories/month";
 import { listActiveTemplates } from "@/server/repositories/template";
 
@@ -145,6 +147,17 @@ export async function createMonth(
 
 export async function getMonthList(userId: string): Promise<Month[]> {
   return listMonths(userId);
+}
+
+export async function getMonthYears(userId: string): Promise<number[]> {
+  return listMonthYears(userId);
+}
+
+export async function getMonthsByYear(
+  userId: string,
+  year: number,
+): Promise<Month[]> {
+  return listMonthsByYear(userId, year);
 }
 
 export async function getMonthWorkspace(

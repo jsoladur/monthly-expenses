@@ -34,10 +34,11 @@ export async function SummaryBlock({ summary, currency }: SummaryBlockProps) {
           {formatMoney(summary.potentialSavings, currency)}
         </p>
       </div>
-      <dl className="bg-card text-card-foreground grid grid-cols-3 gap-3 rounded-lg border p-4 text-sm">
+      <dl className="bg-card text-card-foreground grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm md:grid-cols-4">
         <SummaryCell label={t("income")} cents={summary.incomesTotal} currency={currency} testId="summary-income" />
         <SummaryCell label={t("actuals")} cents={summary.actualsTotal} currency={currency} testId="summary-actuals" />
         <SummaryCell label={t("reserved")} cents={summary.reservedRemainingTotal} currency={currency} testId="summary-reserved" />
+        <SummaryCell label={t("totalExpenses")} cents={summary.actualsTotal + summary.reservedRemainingTotal} currency={currency} testId="summary-total-expenses" highlight />
       </dl>
     </section>
   );
@@ -48,16 +49,21 @@ function SummaryCell({
   cents,
   currency,
   testId,
+  highlight,
 }: {
   label: string;
   cents: number;
   currency: string;
   testId: string;
+  highlight?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>
-      <dd className="amount text-sm font-medium" data-testid={testId}>
+      <dd
+        className={`amount text-sm font-medium ${highlight ? "text-base" : ""}`}
+        data-testid={testId}
+      >
         {formatMoney(cents, currency)}
       </dd>
     </div>

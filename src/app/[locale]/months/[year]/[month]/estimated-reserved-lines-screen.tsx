@@ -40,13 +40,7 @@ export function EstimatedReservedLinesScreen({
 
   return (
     <div className="flex flex-col gap-6">
-      <section
-        aria-labelledby="estimated-reserved"
-        className="flex flex-col gap-2"
-      >
-        <h2 id="estimated-reserved" className="text-base font-semibold">
-          {t("estimatedTitle")}
-        </h2>
+      <section className="flex flex-col gap-2">
         {rows.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("noEstimated")}</p>
         ) : (

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { requireUserId } from "@/server/auth/require-user-id";
 import {
@@ -35,6 +35,7 @@ import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[mont
 import { AppShell } from "@/components/app-shell";
 import { redirect } from "@/i18n/navigation";
 import { auth, signOut } from "@/auth";
+import { MonthWorkspaceTabs } from "@/app/[locale]/months/[year]/[month]/month-workspace-tabs";
 
 export default async function MonthWorkspacePage({
   params,
@@ -153,6 +154,8 @@ export default async function MonthWorkspacePage({
   const displayName = session?.user?.name ?? null;
   const avatarUrl = session?.user?.image ?? null;
 
+  const t = await getTranslations({ locale, namespace: "months.tabs" });
+
   async function startSignOut() {
     "use server";
     await signOut({ redirectTo: `/${locale}/sign-in` });
@@ -170,42 +173,58 @@ export default async function MonthWorkspacePage({
 
         <SummaryBlock summary={summary} currency={currency} />
 
-        <ActualsScreen
-          monthId={workspace.month.id}
-          year={workspace.month.year}
-          month={workspace.month.month}
-          currency={currency}
-          initialActuals={actualRows}
-          expenseCategories={activeExpenseCategories.map((c) => ({
-            id: c.id,
-            name: c.name,
-          }))}
-          overspendWarnings={overspendWarnings}
-          committedReservedLines={reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? []}
-        />
-
-        <EstimatedReservedLinesScreen
-          monthId={workspace.month.id}
-          year={workspace.month.year}
-          month={workspace.month.month}
-          currency={currency}
-          rows={reservedLineGroups.find((g) => g.kind === "estimated")?.rows ?? []}
-          expenseCategories={activeExpenseCategories.map((c) => ({
-            id: c.id,
-            name: c.name,
-          }))}
-        />
-
-        <IncomesScreen
-          monthId={workspace.month.id}
-          year={workspace.month.year}
-          month={workspace.month.month}
-          currency={currency}
-          initialIncomes={incomeRows}
-          incomeCategories={activeIncomeCategories.map((c) => ({
-            id: c.id,
-            name: c.name,
-          }))}
+        <MonthWorkspaceTabs
+          actualsTab={
+            <ActualsScreen
+              monthId={workspace.month.id}
+              year={workspace.month.year}
+              month={workspace.month.month}
+              currency={currency}
+              initialActuals={actualRows}
+              expenseCategories={activeExpenseCategories.map((c) => ({
+                id: c.id,
+                name: c.name,
+              }))}
+              overspendWarnings={overspendWarnings}
+              committedReservedLines={reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? []}
+            />
+          }
+          incomesTab={
+            <IncomesScreen
+              monthId={workspace.month.id}
+              year={workspace.month.year}
+              month={workspace.month.month}
+              currency={currency}
+              initialIncomes={incomeRows}
+              incomeCategories={activeIncomeCategories.map((c) => ({
+                id: c.id,
+                name: c.name,
+              }))}
+            />
+          }
+          reservedTab={
+            <EstimatedReservedLinesScreen
+              monthId={workspace.month.id}
+              year={workspace.month.year}
+              month={workspace.month.month}
+              currency={currency}
+              rows={reservedLineGroups.find((g) => g.kind === "estimated")?.rows ?? []}
+              expenseCategories={activeExpenseCategories.map((c) => ({
+                id: c.id,
+                name: c.name,
+              }))}
+            />
+          }
+          labels={{
+            actuals: t("actuals"),
+            incomes: t("incomes"),
+            reserved: t("reserved"),
+          }}
+          counts={{
+            actuals: actualRows.length,
+            incomes: incomeRows.length,
+            reserved: reservedLineGroups.find((g) => g.kind === "estimated")?.rows.length ?? 0,
+          }}
         />
       </div>
     </AppShell>

@@ -47,6 +47,7 @@
   },
   "nav": {
     "home": "Inicio",
+    "history": "Historial",
     "categories": "Categorías",
     "templates": "Plantillas",
     "settings": "Ajustes",
@@ -105,6 +106,7 @@
       "income": "Ingresos",
       "actuals": "Gastos reales",
       "reserved": "Reservado",
+      "totalExpenses": "Total gastos",
       "savings": "Ahorro potencial",
       "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas.",
       "negativeNote": "Los importes negativos cuentan (reembolsos, devoluciones).",
@@ -119,8 +121,27 @@
       "noLines": "No se copiaron líneas reservadas. Añade gastos reales o ingresos más abajo para empezar este mes.",
       "incomesComingNext": "Los ingresos llegan en UC-07."
     },
+    "tabs": {
+      "actuals": "Gastos",
+      "incomes": "Ingresos",
+      "reserved": "Reservado"
+    },
     "home": {
       "noMonths": "Todavía no has creado ningún mes."
+    }
+  },
+  "history": {
+    "title": "Historial",
+    "backToYears": "Volver a años",
+    "empty": {
+      "title": "Aún no hay historial",
+      "body": "Los años anteriores aparecerán aquí una vez que crees meses en ellos."
+    },
+    "years": {
+      "title": "Años anteriores"
+    },
+    "year": {
+      "empty": "No se han creado meses para este año."
     }
   },
   "incomes": {
@@ -145,6 +166,7 @@
   },
   "actuals": {
     "title": "Gastos reales",
+    "warnings": "Avisos",
     "new": "Nuevo ticket de gasto",
     "name": "Nombre",
     "observations": "Observaciones",

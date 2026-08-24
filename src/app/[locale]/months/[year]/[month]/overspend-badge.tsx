@@ -1,4 +1,6 @@
-import { getTranslations } from "next-intl/server";
+"use client";
+
+import { useTranslations } from "next-intl";
 import { formatMoney } from "@/i18n/format";
 import type { OverspendWarning } from "@/server/services/summary";
 import { AlertTriangle } from "lucide-react";
@@ -8,8 +10,8 @@ export interface OverspendBadgeProps {
   currency: string;
 }
 
-export async function OverspendBadge({ warning, currency }: OverspendBadgeProps) {
-  const t = await getTranslations("warnings");
+export function OverspendBadge({ warning, currency }: OverspendBadgeProps) {
+  const t = useTranslations("warnings");
   return (
     <div
       role="status"
@@ -19,7 +21,8 @@ export async function OverspendBadge({ warning, currency }: OverspendBadgeProps)
     >
       <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />
       <p>
-        <span className="font-medium text-warning">{t("overspend")}</span>{" "}
+        <span className="font-medium text-warning">{warning.categoryName}</span>
+        {": "}
         <span className="text-muted-foreground">
           {t("overspendPlan", { plan: formatMoney(warning.estimatedTemplateTotal, currency) })}
           {" · "}

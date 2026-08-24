@@ -19,6 +19,7 @@ import { OverspendBadge } from "@/app/[locale]/months/[year]/[month]/overspend-b
 import type { OverspendWarning } from "@/server/services/summary";
 import { Button } from "@/components/ui/button";
 import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
+import { Collapsible } from "@/components/ui/collapsible";
 
 // ============================================================================
 // Actuals screen (UC-08) — interactive part of the workspace's actuals block.
@@ -92,8 +93,6 @@ export function ActualsScreen({
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">{t("title")}</h2>
-
       <AddActualForm
         monthId={monthId}
         year={year}
@@ -102,56 +101,55 @@ export function ActualsScreen({
         expenseCategories={expenseCategories}
       />
 
-      {initialActuals.length === 0 && committedReservedLines.length === 0 ? (
+      {warningByCategoryId.size > 0 && (
+        <Collapsible title={t("warnings")} count={warningByCategoryId.size} variant="warning">
+          <div className="flex flex-col gap-1">
+            {Array.from(warningByCategoryId.values()).map((warning) => (
+              <OverspendBadge
+                key={warning.categoryId}
+                warning={warning}
+                currency={currency}
+              />
+            ))}
+          </div>
+        </Collapsible>
+      )}
+
+      {initialActuals.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {initialActuals.map((row) => (
+            <ActualRow
+              key={row.id}
+              row={row}
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              expenseCategories={expenseCategories}
+            />
+          ))}
+        </ul>
+      )}
+
+      {initialActuals.length === 0 && committedReservedLines.length === 0 && (
         <p className="text-muted-foreground text-sm">{t("empty")}</p>
-      ) : (
-        <>
-          {warningByCategoryId.size > 0 && (
-            <div className="flex flex-col gap-1">
-              {Array.from(warningByCategoryId.values()).map((warning) => (
-                <OverspendBadge
-                  key={warning.categoryId}
-                  warning={warning}
-                  currency={currency}
-                />
-              ))}
-            </div>
-          )}
-          {committedReservedLines.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                {t("committedReserved")}
-              </h3>
-              <ul className="flex flex-col gap-1">
-                {committedReservedLines.map((row) => (
-                  <CommittedReservedRow
-                    key={row.id}
-                    row={row}
-                    monthId={monthId}
-                    year={year}
-                    month={month}
-                    currency={currency}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
-          {initialActuals.length > 0 && (
-            <ul className="flex flex-col gap-1">
-              {initialActuals.map((row) => (
-                <ActualRow
-                  key={row.id}
-                  row={row}
-                  monthId={monthId}
-                  year={year}
-                  month={month}
-                  currency={currency}
-                  expenseCategories={expenseCategories}
-                />
-              ))}
-            </ul>
-          )}
-        </>
+      )}
+
+      {committedReservedLines.length > 0 && (
+        <Collapsible title={t("committedReserved")} count={committedReservedLines.length}>
+          <ul className="flex flex-col gap-1">
+            {committedReservedLines.map((row) => (
+              <CommittedReservedRow
+                key={row.id}
+                row={row}
+                monthId={monthId}
+                year={year}
+                month={month}
+                currency={currency}
+              />
+            ))}
+          </ul>
+        </Collapsible>
       )}
     </section>
   );

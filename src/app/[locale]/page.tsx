@@ -26,13 +26,15 @@ export default async function LocaleHome({
   const tm = await getTranslations({ locale, namespace: "months" });
   const tv = await getTranslations({ locale, namespace: "validation" });
 
-  const months = await getMonthList(userId);
+  const allMonths = await getMonthList(userId);
+  const currentYear = new Date().getFullYear();
+  const months = allMonths.filter((m) => m.year === currentYear);
   const session = await auth();
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
   const avatarUrl = session?.user?.image ?? null;
   const monthNames = Array.from({ length: 12 }, (_, i) => monthName(locale as AppLocale, i + 1));
-  const existingMonths = months.map((m) => ({ year: m.year, month: m.month }));
+  const existingMonths = allMonths.map((m) => ({ year: m.year, month: m.month }));
 
   async function startSignOut() {
     "use server";
@@ -77,22 +79,6 @@ export default async function LocaleHome({
           </section>
         ) : (
           <section aria-labelledby="month-list" className="flex flex-col gap-4">
-            <h2 id="month-list" className="text-lg font-semibold">
-              {tm("list.title")}
-            </h2>
-            <ul className="flex flex-col gap-2">
-              {months.map((m) => (
-                <li key={m.id}>
-                  <Link
-                    href={`/months/${m.year}/${m.month}`}
-                    className="bg-card text-card-foreground hover:bg-accent flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
-                  >
-                    <span>{monthYear(locale as AppLocale, m.year, m.month)}</span>
-                    <span className="text-muted-foreground" aria-hidden="true">→</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
             <details className="bg-card text-card-foreground rounded-lg border">
               <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
                 {tm("list.createNew")}
@@ -114,6 +100,22 @@ export default async function LocaleHome({
                 />
               </div>
             </details>
+            <h2 id="month-list" className="text-lg font-semibold">
+              {tm("list.title")}
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {months.map((m) => (
+                <li key={m.id}>
+                  <Link
+                    href={`/months/${m.year}/${m.month}`}
+                    className="bg-card text-card-foreground hover:bg-accent flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
+                  >
+                    <span>{monthYear(locale as AppLocale, m.year, m.month)}</span>
+                    <span className="text-muted-foreground" aria-hidden="true">→</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
       </div>

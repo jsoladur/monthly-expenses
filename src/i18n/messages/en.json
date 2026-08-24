@@ -47,6 +47,7 @@
   },
   "nav": {
     "home": "Home",
+    "history": "History",
     "categories": "Categories",
     "templates": "Templates",
     "settings": "Settings",
@@ -105,6 +106,7 @@
       "income": "Income",
       "actuals": "Actuals",
       "reserved": "Reserved",
+      "totalExpenses": "Total Expenses",
       "savings": "Potential savings",
       "savingsHelp": "Income minus actual spend minus money still reserved in fixed/estimated lines.",
       "negativeNote": "Negative amounts count (refunds, payouts).",
@@ -119,8 +121,27 @@
       "noLines": "No reserved lines cloned. Add actual spend or incomes below to start tracking this month.",
       "incomesComingNext": "Incomes ship in UC-07."
     },
+    "tabs": {
+      "actuals": "Actuals",
+      "incomes": "Incomes",
+      "reserved": "Reserved"
+    },
     "home": {
       "noMonths": "You have not created a month yet."
+    }
+  },
+  "history": {
+    "title": "History",
+    "backToYears": "Back to years",
+    "empty": {
+      "title": "No history yet",
+      "body": "Previous years will appear here once you create months in them."
+    },
+    "years": {
+      "title": "Previous years"
+    },
+    "year": {
+      "empty": "No months created for this year."
     }
   },
   "incomes": {
@@ -145,6 +166,7 @@
   },
   "actuals": {
     "title": "Actuals",
+    "warnings": "Warnings",
     "new": "New expense ticket",
     "name": "Name",
     "observations": "Observations",

@@ -60,8 +60,6 @@ export function IncomesScreen({
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">{t("title")}</h2>
-
       <AddIncomeForm
         monthId={monthId}
         year={year}
