@@ -37,7 +37,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
-RUN pnpm run build
+RUN npx next build --webpack
 
 # ----------------------------------------------------------------------------
 # 3. runner
