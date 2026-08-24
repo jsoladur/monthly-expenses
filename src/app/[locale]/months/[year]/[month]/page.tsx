@@ -151,6 +151,7 @@ export default async function MonthWorkspacePage({
   const session = await auth();
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
+  const avatarUrl = session?.user?.image ?? null;
 
   async function startSignOut() {
     "use server";
@@ -158,7 +159,7 @@ export default async function MonthWorkspacePage({
   }
 
   return (
-    <AppShell email={email} displayName={displayName} signOutAction={startSignOut}>
+    <AppShell email={email} displayName={displayName} avatarUrl={avatarUrl} signOutAction={startSignOut}>
       <MonthTouchClient year={workspace.month.year} month={workspace.month.month} />
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">

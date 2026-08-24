@@ -5,14 +5,16 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { User, LogOut, ChevronDown } from "lucide-react";
+import Image from "next/image";
 
 interface ProfileMenuProps {
   email: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
   signOutAction: () => Promise<void>;
 }
 
-export function ProfileMenu({ email, displayName, signOutAction }: ProfileMenuProps) {
+export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: ProfileMenuProps) {
   const t = useTranslations("profile");
   const current = useLocale() as AppLocale;
   const pathname = usePathname();
@@ -43,7 +45,17 @@ export function ProfileMenu({ email, displayName, signOutAction }: ProfileMenuPr
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <User className="size-4 opacity-70" />
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt={displayName || email}
+            width={20}
+            height={20}
+            className="rounded-full"
+          />
+        ) : (
+          <User className="size-4 opacity-70" />
+        )}
         <span className="hidden sm:inline max-w-32 truncate">{displayName || email}</span>
         <ChevronDown className={`size-4 opacity-70 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>

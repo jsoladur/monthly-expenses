@@ -31,6 +31,15 @@ const nextConfig: NextConfig = {
   // Don't fail the build when DB env vars are not set (CI image build).
   // Runtime check happens in src/server/db/client.ts.
   serverExternalPackages: ["postgres"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/a/**",
+      },
+    ],
+  },
 };
 
 export default withSerwist(withNextIntl(nextConfig));

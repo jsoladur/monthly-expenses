@@ -30,6 +30,7 @@ export default async function LocaleHome({
   const session = await auth();
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
+  const avatarUrl = session?.user?.image ?? null;
   const monthNames = Array.from({ length: 12 }, (_, i) => monthName(locale as AppLocale, i + 1));
   const existingMonths = months.map((m) => ({ year: m.year, month: m.month }));
 
@@ -39,7 +40,7 @@ export default async function LocaleHome({
   }
 
   return (
-    <AppShell email={email} displayName={displayName} signOutAction={startSignOut}>
+    <AppShell email={email} displayName={displayName} avatarUrl={avatarUrl} signOutAction={startSignOut}>
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">
           {t("title")}

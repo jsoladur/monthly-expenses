@@ -12,6 +12,7 @@ interface AppShellProps {
   children: ReactNode;
   email: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
   signOutAction: () => Promise<void>;
 }
 
@@ -35,7 +36,7 @@ function isActiveRoute(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-export function AppShell({ children, email, displayName, signOutAction }: AppShellProps) {
+export function AppShell({ children, email, displayName, avatarUrl, signOutAction }: AppShellProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
 
@@ -82,6 +83,7 @@ export function AppShell({ children, email, displayName, signOutAction }: AppShe
             <ProfileMenu
               email={email}
               displayName={displayName}
+              avatarUrl={avatarUrl}
               signOutAction={signOutAction}
             />
           </div>

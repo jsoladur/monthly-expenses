@@ -1,7 +1,7 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 import { isAllowlisted, parseAllowlist } from "@/server/auth/allowlist";
-import { findUserByGoogleSub } from "@/server/repositories/user";
+import { findUserByGoogleSub, findUserById } from "@/server/repositories/user";
 import { upsertUserOnSignIn } from "@/server/services/auth";
 
 
@@ -60,26 +60,12 @@ export const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      authorization: {
-        params: {
-          prompt: "select_account",
-        },
-      },
     }),
   ],
   callbacks: {
     async signIn({ profile }) {
-      console.log("[auth] signIn callback - profile:", JSON.stringify({
-        email: profile?.email,
-        name: profile?.name,
-        sub: profile?.sub,
-        email_verified: profile?.email_verified,
-      }, null, 2));
       const allowlist = getAllowedEmails();
-      console.log("[auth] allowlist:", Array.from(allowlist));
-      console.log("[auth] isAllowlisted:", isAllowlisted(profile?.email, allowlist));
       if (!isAllowlisted(profile?.email, allowlist)) {
-        console.log("[auth] DENIED: email not in allowlist");
         return false;
       }
       const googleSub = profile?.sub;
@@ -110,13 +96,42 @@ export const authConfig: NextAuthConfig = {
       // `handleLoginOrRegister`). `profile.sub` is the same value, kept as a
       // belt-and-suspenders fallback. On subsequent calls `account` and
       // `profile` are undefined and we re-use the cached `token.userId`.
+      //
+      // We also store Google profile info on the token so we can re-provision
+      // the user if the DB is reset but the session cookie persists.
       if (token.userId) {
-        return token;
+        // Verify the user still exists in the DB (handles DB reset scenario)
+        const existing = await findUserById(token.userId);
+        if (existing) {
+          return token;
+        }
+        // User doesn't exist — try to re-provision using stored profile info
+        const storedGoogleSub = token.googleSub as string | undefined;
+        const storedEmail = token.email as string | undefined;
+        if (storedGoogleSub && storedEmail) {
+          const created = await upsertUserOnSignIn({
+            googleSub: storedGoogleSub,
+            email: storedEmail,
+            displayName: (token.displayName as string) ?? null,
+            avatarUrl: (token.avatarUrl as string) ?? null,
+          });
+          token.userId = created.id;
+          return token;
+        }
+        // No profile info available — invalidate session
+        return {};
       }
       const googleSub =
         account?.provider === "google" ? account.providerAccountId : profile?.sub;
       if (typeof googleSub !== "string" || googleSub.length === 0) {
         return token;
+      }
+      // Store Google profile info on the token for potential re-provisioning
+      if (profile?.email) {
+        token.googleSub = googleSub;
+        token.email = profile.email;
+        token.displayName = profile?.name ?? null;
+        token.avatarUrl = profile?.picture ?? null;
       }
       const internal = await findUserByGoogleSub(googleSub);
       if (internal) {
@@ -137,8 +152,12 @@ export const authConfig: NextAuthConfig = {
     },
     async session({ session, token }) {
       const userId = (token as { userId?: string }).userId;
+      const avatarUrl = (token as { avatarUrl?: string | null }).avatarUrl;
       if (typeof userId === "string" && userId.length > 0 && session.user) {
         session.user.id = userId;
+      }
+      if (typeof avatarUrl === "string" && avatarUrl.length > 0 && session.user) {
+        session.user.image = avatarUrl;
       }
       return session;
     },

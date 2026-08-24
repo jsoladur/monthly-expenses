@@ -31,6 +31,7 @@ export default async function CategoriesPage({
 
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
+  const avatarUrl = session?.user?.image ?? null;
 
   async function startSignOut() {
     "use server";
@@ -38,7 +39,7 @@ export default async function CategoriesPage({
   }
 
   return (
-    <AppShell email={email} displayName={displayName} signOutAction={startSignOut}>
+    <AppShell email={email} displayName={displayName} avatarUrl={avatarUrl} signOutAction={startSignOut}>
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <CategoriesScreen
