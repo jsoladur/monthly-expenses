@@ -167,62 +167,45 @@ export default async function MonthWorkspacePage({
 
         {showPastMonthBanner && <PastMonthBanner />}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8" style={{
-          gridTemplateAreas: `
-            "summary"
-            "actuals"
-            "reserved"
-            "incomes"
-          `,
-        }}>
-          <div className="max-lg:order-1 lg:[grid-area:summary]">
-            <SummaryBlock summary={summary} currency={currency} />
-          </div>
+        <SummaryBlock summary={summary} currency={currency} />
 
-          <div className="max-lg:order-2 lg:[grid-area:actuals]">
-            <ActualsScreen
-              monthId={workspace.month.id}
-              year={workspace.month.year}
-              month={workspace.month.month}
-              currency={currency}
-              initialActuals={actualRows}
-              expenseCategories={activeExpenseCategories.map((c) => ({
-                id: c.id,
-                name: c.name,
-              }))}
-              overspendWarnings={overspendWarnings}
-              committedReservedLines={reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? []}
-            />
-          </div>
+        <ActualsScreen
+          monthId={workspace.month.id}
+          year={workspace.month.year}
+          month={workspace.month.month}
+          currency={currency}
+          initialActuals={actualRows}
+          expenseCategories={activeExpenseCategories.map((c) => ({
+            id: c.id,
+            name: c.name,
+          }))}
+          overspendWarnings={overspendWarnings}
+          committedReservedLines={reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? []}
+        />
 
-          <div className="max-lg:order-3 lg:[grid-area:reserved]">
-            <EstimatedReservedLinesScreen
-              monthId={workspace.month.id}
-              year={workspace.month.year}
-              month={workspace.month.month}
-              currency={currency}
-              rows={reservedLineGroups.find((g) => g.kind === "estimated")?.rows ?? []}
-              expenseCategories={activeExpenseCategories.map((c) => ({
-                id: c.id,
-                name: c.name,
-              }))}
-            />
-          </div>
+        <EstimatedReservedLinesScreen
+          monthId={workspace.month.id}
+          year={workspace.month.year}
+          month={workspace.month.month}
+          currency={currency}
+          rows={reservedLineGroups.find((g) => g.kind === "estimated")?.rows ?? []}
+          expenseCategories={activeExpenseCategories.map((c) => ({
+            id: c.id,
+            name: c.name,
+          }))}
+        />
 
-          <div className="max-lg:order-4 lg:[grid-area:incomes]">
-            <IncomesScreen
-              monthId={workspace.month.id}
-              year={workspace.month.year}
-              month={workspace.month.month}
-              currency={currency}
-              initialIncomes={incomeRows}
-              incomeCategories={activeIncomeCategories.map((c) => ({
-                id: c.id,
-                name: c.name,
-              }))}
-            />
-          </div>
-        </div>
+        <IncomesScreen
+          monthId={workspace.month.id}
+          year={workspace.month.year}
+          month={workspace.month.month}
+          currency={currency}
+          initialIncomes={incomeRows}
+          incomeCategories={activeIncomeCategories.map((c) => ({
+            id: c.id,
+            name: c.name,
+          }))}
+        />
       </div>
     </AppShell>
   );

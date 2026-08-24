@@ -22,9 +22,6 @@ export default async function ForbiddenPage({
       lang={locale}
       className="bg-background flex min-h-svh flex-col items-center justify-center gap-8 px-6"
     >
-      <div className="flex justify-end self-stretch">
-        <LanguageSwitcher />
-      </div>
       <div className="flex flex-col items-center gap-6 text-center">
         <Image
           src="/images/logo.png"
@@ -45,6 +42,9 @@ export default async function ForbiddenPage({
         >
           {t("returnHome")}
         </Link>
+      </div>
+      <div className="flex justify-center">
+        <LanguageSwitcher />
       </div>
     </main>
   );

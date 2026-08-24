@@ -4,6 +4,7 @@ import { isAllowlisted, parseAllowlist } from "@/server/auth/allowlist";
 import { findUserByGoogleSub } from "@/server/repositories/user";
 import { upsertUserOnSignIn } from "@/server/services/auth";
 
+
 // ============================================================================
 // Auth.js v5 — Google provider + env-var email allowlist (UC-01, ADR-2, ADR-3).
 //
@@ -30,11 +31,22 @@ import { upsertUserOnSignIn } from "@/server/services/auth";
 // come from env (ARCH §3.2 rule 5); `AUTH_GOOGLE_ID/SECRET` are inferred
 // from the provider id by Auth.js v5, but we read them explicitly to keep
 // the link obvious and to make local-dev failures self-explanatory.
+//
+// Google provider prompt: intentionally omitted. Without `prompt`, Google
+// silently re-authenticates the user's last-used account when a Google
+// session is already active, skipping the account chooser — the right
+// default for a single-tenant, allowlist-gated app where each user has one
+// relevant Google identity. If a future need arises for explicit account
+// switching (e.g. a "switch account" button), pass
+// `authorizationParams: { prompt: "select_account" }` to that specific
+// `signIn()` call rather than forcing the picker on every sign-in.
 // ============================================================================
+
 
 function getAllowedEmails(): ReadonlySet<string> {
   return parseAllowlist(process.env.ALLOWED_EMAILS);
 }
+
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
@@ -109,6 +121,17 @@ export const authConfig: NextAuthConfig = {
       const internal = await findUserByGoogleSub(googleSub);
       if (internal) {
         token.userId = internal.id;
+      } else if (profile?.email && profile?.email_verified) {
+        // User has a valid Google session but doesn't exist in our DB.
+        // This can happen if the DB was reset but the Google session persists.
+        // Create the user now using the profile information.
+        const created = await upsertUserOnSignIn({
+          googleSub,
+          email: profile.email,
+          displayName: profile?.name ?? null,
+          avatarUrl: profile?.picture ?? null,
+        });
+        token.userId = created.id;
       }
       return token;
     },
@@ -121,5 +144,6 @@ export const authConfig: NextAuthConfig = {
     },
   },
 };
+
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
