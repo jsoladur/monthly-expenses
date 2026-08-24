@@ -125,9 +125,21 @@
       "incomesComingNext": "Los ingresos llegan en UC-07."
     },
     "tabs": {
+      "data": "Datos",
+      "stats": "Estadísticas",
       "actuals": "Gastos",
       "incomes": "Ingresos",
       "reserved": "Reservado"
+    },
+    "stats": {
+      "expensesByCategory": "Gastos por categoría",
+      "distribution": "Distribución",
+      "actuals": "Gastos reales",
+      "reserved": "Reservado",
+      "committed": "Comprometido",
+      "noData": "No hay datos para mostrar",
+      "percent": "Porcentaje",
+      "absolute": "Absoluto"
     },
     "home": {
       "noMonths": "Todavía no has creado ningún mes."

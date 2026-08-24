@@ -125,9 +125,21 @@
       "incomesComingNext": "Incomes ship in UC-07."
     },
     "tabs": {
+      "data": "Data",
+      "stats": "Stats",
       "actuals": "Actuals",
       "incomes": "Incomes",
       "reserved": "Reserved"
+    },
+    "stats": {
+      "expensesByCategory": "Expenses by category",
+      "distribution": "Distribution",
+      "actuals": "Actuals",
+      "reserved": "Reserved",
+      "committed": "Committed",
+      "noData": "No data to display",
+      "percent": "Percentage",
+      "absolute": "Absolute"
     },
     "home": {
       "noMonths": "You have not created a month yet."

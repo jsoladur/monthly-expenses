@@ -32,6 +32,7 @@ import {
 import { SummaryBlock } from "@/app/[locale]/months/[year]/[month]/summary-block";
 import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month-banner";
 import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
+import { StatsScreen } from "@/app/[locale]/months/[year]/[month]/stats-screen";
 import { AppShell } from "@/components/app-shell";
 import { redirect } from "@/i18n/navigation";
 import { auth, signOut } from "@/auth";
@@ -156,6 +157,9 @@ export default async function MonthWorkspacePage({
 
   const t = await getTranslations({ locale, namespace: "months.tabs" });
 
+  const committedLines = reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? [];
+  const committedTotalCents = committedLines.reduce((sum, line) => sum + line.originalCents, 0);
+
   async function startSignOut() {
     "use server";
     await signOut({ redirectTo: `/${locale}/sign-in` });
@@ -186,7 +190,7 @@ export default async function MonthWorkspacePage({
                 name: c.name,
               }))}
               overspendWarnings={overspendWarnings}
-              committedReservedLines={reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? []}
+              committedReservedLines={committedLines}
             />
           }
           incomesTab={
@@ -215,7 +219,21 @@ export default async function MonthWorkspacePage({
               }))}
             />
           }
+          statsTab={
+            <StatsScreen
+              actuals={actualRows.map((r) => ({
+                categoryName: r.categoryName,
+                amountCents: r.amountCents,
+              }))}
+              actualsTotalCents={summary.actualsTotal}
+              reservedRemainingTotalCents={summary.reservedRemainingTotal}
+              committedTotalCents={committedTotalCents}
+              currency={currency}
+            />
+          }
           labels={{
+            data: t("data"),
+            stats: t("stats"),
             actuals: t("actuals"),
             incomes: t("incomes"),
             reserved: t("reserved"),
