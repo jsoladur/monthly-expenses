@@ -24,7 +24,6 @@ export type AmountValidity = "ok" | "incomplete" | "invalid";
 export function classifyAmount(value: string, required: boolean): AmountValidity {
   if (value === "") return required ? "incomplete" : "ok";
   if (AMOUNT_RE.test(value)) return "ok";
-  if (INTEGER_RE.test(value)) return "ok";
   if (value.includes(",")) return "invalid";
   if (PARTIAL_RE.test(value)) return "incomplete";
   return "invalid";
