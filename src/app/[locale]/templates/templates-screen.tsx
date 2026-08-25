@@ -72,6 +72,15 @@ export function TemplatesScreen({
 
   return (
     <section className="flex flex-col gap-4">
+      <div className="rounded-lg p-5" style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" }}>
+        <h2 className="text-white/80 text-sm font-medium">
+          {t("totalMonthlyExpenses")}
+        </h2>
+        <p className="amount text-2xl font-semibold text-white md:text-3xl">
+          {formatMoney(totalMonthlyExpenses, currency)}
+        </p>
+      </div>
+
       {hasCategoryData && (
         <Collapsible title={t("distribution")}>
           <div className="grid gap-6 md:grid-cols-2">
@@ -146,15 +155,6 @@ export function TemplatesScreen({
           </div>
         </Collapsible>
       )}
-
-      <div className="rounded-lg p-5" style={{ background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" }}>
-        <h2 className="text-white/80 text-sm font-medium">
-          {t("totalMonthlyExpenses")}
-        </h2>
-        <p className="amount text-2xl font-semibold text-white md:text-3xl">
-          {formatMoney(totalMonthlyExpenses, currency)}
-        </p>
-      </div>
 
       <div
         role="tablist"
