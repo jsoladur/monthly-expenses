@@ -1,0 +1,1 @@
+ALTER TABLE "annual" ADD COLUMN "amount" numeric(14, 2);

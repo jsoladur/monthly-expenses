@@ -87,6 +87,7 @@ export async function updateAnnual(
     categoryId: string;
     name: string;
     observations: string | null;
+    amount: string | null;
     chargeMonth: number;
     isDirectDebit: boolean;
   },
@@ -98,6 +99,7 @@ export async function updateAnnual(
       categoryId: patch.categoryId,
       name: patch.name,
       observations: patch.observations,
+      amount: patch.amount,
       chargeMonth: patch.chargeMonth,
       isDirectDebit: patch.isDirectDebit,
       updatedAt: sql`now()`,

@@ -7,6 +7,7 @@ import {
   type AnnualActionResult,
 } from "@/actions/annuals";
 import { Button } from "@/components/ui/button";
+import { AmountInput } from "@/components/amount-input";
 import type { CategoryOption } from "./annuals-screen";
 
 export function AddAnnualForm({
@@ -49,6 +50,7 @@ function AddAnnualFormBody({
 }) {
   const [bumpOnSuccess, setBumpOnSuccess] = useState(0);
   const [isDirectDebit, setIsDirectDebit] = useState(false);
+  const [draftAmount, setDraftAmount] = useState("");
 
   const [state, formAction, pending] = useActionState<AnnualActionResult | null, FormData>(
     async (_prev, formData) => {
@@ -56,6 +58,7 @@ function AddAnnualFormBody({
         categoryId: String(formData.get("categoryId") ?? ""),
         name: String(formData.get("name") ?? "").trim(),
         observations: readObservations(formData),
+        amount: draftAmount.trim() || undefined,
         chargeMonth: Number(formData.get("chargeMonth") ?? 1),
         isDirectDebit,
       };
@@ -63,6 +66,7 @@ function AddAnnualFormBody({
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
         setIsDirectDebit(false);
+        setDraftAmount("");
       }
       return result;
     },
@@ -117,6 +121,21 @@ function AddAnnualFormBody({
         maxLength={500}
         className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
       />
+      <div className="flex items-stretch gap-2">
+        <label htmlFor="new-annual-amount" className="sr-only">
+          {t("amount")}
+        </label>
+        <div className="flex-1">
+          <AmountInput
+            id="new-annual-amount"
+            value={draftAmount}
+            onChange={setDraftAmount}
+            ariaLabel={t("amount")}
+            inputClassName="h-9"
+            placeholder={t("amountOptional")}
+          />
+        </div>
+      </div>
       <div className="flex items-stretch gap-2">
         <label htmlFor="new-annual-chargeMonth" className="sr-only">
           {t("chargeMonth")}

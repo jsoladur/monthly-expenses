@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { IconButton } from "@/components/ui/icon-button";
 import { Pencil, CircleOff, RotateCcw, Check, X } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
+import { formatMoney } from "@/i18n/format";
 import {
   deactivateAnnualAction,
   reactivateAnnualAction,
@@ -13,6 +15,7 @@ import type { AnnualRowData, CategoryOption } from "./annuals-screen";
 
 export function AnnualRow({
   annual,
+  currency,
   expenseCategories,
 }: {
   annual: AnnualRowData;
@@ -24,6 +27,9 @@ export function AnnualRow({
   const [isEditing, setIsEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [draftAmount, setDraftAmount] = useState(
+    annual.amountCents !== null ? centsToInputString(annual.amountCents) : "",
+  );
 
   const handleDeactivate = () => {
     setError(null);
@@ -51,6 +57,7 @@ export function AnnualRow({
       categoryId: String(formData.get("categoryId") ?? ""),
       name: String(formData.get("name") ?? "").trim(),
       observations: readObservations(formData),
+      amount: draftAmount.trim() || undefined,
       chargeMonth: Number(formData.get("chargeMonth") ?? 1),
       isDirectDebit: formData.get("isDirectDebit") === "on",
     };
@@ -113,6 +120,20 @@ export function AnnualRow({
             defaultValue={annual.observations}
             className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
           />
+          <div className="flex items-stretch gap-2">
+            <label htmlFor={`edit-${annual.id}-amount`} className="sr-only">
+              {t("amount")}
+            </label>
+            <div className="flex-1">
+              <AmountInput
+                value={draftAmount}
+                onChange={setDraftAmount}
+                ariaLabel={t("amount")}
+                inputClassName="h-9"
+                placeholder={t("amountOptional")}
+              />
+            </div>
+          </div>
           <div className="flex items-stretch gap-2">
             <label htmlFor={`edit-${annual.id}-chargeMonth`} className="sr-only">
               {t("chargeMonth")}
@@ -183,6 +204,9 @@ export function AnnualRow({
         </div>
         <span className="text-muted-foreground truncate text-xs">
           {annual.categoryName} · {getMonthName(annual.chargeMonth)}
+          {annual.amountCents !== null && (
+            <> · {formatMoney(annual.amountCents, currency)}</>
+          )}
         </span>
         {annual.observations && (
           <span className="text-muted-foreground truncate text-xs italic">
@@ -269,4 +293,12 @@ function getMonthName(month: number): string {
     "July", "August", "September", "October", "November", "December",
   ];
   return months[month - 1] ?? "";
+}
+
+function centsToInputString(cents: number): string {
+  const negative = cents < 0;
+  const abs = Math.abs(cents);
+  const whole = Math.floor(abs / 100);
+  const frac = abs % 100;
+  return `${negative ? "-" : ""}${whole}.${frac.toString().padStart(2, "0")}`;
 }

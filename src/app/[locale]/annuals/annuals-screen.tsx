@@ -10,6 +10,7 @@ export interface AnnualRowData {
   categoryName: string;
   name: string;
   observations: string;
+  amountCents: number | null;
   chargeMonth: number;
   isDirectDebit: boolean;
   active: boolean;
@@ -37,8 +38,6 @@ export function AnnualsScreen({
 
   return (
     <section className="flex flex-col gap-4">
-      <p className="text-muted-foreground text-sm">{t("help")}</p>
-
       <AddAnnualForm
         currency={currency}
         expenseCategories={expenseCategories}

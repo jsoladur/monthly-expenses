@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-25
+
+### Added
+- Optional amount field in annuals: users can now set a reference amount when creating or editing an annual. The amount is displayed in the annual row and in the annual reminder cards on the month workspace. Migration 0003 adds the `amount` column (numeric(14,2), nullable) to the `annual` table.
+
+### Changed
+- Removed `annuals.help` text from the annuals management screen (no longer needed).
+
 ## [0.2.0] - 2026-08-25
 
 ### Added
@@ -59,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - AmountInput auto-appends `.00` on blur for integer values: typing `100` and leaving the field now normalizes to `100.00` automatically, matching the wire format. Partial decimals like `100.5` are also completed to `100.50`. The validation classifier now treats bare integers as valid so no error flashes while typing.
 
-## [0.1.4]
+## [0.1.4] - 2026-08-24
 
 ### Fixed
 - Google sign-in still failing for browsers that had the pre-0.1.3 service worker registered: navigation preload is a registration-level flag that SURVIVES service-worker updates, so the fixed worker inherited the enabled preload from older versions and the OAuth callback could still reach the server twice (`invalid_grant` → `/403`). The service worker now explicitly `disable()`s navigation preload on `activate` (first update past 0.1.3 turns it off for good), and `public/sw.js` is regenerated — the shipped 0.1.3 artifact still contained the buggy `navigationPreload: true` build because dev builds skip the Serwist plugin.
@@ -69,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Google sign-in failing with `invalid_grant` ("Access Denied") in browsers with a registered service worker: `navigationPreload` is now disabled in the Serwist service worker (`src/app/sw.ts`). With it enabled, a service-worker lifecycle race could make the OAuth callback reach the server twice, consuming the single-use Google authorization code twice and breaking sign-in for users with an active Google session (serwist/serwist#150).
 
-## [0.1.2]
+## [0.1.2] - 2026-08-24
 
 ### Added
 - GitHub Actions CI/CD pipeline: reusable `common.yml` workflow with `lint`, `tests`, and `deploy` jobs; `main.yml` triggers on `main` branch and `v*` tags with Docker push enabled; `non-main-ci.yml` triggers on non-main branches and PRs with build-only (no push). Version extracted from `package.json` for Docker image tagging.

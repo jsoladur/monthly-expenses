@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { nonEmptyStringSchema, uuidSchema, monthSchema } from "@/server/validators";
+import { nonEmptyStringSchema, uuidSchema, monthSchema, amountSchema } from "@/server/validators";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import {
@@ -40,6 +40,7 @@ const createSchema = z.object({
   categoryId: uuidSchema,
   name: nonEmptyStringSchema.max(80),
   observations: nonEmptyStringSchema.max(500).optional(),
+  amount: amountSchema.optional(),
   chargeMonth: monthSchema,
   isDirectDebit: z.boolean(),
 });
@@ -49,6 +50,7 @@ const updateSchema = z.object({
   categoryId: uuidSchema,
   name: nonEmptyStringSchema.max(80),
   observations: nonEmptyStringSchema.max(500).optional(),
+  amount: amountSchema.optional(),
   chargeMonth: monthSchema,
   isDirectDebit: z.boolean(),
 });
@@ -75,6 +77,7 @@ export async function createAnnualAction(input: {
   categoryId: string;
   name: string;
   observations?: string;
+  amount?: string;
   chargeMonth: number;
   isDirectDebit: boolean;
 }): Promise<AnnualActionResult> {
@@ -88,6 +91,7 @@ export async function createAnnualAction(input: {
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
       observations: parsed.data.observations ?? null,
+      amount: parsed.data.amount ?? null,
       chargeMonth: parsed.data.chargeMonth,
       isDirectDebit: parsed.data.isDirectDebit,
     });
@@ -115,6 +119,7 @@ export async function updateAnnualAction(input: {
   categoryId: string;
   name: string;
   observations?: string;
+  amount?: string;
   chargeMonth: number;
   isDirectDebit: boolean;
 }): Promise<AnnualActionResult> {
@@ -129,6 +134,7 @@ export async function updateAnnualAction(input: {
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
       observations: parsed.data.observations ?? null,
+      amount: parsed.data.amount ?? null,
       chargeMonth: parsed.data.chargeMonth,
       isDirectDebit: parsed.data.isDirectDebit,
     });

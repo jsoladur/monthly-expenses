@@ -168,6 +168,7 @@ export default async function MonthWorkspacePage({
     name: r.name,
     categoryName: expenseCategoryMap.get(r.categoryId)?.name ?? "—",
     isDirectDebit: r.isDirectDebit,
+    amountCents: r.amount !== null ? parseAmount(r.amount) : null,
   }));
 
   async function startSignOut() {
@@ -191,6 +192,7 @@ export default async function MonthWorkspacePage({
           <AnnualReminderCards
             reminders={reminderData}
             monthName={monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
+            currency={currency}
           />
         )}
 

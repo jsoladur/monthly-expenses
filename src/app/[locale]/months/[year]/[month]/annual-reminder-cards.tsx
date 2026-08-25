@@ -3,20 +3,24 @@
 import { useTranslations } from "next-intl";
 import { Bell } from "lucide-react";
 import { Collapsible } from "@/components/ui/collapsible";
+import { formatMoney } from "@/i18n/format";
 
 export interface AnnualReminder {
   id: string;
   name: string;
   categoryName: string;
   isDirectDebit: boolean;
+  amountCents: number | null;
 }
 
 export function AnnualReminderCards({
   reminders,
   monthName,
+  currency,
 }: {
   reminders: AnnualReminder[];
   monthName: string;
+  currency: string;
 }) {
   const t = useTranslations("reminders");
   const tAnnuals = useTranslations("annuals");
@@ -47,6 +51,9 @@ export function AnnualReminderCards({
             </p>
             <p className="text-muted-foreground text-xs">
               {reminder.categoryName}
+              {reminder.amountCents !== null && (
+                <> · {formatMoney(reminder.amountCents, currency)}</>
+              )}
               {reminder.isDirectDebit && (
                 <span className="ml-2 rounded-full bg-warning/20 px-2 py-0.5 text-xs">
                   {tAnnuals("isDirectDebit")}

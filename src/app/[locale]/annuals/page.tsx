@@ -5,6 +5,7 @@ import { requireUserId } from "@/server/auth/require-user-id";
 import { listAnnualsForManagement } from "@/server/services/annuals";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { getProfileSettings } from "@/server/services/settings";
+import { parseAmount } from "@/server/money";
 import { AnnualsScreen } from "./annuals-screen";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
@@ -56,6 +57,7 @@ export default async function AnnualsPage({
             categoryName: resolveCategoryName(row.categoryId, expenseCategories),
             name: row.name,
             observations: row.observations ?? "",
+            amountCents: row.amount !== null ? parseAmount(row.amount) : null,
             chargeMonth: row.chargeMonth,
             isDirectDebit: row.isDirectDebit,
             active: row.active,

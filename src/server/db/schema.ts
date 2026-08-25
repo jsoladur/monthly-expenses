@@ -121,6 +121,7 @@ export const annual = pgTable(
       .references(() => category.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     observations: text("observations"),
+    amount: numeric("amount", { precision: 14, scale: 2 }),
     chargeMonth: integer("charge_month").notNull(),
     isDirectDebit: boolean("is_direct_debit").notNull().default(false),
     active: boolean("active").notNull().default(true),

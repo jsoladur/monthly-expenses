@@ -112,6 +112,7 @@ export interface AnnualInput {
   categoryId: string;
   name: string;
   observations?: string | null;
+  amount?: string | null;
   chargeMonth: number;
   isDirectDebit: boolean;
 }
@@ -141,6 +142,7 @@ export async function createAnnual(
       categoryId: input.categoryId,
       name: input.name,
       observations: input.observations ?? null,
+      amount: input.amount ?? null,
       chargeMonth: input.chargeMonth,
       isDirectDebit: input.isDirectDebit,
       active: true,
@@ -179,6 +181,7 @@ export async function updateAnnual(
       categoryId: input.categoryId,
       name: input.name,
       observations: input.observations ?? null,
+      amount: input.amount ?? null,
       chargeMonth: input.chargeMonth,
       isDirectDebit: input.isDirectDebit,
     },
