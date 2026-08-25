@@ -3,7 +3,7 @@
 import { usePathname } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Calendar, Tags, DollarSign, Settings, Bell } from "lucide-react";
+import { Calendar, Tags, DollarSign, Settings, Bell, History } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { ProfileMenu } from "./profile-menu";
@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home" },
   { href: "/templates", icon: DollarSign, labelKey: "templates" },
   { href: "/annuals", icon: Bell, labelKey: "annuals" },
+  { href: "/history", icon: History, labelKey: "history" },
   { href: "/categories", icon: Tags, labelKey: "categories" },
   { href: "/settings", icon: Settings, labelKey: "settings" },
 ];
@@ -39,6 +40,9 @@ function isActiveRoute(pathname: string, href: string): boolean {
   }
   if (href === "/annuals") {
     return pathname.startsWith("/annuals");
+  }
+  if (href === "/history") {
+    return pathname.startsWith("/history");
   }
   if (href === "/categories") {
     return pathname.startsWith("/categories");
