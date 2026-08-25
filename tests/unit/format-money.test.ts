@@ -16,36 +16,41 @@ import { formatMoney } from "@/i18n/format";
 // ============================================================================
 
 describe("formatMoney", () => {
-  it("renders positive cents as `<amount> <CURRENCY>` with two decimals", () => {
-    expect(formatMoney(123456, "EUR")).toBe("1234.56 EUR");
-    expect(formatMoney(100, "EUR")).toBe("1.00 EUR");
+  it("renders positive cents as `<amount> <SYMBOL>` with two decimals", () => {
+    expect(formatMoney(123456, "EUR")).toBe("1234.56 €");
+    expect(formatMoney(100, "EUR")).toBe("1.00 €");
   });
 
-  it("renders zero as `0.00 <CURRENCY>` (no negative sign)", () => {
-    expect(formatMoney(0, "EUR")).toBe("0.00 EUR");
-    expect(formatMoney(0, "USD")).toBe("0.00 USD");
+  it("renders zero as `0.00 <SYMBOL>` (no negative sign)", () => {
+    expect(formatMoney(0, "EUR")).toBe("0.00 €");
+    expect(formatMoney(0, "USD")).toBe("0.00 $");
   });
 
   it("renders negative cents with a leading minus — PRD §7.6", () => {
-    expect(formatMoney(-2000, "EUR")).toBe("-20.00 EUR");
-    expect(formatMoney(-1, "EUR")).toBe("-0.01 EUR");
+    expect(formatMoney(-2000, "EUR")).toBe("-20.00 €");
+    expect(formatMoney(-1, "EUR")).toBe("-0.01 €");
   });
 
   it("pads single-digit fractional amounts so the wire format has exactly two decimals", () => {
     // Bigint-safe — 5 cents is the smallest nonzero amount.
-    expect(formatMoney(5, "EUR")).toBe("0.05 EUR");
-    expect(formatMoney(9, "EUR")).toBe("0.09 EUR");
+    expect(formatMoney(5, "EUR")).toBe("0.05 €");
+    expect(formatMoney(9, "EUR")).toBe("0.09 €");
   });
 
   it("supports the full numeric(14,2) range", () => {
     // 9_999_999_999_999.99 → 999_999_999_999_999 cents (within Number.MAX_SAFE_INTEGER)
-    expect(formatMoney(999_999_999_999_999, "EUR")).toBe("9999999999999.99 EUR");
-    expect(formatMoney(-999_999_999_999_999, "EUR")).toBe("-9999999999999.99 EUR");
+    expect(formatMoney(999_999_999_999_999, "EUR")).toBe("9999999999999.99 €");
+    expect(formatMoney(-999_999_999_999_999, "EUR")).toBe("-9999999999999.99 €");
   });
 
-  it("preserves the user's chosen currency label verbatim (USD / GBP / JPY / etc.)", () => {
-    expect(formatMoney(5000, "USD")).toBe("50.00 USD");
-    expect(formatMoney(5000, "GBP")).toBe("50.00 GBP");
+  it("uses currency symbols for known currencies (USD / GBP / JPY / etc.)", () => {
+    expect(formatMoney(5000, "USD")).toBe("50.00 $");
+    expect(formatMoney(5000, "GBP")).toBe("50.00 £");
+    expect(formatMoney(5000, "JPY")).toBe("50.00 ¥");
+  });
+
+  it("falls back to ISO code for unknown currencies", () => {
+    expect(formatMoney(5000, "XYZ")).toBe("50.00 XYZ");
   });
 
   it("rejects non-integer cents — the domain contract (ADR-5, ARCH §8)", () => {

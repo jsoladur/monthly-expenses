@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-25
+
+### Added
+- Annual reminders (UC-14): new catalog of annual recurring expenses with charge month tracking. Users can add, edit, deactivate and reactivate annuals. Annual reminder cards appear on the home page when an annual's charge month matches the current month, with collapsible accordion and warning styling.
+- Icon-based action buttons with tooltips across all list screens (categories, templates, annuals, incomes, reserved lines, estimated reserved lines, actuals). Text labels replaced by compact icons (Pencil, Trash2, CircleOff, RotateCcw, ArrowRightCircle, Undo2, Check, X) with CSS tooltips on hover, saving horizontal space on mobile.
+
+### Changed
+- Navigation: History replaced by Annuals in the main navigation. Menu order is now Home, Templates, Annuals, Categories, Settings.
+- Currency display changed from ISO codes (EUR, USD) to symbols (€, $, etc.) throughout the app.
+- Annual reminder cards redesigned with warning color scheme, collapsible accordion layout, and removed duplicate name display.
+- Past month warning message updated to "ATTENTION: This month is not the current calendar month."
+
+### Fixed
+- Fixed Server Component → Client Component error in annual reminder cards by removing onQuickAdd prop.
+- Removed orphan i18n keys: annuals.help text, and confirmed history/quickAdd keys were unused after navigation and reminder card changes.
+
 ## [0.1.9] - 2026-08-25
 
 ### Added

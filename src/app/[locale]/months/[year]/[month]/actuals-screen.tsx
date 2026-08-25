@@ -18,6 +18,8 @@ import {
 import { OverspendBadge } from "@/app/[locale]/months/[year]/[month]/overspend-badge";
 import type { OverspendWarning } from "@/server/services/summary";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Pencil, Trash2, Undo2, ArrowRightCircle } from "lucide-react";
 import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
 import { Collapsible } from "@/components/ui/collapsible";
 
@@ -426,22 +428,18 @@ function RowActions({
   return (
     <span className="flex flex-col items-end gap-1">
       <span className="flex items-center gap-1">
-        <button
-          type="button"
+        <IconButton
+          icon={<Pencil className="size-4" />}
+          label={t("actions.edit")}
           onClick={onEdit}
-          className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
-        >
-          {t("actions.edit")}
-        </button>
+        />
         {canUndoPass && (
-          <button
-            type="button"
-            onClick={handleUndo}
+          <IconButton
+            icon={<Undo2 className="size-4" />}
+            label={t("actions.undoPass")}
             disabled={pending}
-            className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
-          >
-            {t("actions.undoPass")}
-          </button>
+            onClick={handleUndo}
+          />
         )}
         <form
           action={async () => {
@@ -452,13 +450,13 @@ function RowActions({
             setPending(false);
           }}
         >
-          <button
-            type="submit"
+          <IconButton
+            icon={<Trash2 className="size-4" />}
+            label={t("actions.delete")}
+            destructive
             disabled={pending}
-            className="text-muted-foreground hover:text-destructive px-2 text-xs underline-offset-4 hover:underline"
-          >
-            {t("actions.delete")}
-          </button>
+            type="submit"
+          />
         </form>
       </span>
       {undoError && (
@@ -726,14 +724,12 @@ function CommittedReservedRow({
               </span>
             )}
           </span>
-          <button
-            type="button"
-            onClick={handlePass}
+          <IconButton
+            icon={<ArrowRightCircle className="size-4" />}
+            label={t("actions.passToActual")}
             disabled={pending}
-            className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
-          >
-            {t("actions.passToActual")}
-          </button>
+            onClick={handlePass}
+          />
         </span>
       </div>
       {!row.categoryActive && (

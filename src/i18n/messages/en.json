@@ -340,7 +340,6 @@
       "selectCategory": "Pick a category",
       "selectMonth": "Pick a month"
     },
-    "help": "Annuals remind you when a recurring expense is due. They do not auto-create lines — you add them manually when needed.",
     "noActiveCategories": "Create an active expense category first."
   },
   "reminders": {

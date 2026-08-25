@@ -12,6 +12,8 @@ import {
 } from "@/actions/reserved-lines";
 import type { ReservedLineRowData, CategoryOption } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Pencil, Trash2 } from "lucide-react";
 
 // ============================================================================
 // Estimated reserved lines screen — separate section for estimated lines only.
@@ -175,13 +177,11 @@ function RowActions({
   return (
     <span className="flex flex-col items-end gap-1">
       <span className="flex items-center gap-1">
-        <button
-          type="button"
+        <IconButton
+          icon={<Pencil className="size-4" />}
+          label={t("actions.edit")}
           onClick={onEdit}
-          className="text-muted-foreground hover:text-foreground px-2 text-xs underline-offset-4 hover:underline"
-        >
-          {t("actions.edit")}
-        </button>
+        />
         <form
           action={async () => {
             if (pending) return;
@@ -191,13 +191,13 @@ function RowActions({
             setPending(false);
           }}
         >
-          <button
-            type="submit"
+          <IconButton
+            icon={<Trash2 className="size-4" />}
+            label={t("actions.delete")}
+            destructive
             disabled={pending}
-            className="text-muted-foreground hover:text-destructive px-2 text-xs underline-offset-4 hover:underline"
-          >
-            {t("actions.delete")}
-          </button>
+            type="submit"
+          />
         </form>
       </span>
     </span>

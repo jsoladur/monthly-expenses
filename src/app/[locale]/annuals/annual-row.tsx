@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { Pencil, CircleOff, RotateCcw, Check, X } from "lucide-react";
 import {
   deactivateAnnualAction,
   reactivateAnnualAction,
@@ -138,21 +139,21 @@ export function AnnualRow({
               />
               <span>{t("isDirectDebit")}</span>
             </label>
-            <Button type="submit" disabled={pending} size="sm">
-              {t("actions.save")}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <IconButton
+              icon={<Check className="size-4" />}
+              label={t("actions.save")}
+              disabled={pending}
+              type="submit"
+            />
+            <IconButton
+              icon={<X className="size-4" />}
+              label={t("actions.cancel")}
               disabled={pending}
               onClick={() => {
                 setIsEditing(false);
                 setError(null);
               }}
-            >
-              {t("actions.cancel")}
-            </Button>
+            />
           </div>
           {error && (
             <p role="alert" className="text-destructive text-xs">
@@ -194,38 +195,29 @@ export function AnnualRow({
           {t("inactive")}
         </span>
       )}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
+      <IconButton
+        icon={<Pencil className="size-4" />}
+        label={t("actions.edit")}
         disabled={pending}
         onClick={() => {
           setIsEditing(true);
           setError(null);
         }}
-      >
-        {t("actions.edit")}
-      </Button>
+      />
       {annual.active ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
+        <IconButton
+          icon={<CircleOff className="size-4" />}
+          label={t("actions.deactivate")}
           disabled={pending}
           onClick={handleDeactivate}
-        >
-          {t("actions.deactivate")}
-        </Button>
+        />
       ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
+        <IconButton
+          icon={<RotateCcw className="size-4" />}
+          label={t("actions.reactivate")}
           disabled={pending}
           onClick={handleReactivate}
-        >
-          {t("actions.reactivate")}
-        </Button>
+        />
       )}
       {error && (
         <p role="alert" className="text-destructive basis-full text-xs">

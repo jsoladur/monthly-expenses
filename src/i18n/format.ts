@@ -83,10 +83,11 @@ export function amountToParts(amount: string): AmountParts {
 //
 // Wire format is locked by PRD C9: dot-decimal in BOTH locales, exactly two
 // fractional digits. `formatMoney` mirrors that on the display side and
-// appends the currency label verbatim so the same string is reproducible in
-// either locale — this is the "no FX conversion, label only" requirement of
-// PRD UC-15. No grouping separator (it would force a locale decision here
-// and there is no requirement to introduce one yet).
+// appends the currency symbol (or ISO code if no symbol mapping exists) so
+// the same string is reproducible in either locale — this is the "no FX
+// conversion, label only" requirement of PRD UC-15. No grouping separator
+// (it would force a locale decision here and there is no requirement to
+// introduce one yet).
 //
 // Negative amounts keep the leading minus (PRD §7.6). Zero renders as
 // `0.00 <LABEL>` — no sign.
@@ -98,6 +99,70 @@ export function amountToParts(amount: string): AmountParts {
 // ============================================================================
 
 const CURRENCY_LABEL_RE = /^[A-Z]{3}$/;
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: "€",
+  USD: "$",
+  GBP: "£",
+  JPY: "¥",
+  CNY: "¥",
+  CHF: "CHF",
+  CAD: "CA$",
+  AUD: "A$",
+  NZD: "NZ$",
+  SEK: "kr",
+  NOK: "kr",
+  DKK: "kr",
+  PLN: "zł",
+  CZK: "Kč",
+  HUF: "Ft",
+  RON: "lei",
+  BGN: "лв",
+  HRK: "kn",
+  RUB: "₽",
+  TRY: "₺",
+  BRL: "R$",
+  MXN: "MX$",
+  ARS: "AR$",
+  CLP: "CL$",
+  COP: "COP$",
+  PEN: "S/",
+  UYU: "$U",
+  INR: "₹",
+  PKR: "₨",
+  BDT: "৳",
+  LKR: "₨",
+  NPR: "₨",
+  IDR: "Rp",
+  MYR: "RM",
+  SGD: "S$",
+  THB: "฿",
+  VND: "₫",
+  PHP: "₱",
+  KRW: "₩",
+  TWD: "NT$",
+  HKD: "HK$",
+  ZAR: "R",
+  EGP: "E£",
+  NGN: "₦",
+  KES: "KSh",
+  GHS: "GH₵",
+  MAD: "MAD",
+  TND: "DT",
+  AED: "د.إ",
+  SAR: "﷼",
+  QAR: "﷼",
+  KWD: "KD",
+  BHD: "BD",
+  OMR: "OMR",
+  ILS: "₪",
+  JOD: "JD",
+  LBP: "L£",
+};
+
+function getCurrencySymbol(currency: string): string {
+  return CURRENCY_SYMBOLS[currency] ?? currency;
+}
 
 export function formatMoney(cents: number, currency: string): string {
   if (!Number.isInteger(cents)) {
@@ -115,7 +180,8 @@ export function formatMoney(cents: number, currency: string): string {
   const whole = Math.floor(abs / 100);
   const frac = abs % 100;
   const sign = negative ? "-" : "";
-  return `${sign}${whole}.${frac.toString().padStart(2, "0")} ${currency}`;
+  const symbol = getCurrencySymbol(currency);
+  return `${sign}${whole}.${frac.toString().padStart(2, "0")} ${symbol}`;
 }
 
 // Inverse of `formatMoney` for the integer-cents part: turn the stored cents

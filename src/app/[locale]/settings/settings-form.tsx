@@ -16,6 +16,23 @@ type CurrencyCode = string;
 
 const THEME_OPTIONS: ThemePreference[] = ["auto", "light", "dark"];
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: "€",
+  USD: "$",
+  GBP: "£",
+  JPY: "¥",
+  CHF: "CHF",
+  CAD: "CA$",
+  AUD: "A$",
+  MXN: "MX$",
+  ARS: "AR$",
+};
+
+function getCurrencyDisplay(code: string): string {
+  const symbol = CURRENCY_SYMBOLS[code];
+  return symbol ? `${symbol} (${code})` : code;
+}
+
 export function SettingsForm({
   currentCurrency,
   supportedCurrencies,
@@ -91,7 +108,7 @@ export function SettingsForm({
         >
           {supportedCurrencies.map((code) => (
             <option key={code} value={code}>
-              {code}
+              {getCurrencyDisplay(code)}
             </option>
           ))}
         </select>

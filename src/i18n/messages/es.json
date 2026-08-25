@@ -340,7 +340,6 @@
       "selectCategory": "Elige una categoría",
       "selectMonth": "Elige un mes"
     },
-    "help": "Los anuales te recuerdan cuándo vence un gasto recurrente. No crean líneas automáticamente — las añades manualmente cuando sea necesario.",
     "noActiveCategories": "Crea primero una categoría de gasto activa."
   },
   "reminders": {
