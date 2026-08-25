@@ -2,7 +2,7 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
-import { classifyAmount, type AmountValidity } from "@/components/amount-input-helpers";
+import { classifyAmount, normalizeAmount, type AmountValidity } from "@/components/amount-input-helpers";
 
 // ============================================================================
 // Amount input (UC-02, PRD C9, PRD §11, ADR-5, ARCH §8).
@@ -68,7 +68,13 @@ export function AmountInput({
         aria-invalid={showError || undefined}
         aria-describedby={showError || showHint ? errorId : undefined}
         onChange={handleChange}
-        onBlur={() => setTouched(true)}
+        onBlur={() => {
+          setTouched(true);
+          const normalized = normalizeAmount(value);
+          if (normalized !== value) {
+            onChange(normalized);
+          }
+        }}
         className={
           "border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs transition-colors focus-visible:ring-3 focus-visible:outline-none aria-invalid:border-destructive aria-invalid:ring-destructive/20 disabled:pointer-events-none disabled:opacity-50 " +
           (inputClassName ?? "")

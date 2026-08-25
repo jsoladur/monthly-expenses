@@ -16,6 +16,7 @@ import { AMOUNT_PATTERN } from "@/server/money";
 // ============================================================================
 
 const AMOUNT_RE = new RegExp(`^${AMOUNT_PATTERN}$`);
+const INTEGER_RE = /^-?\d{1,12}$/;
 const PARTIAL_RE = /^-?\d{0,12}(\.\d{0,2})?$/;
 
 export type AmountValidity = "ok" | "incomplete" | "invalid";
@@ -23,7 +24,15 @@ export type AmountValidity = "ok" | "incomplete" | "invalid";
 export function classifyAmount(value: string, required: boolean): AmountValidity {
   if (value === "") return required ? "incomplete" : "ok";
   if (AMOUNT_RE.test(value)) return "ok";
+  if (INTEGER_RE.test(value)) return "ok";
   if (value.includes(",")) return "invalid";
   if (PARTIAL_RE.test(value)) return "incomplete";
   return "invalid";
+}
+
+export function normalizeAmount(value: string): string {
+  if (value === "") return value;
+  if (INTEGER_RE.test(value)) return `${value}.00`;
+  if (/^-?\d{1,12}\.\d$/.test(value)) return `${value}0`;
+  return value;
 }

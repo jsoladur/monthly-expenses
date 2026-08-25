@@ -71,6 +71,7 @@ export function TemplateRow({
       id: template.id,
       categoryId: String(formData.get("categoryId") ?? ""),
       name: String(formData.get("name") ?? "").trim(),
+      observations: readObservations(formData),
       amount: draftAmount.trim(),
       kind: template.kind,
     };
@@ -120,6 +121,19 @@ export function TemplateRow({
               className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
             />
           </div>
+          <label htmlFor={`edit-${template.id}-observations`} className="sr-only">
+            {t("observations")}
+          </label>
+          <input
+            id={`edit-${template.id}-observations`}
+            name="observations"
+            type="text"
+            autoComplete="off"
+            placeholder={t("observations")}
+            maxLength={500}
+            defaultValue={template.observations}
+            className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          />
           <div className="flex items-stretch gap-2">
             <label htmlFor={`edit-${template.id}-amount`} className="sr-only">
               {t("amount")}
@@ -172,6 +186,11 @@ export function TemplateRow({
         <span className="text-muted-foreground truncate text-xs">
           {template.categoryName} · {formatMoney(template.amountCents, currency)}
         </span>
+        {template.observations && (
+          <span className="text-muted-foreground truncate text-xs italic">
+            {template.observations}
+          </span>
+        )}
       </div>
       {!template.active && (
         <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
@@ -249,6 +268,13 @@ function mapError(
       // between render and click. The next revalidate drops the stale row.
       return "";
   }
+}
+
+function readObservations(formData: FormData): string | undefined {
+  const value = formData.get("observations");
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
 }
 
 // Integer cents → wire string (`"-20.00"`, `"150.00"`). Mirror of the

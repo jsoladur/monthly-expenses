@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-08-25
+
+### Added
+- Observations field in template add and edit forms: users can now add optional notes to templates (the DB column already existed; the UI was missing). The add form (`add-template-form.tsx`) and the inline edit form (`template-row.tsx`) both include a text input for observations (max 500 chars), and the template row view displays observations when present.
+
+### Changed
+- AmountInput auto-appends `.00` on blur for integer values: typing `100` and leaving the field now normalizes to `100.00` automatically, matching the wire format. Partial decimals like `100.5` are also completed to `100.50`. The validation classifier now treats bare integers as valid so no error flashes while typing.
+
 ## [0.1.4]
 
 ### Fixed

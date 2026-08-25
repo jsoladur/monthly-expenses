@@ -81,6 +81,7 @@ function AddTemplateFormBody({
       const payload = {
         categoryId: String(formData.get("categoryId") ?? ""),
         name: String(formData.get("name") ?? "").trim(),
+        observations: readObservations(formData),
         amount: draftAmount.trim(),
         kind,
       };
@@ -133,6 +134,18 @@ function AddTemplateFormBody({
           className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
+      <label htmlFor={`new-${kind}-observations`} className="sr-only">
+        {t("observations")}
+      </label>
+      <input
+        id={`new-${kind}-observations`}
+        name="observations"
+        type="text"
+        autoComplete="off"
+        placeholder={t("observations")}
+        maxLength={500}
+        className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+      />
       <div className="flex items-stretch gap-2">
         <label htmlFor={`new-${kind}-amount`} className="sr-only">
           {t("amount")}
@@ -171,6 +184,7 @@ function bindKind(
   action: (input: {
     categoryId: string;
     name: string;
+    observations?: string;
     amount: string;
     kind: Kind;
   }) => Promise<TemplateActionResult>,
@@ -178,9 +192,17 @@ function bindKind(
 ): (input: {
   categoryId: string;
   name: string;
+  observations?: string;
   amount: string;
 }) => Promise<TemplateActionResult> {
   return (input) => action({ ...input, kind });
+}
+
+function readObservations(formData: FormData): string | undefined {
+  const value = formData.get("observations");
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
 }
 
 function errorToMessage(
