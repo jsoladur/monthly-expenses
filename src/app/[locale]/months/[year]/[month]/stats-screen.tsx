@@ -103,7 +103,7 @@ export function StatsScreen({
                         borderRadius: "0.5rem",
                       }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -137,7 +137,7 @@ export function StatsScreen({
                         borderRadius: "0.5rem",
                       }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -185,7 +185,7 @@ export function StatsScreen({
                         borderRadius: "0.5rem",
                       }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -219,7 +219,7 @@ export function StatsScreen({
                         borderRadius: "0.5rem",
                       }}
                     />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
