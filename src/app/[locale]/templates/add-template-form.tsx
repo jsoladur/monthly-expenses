@@ -103,7 +103,7 @@ function AddTemplateFormBody({
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-2">
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor={`new-${kind}-category`} className="sr-only">
           {t("category")}
         </label>
@@ -112,7 +112,7 @@ function AddTemplateFormBody({
           name="categoryId"
           required
           defaultValue={expenseCategories[0]?.id ?? ""}
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         >
           {expenseCategories.map((option) => (
             <option key={option.id} value={option.id}>
@@ -131,7 +131,7 @@ function AddTemplateFormBody({
           placeholder={t("actions.placeholder")}
           required
           maxLength={80}
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
       <label htmlFor={`new-${kind}-observations`} className="sr-only">
@@ -146,11 +146,11 @@ function AddTemplateFormBody({
         maxLength={500}
         className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
       />
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor={`new-${kind}-amount`} className="sr-only">
           {t("amount")}
         </label>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <AmountInput
             value={draftAmount}
             onChange={setDraftAmount}

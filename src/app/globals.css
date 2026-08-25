@@ -170,6 +170,12 @@
       BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     letter-spacing: -0.01em;
   }
+  main {
+    @apply overflow-x-hidden;
+  }
+  section {
+    @apply max-w-full overflow-x-hidden;
+  }
 }
 
 @utility amount {

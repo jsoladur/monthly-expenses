@@ -78,7 +78,7 @@ function AddAnnualFormBody({
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-2">
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-annual-category" className="sr-only">
           {t("category")}
         </label>
@@ -87,7 +87,7 @@ function AddAnnualFormBody({
           name="categoryId"
           required
           defaultValue={expenseCategories[0]?.id ?? ""}
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         >
           {expenseCategories.map((option) => (
             <option key={option.id} value={option.id}>
@@ -106,7 +106,7 @@ function AddAnnualFormBody({
           placeholder={t("actions.placeholder")}
           required
           maxLength={80}
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
       <label htmlFor="new-annual-observations" className="sr-only">
@@ -121,11 +121,11 @@ function AddAnnualFormBody({
         maxLength={500}
         className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
       />
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-annual-amount" className="sr-only">
           {t("amount")}
         </label>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <AmountInput
             id="new-annual-amount"
             value={draftAmount}
@@ -136,7 +136,7 @@ function AddAnnualFormBody({
           />
         </div>
       </div>
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-annual-chargeMonth" className="sr-only">
           {t("chargeMonth")}
         </label>
@@ -145,7 +145,7 @@ function AddAnnualFormBody({
           name="chargeMonth"
           required
           defaultValue={1}
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         >
           {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
             <option key={month} value={month}>

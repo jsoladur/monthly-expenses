@@ -91,7 +91,7 @@ export function TemplateRow({
     return (
       <li className="bg-card flex flex-col gap-2 rounded-md border p-3">
         <form action={handleSave} className="flex flex-col gap-2">
-          <div className="flex items-stretch gap-2">
+          <div className="flex flex-wrap items-stretch gap-2">
             <label htmlFor={`edit-${template.id}-category`} className="sr-only">
               {t("category")}
             </label>
@@ -100,7 +100,7 @@ export function TemplateRow({
               name="categoryId"
               required
               defaultValue={template.categoryId}
-              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
             >
               {expenseCategories.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -119,7 +119,7 @@ export function TemplateRow({
               defaultValue={template.name}
               required
               maxLength={80}
-              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
             />
           </div>
           <label htmlFor={`edit-${template.id}-observations`} className="sr-only">
@@ -135,11 +135,11 @@ export function TemplateRow({
             defaultValue={template.observations}
             className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
           />
-          <div className="flex items-stretch gap-2">
+          <div className="flex flex-wrap items-stretch gap-2">
             <label htmlFor={`edit-${template.id}-amount`} className="sr-only">
               {t("amount")}
             </label>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <AmountInput
                 value={draftAmount}
                 onChange={setDraftAmount}
