@@ -225,6 +225,10 @@ export default async function MonthWorkspacePage({
                 categoryName: r.categoryName,
                 amountCents: r.amountCents,
               }))}
+              reservedLines={reservedLineRows.map((r) => ({
+                categoryName: r.categoryName,
+                remainingCents: r.remainingCents,
+              }))}
               actualsTotalCents={summary.actualsTotal}
               reservedRemainingTotalCents={summary.reservedRemainingTotal}
               committedTotalCents={committedTotalCents}

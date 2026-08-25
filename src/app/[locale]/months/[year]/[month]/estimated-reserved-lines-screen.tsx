@@ -112,7 +112,7 @@ function EstimatedReservedLineRow({
         <span className="flex flex-col">
           <span>{row.name}</span>
           <span className="text-muted-foreground text-xs">
-            {row.categoryName} · {t(`origin.${row.origin}`)}
+            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
           </span>
           {row.observations && (
             <span className="text-muted-foreground text-xs italic">
@@ -501,4 +501,8 @@ function readRemainingAmount(formData: FormData, fallback: string): string {
     return value.trim();
   }
   return fallback.trim();
+}
+
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }

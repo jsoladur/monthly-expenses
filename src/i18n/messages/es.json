@@ -79,7 +79,7 @@
     "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer."
   },
   "warnings": {
-    "pastMonth": "Este mes no es el mes natural actual. Los cambios están permitidos.",
+    "pastMonth": "ATENCIÓN: Este mes no es el mes natural actual.",
     "overspend": "Los tickets reales en esta categoría superan el plan definido en tus plantillas.",
     "overspendPlan": "Plan en plantillas: {plan}",
     "overspendOver": "Excedido por {amount}",
@@ -113,7 +113,7 @@
       "savings": "Ahorro potencial",
       "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas.",
       "negativeNote": "Los importes negativos cuentan (reembolsos, devoluciones).",
-      "pastMonthBanner": "Este mes no es el mes natural actual. Los cambios están permitidos."
+      "pastMonthBanner": "ATENCIÓN: Este mes no es el mes natural actual."
     },
     "estimateHelp": "Los tickets no reducen este número. Redúcelo tú mismo cuando quieras que baje la reserva.",
     "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover.",

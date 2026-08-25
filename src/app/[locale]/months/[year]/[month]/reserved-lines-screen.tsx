@@ -85,6 +85,13 @@ export function ReservedLinesScreen({
 }) {
   return (
     <div className="flex flex-col gap-6">
+      <AddMonthOnlyLineForm
+        monthId={monthId}
+        year={year}
+        month={month}
+        currency={currency}
+        expenseCategories={expenseCategories}
+      />
       {groups.map((group) => (
         <ReservedLineGroupSection
           key={group.kind}
@@ -96,13 +103,6 @@ export function ReservedLinesScreen({
           overspendWarnings={overspendWarnings}
         />
       ))}
-      <AddMonthOnlyLineForm
-        monthId={monthId}
-        year={year}
-        month={month}
-        currency={currency}
-        expenseCategories={expenseCategories}
-      />
     </div>
   );
 }
@@ -232,7 +232,7 @@ function ReservedLineRow({
         <span className="flex flex-col">
           <span>{row.name}</span>
           <span className="text-muted-foreground text-xs">
-            {row.categoryName} · {t(`origin.${row.origin}`)}
+            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
           </span>
           {row.observations && (
             <span className="text-muted-foreground text-xs italic">
@@ -686,4 +686,8 @@ function errorToMessagePass(
     case "validation":
       return tv("required");
   }
+}
+
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }

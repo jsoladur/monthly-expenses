@@ -79,7 +79,7 @@
     "notUndoable": "This expense was not created by pass-to-actual."
   },
   "warnings": {
-    "pastMonth": "This month is not the current calendar month. Changes are allowed.",
+    "pastMonth": "ATTENTION: This month is not the current calendar month.",
     "overspend": "Actual tickets in this category are higher than the plan in your templates.",
     "overspendPlan": "Plan in templates: {plan}",
     "overspendOver": "Over by {amount}",
@@ -113,7 +113,7 @@
       "savings": "Potential savings",
       "savingsHelp": "Income minus actual spend minus money still reserved in fixed/estimated lines.",
       "negativeNote": "Negative amounts count (refunds, payouts).",
-      "pastMonthBanner": "This month is not the current calendar month. Changes are allowed."
+      "pastMonthBanner": "ATTENTION: This month is not the current calendar month."
     },
     "estimateHelp": "Tickets do not reduce this number. Decrease it yourself when you want the reserve to drop.",
     "passToActual": "Move this commitment to actual spend. Estimates cannot be moved.",

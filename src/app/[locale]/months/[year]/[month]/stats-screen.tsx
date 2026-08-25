@@ -9,8 +9,14 @@ interface CategoryExpense {
   amountCents: number;
 }
 
+interface ReservedLineCategoryExpense {
+  categoryName: string;
+  remainingCents: number;
+}
+
 interface StatsScreenProps {
   actuals: CategoryExpense[];
+  reservedLines: ReservedLineCategoryExpense[];
   actualsTotalCents: number;
   reservedRemainingTotalCents: number;
   committedTotalCents: number;
@@ -36,6 +42,7 @@ const DISTRIBUTION_COLORS = [
 
 export function StatsScreen({
   actuals,
+  reservedLines,
   actualsTotalCents,
   reservedRemainingTotalCents,
   committedTotalCents,
@@ -43,7 +50,7 @@ export function StatsScreen({
 }: StatsScreenProps) {
   const t = useTranslations("months.stats");
 
-  const categoryData = aggregateByCategory(actuals);
+  const categoryData = aggregateByCategory(actuals, reservedLines);
   const categoryPercentData = toPercentages(categoryData);
   const distributionData = buildDistributionData(
     actualsTotalCents,
@@ -235,11 +242,18 @@ export function StatsScreen({
   );
 }
 
-function aggregateByCategory(actuals: CategoryExpense[]) {
+function aggregateByCategory(
+  actuals: CategoryExpense[],
+  reservedLines: ReservedLineCategoryExpense[],
+) {
   const map = new Map<string, number>();
   for (const actual of actuals) {
     const current = map.get(actual.categoryName) ?? 0;
     map.set(actual.categoryName, current + actual.amountCents);
+  }
+  for (const line of reservedLines) {
+    const current = map.get(line.categoryName) ?? 0;
+    map.set(line.categoryName, current + line.remainingCents);
   }
   return Array.from(map.entries())
     .map(([name, value]) => ({ name, value }))

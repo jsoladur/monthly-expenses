@@ -700,7 +700,7 @@ function CommittedReservedRow({
         <span className="flex flex-col">
           <span>{row.name}</span>
           <span className="text-muted-foreground text-xs">
-            {row.categoryName} · {t(`origin.${row.origin}`)}
+            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
           </span>
           {row.observations && (
             <span className="text-muted-foreground text-xs italic">
@@ -772,4 +772,8 @@ function errorToMessagePass(
     case "validation":
       return tv("required");
   }
+}
+
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }

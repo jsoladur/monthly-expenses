@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] - 2026-08-25
+
+### Added
+- Observations field in template add and edit forms: users can now add optional notes to templates. The observations are displayed in the template row view.
+- Distribution charts accordion on templates page: collapsed-by-default accordion with two pie charts (percentage and absolute values) showing expense distribution by category. Moved after the Total monthly expenses banner for better visual hierarchy.
+
+### Changed
+- Reduced legend font size in all pie charts (templates and month stats pages) for better visual balance.
+- Stats page "Expenses by category" pie charts now include all expenses: actuals + committed reserved lines + estimated reserved lines, providing a complete picture of monthly expenses.
+- Past month warning message changed to "ATTENTION: This month is not the current calendar month." (removed "Changes are allowed" suffix).
+- Moved "New month-only line" form to appear before the reserved lines tabs for better UX.
+
+### Fixed
+- Fixed i18n key resolution for `month_only` origin: added `toCamelCase` helper to convert snake_case to camelCase so `reservedLines.origin.month_only` correctly resolves to `reservedLines.origin.monthOnly`. Applied fix in reserved-lines-screen.tsx, actuals-screen.tsx, and estimated-reserved-lines-screen.tsx.
+
 ## [0.1.8] - 2026-08-25
 
 ### Changed
