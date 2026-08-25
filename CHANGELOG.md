@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.7] - 2026-08-25
+
+### Added
+- Touch swipe gestures on month workspace rows for smartphones (built on the Touch Events API, so they only activate on touch devices): swipe an actual expense left to delete it, swipe a committed reserved line right to pass it to actuals, and swipe an estimated reserved line in either direction (left to delete, right to pass to actual). A new reusable `SwipeAction` component reveals the action with colored feedback as the row is dragged.
+
+### Removed
+- Orphan `reserved-lines-screen.tsx` component that was never rendered. Its shared types (`ReservedLineRowData`, `ReservedLineGroup`, `ReservedLineKind`, `ReservedLineOrigin`, `CategoryOption`) moved to `reserved-lines-types.ts`.
+
 ## [0.3.6] - 2026-08-25
 
 ### Changed

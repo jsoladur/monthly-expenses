@@ -14,9 +14,10 @@ import {
   passToActualAction,
   type PassToActualActionResult,
 } from "@/actions/pass-to-actual";
-import type { ReservedLineRowData, CategoryOption } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
+import type { ReservedLineRowData, CategoryOption } from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
+import { SwipeAction } from "@/components/ui/swipe-action";
 import { Pencil, Trash2, ArrowRightCircle } from "lucide-react";
 
 // ============================================================================
@@ -94,7 +95,31 @@ function EstimatedReservedLineRow({
   currency: string;
 }) {
   const t = useTranslations("reservedLines");
+  const tv = useTranslations("validation");
   const [editing, setEditing] = useState(false);
+  const [passPending, setPassPending] = useState(false);
+  const [passError, setPassError] = useState<string | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+
+  const handlePass = async () => {
+    if (passPending) return;
+    if (!window.confirm(t("actions.confirmPassToActual"))) return;
+    setPassPending(true);
+    setPassError(null);
+    const result = await passToActualAction({ lineId: row.id, monthId, year, month });
+    setPassPending(false);
+    if (!result.ok) {
+      setPassError(errorToMessagePass(result, tv));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deletePending) return;
+    if (!window.confirm(t("actions.confirmDelete"))) return;
+    setDeletePending(true);
+    await deleteMonthLineAction({ lineId: row.id, monthId, year, month });
+    setDeletePending(false);
+  };
 
   if (editing) {
     return (
@@ -113,82 +138,80 @@ function EstimatedReservedLineRow({
   const isDirty = row.remainingCents !== row.originalCents;
 
   return (
-    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
-      <span className="min-w-0 flex-1 flex flex-col">
-        <span className="truncate">{row.name}</span>
-        <span className="text-muted-foreground truncate text-xs">
-          {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
-        </span>
-        {row.observations && (
-          <span className="text-muted-foreground truncate text-xs italic">
-            {row.observations}
+    <SwipeAction
+      onSwipeLeft={handleDelete}
+      onSwipeRight={handlePass}
+      leftIcon={<ArrowRightCircle className="size-5" />}
+      rightIcon={<Trash2 className="size-5" />}
+      leftLabel={t("actions.passToActual")}
+      rightLabel={t("actions.delete")}
+      className="rounded-md border"
+    >
+      <div className="flex items-center gap-2 px-4 py-2 text-sm">
+        <span className="min-w-0 flex-1 flex flex-col">
+          <span className="truncate">{row.name}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
           </span>
-        )}
-      </span>
-      <span className="flex shrink-0 items-center gap-2">
-        <span className="flex flex-col items-end">
-          <span
-            className={
-              isDirty
-                ? "tabular-nums whitespace-nowrap font-medium"
-                : "tabular-nums whitespace-nowrap"
-            }
-            aria-label={t("remaining")}
-          >
-            {formatMoney(row.remainingCents, currency)}
-          </span>
-          {isDirty && (
-            <span className="text-muted-foreground text-xs whitespace-nowrap">
-              {t("amount")} {formatMoney(row.originalCents, currency)}
+          {row.observations && (
+            <span className="text-muted-foreground truncate text-xs italic">
+              {row.observations}
             </span>
           )}
         </span>
-        <RowActions
-          lineId={row.id}
-          monthId={monthId}
-          year={year}
-          month={month}
-          onEdit={() => setEditing(true)}
-        />
-      </span>
-      {!row.categoryActive && (
-        <p className="text-muted-foreground basis-full text-xs">
-          {t("historicalInactiveNote")}
-        </p>
-      )}
-    </li>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="flex flex-col items-end">
+            <span
+              className={
+                isDirty
+                  ? "tabular-nums whitespace-nowrap font-medium"
+                  : "tabular-nums whitespace-nowrap"
+              }
+              aria-label={t("remaining")}
+            >
+              {formatMoney(row.remainingCents, currency)}
+            </span>
+            {isDirty && (
+              <span className="text-muted-foreground text-xs whitespace-nowrap">
+                {t("amount")} {formatMoney(row.originalCents, currency)}
+              </span>
+            )}
+          </span>
+          <RowActions
+            onEdit={() => setEditing(true)}
+            onPass={handlePass}
+            onDelete={handleDelete}
+            passPending={passPending}
+            deletePending={deletePending}
+            passError={passError}
+          />
+        </span>
+        {!row.categoryActive && (
+          <p className="text-muted-foreground basis-full text-xs">
+            {t("historicalInactiveNote")}
+          </p>
+        )}
+      </div>
+    </SwipeAction>
   );
 }
 
 function RowActions({
-  lineId,
-  monthId,
-  year,
-  month,
   onEdit,
+  onPass,
+  onDelete,
+  passPending,
+  deletePending,
+  passError,
 }: {
-  lineId: string;
-  monthId: string;
-  year: number;
-  month: number;
   onEdit: () => void;
+  onPass: () => void;
+  onDelete: () => void;
+  passPending: boolean;
+  deletePending: boolean;
+  passError: string | null;
 }) {
   const t = useTranslations("reservedLines");
-  const tv = useTranslations("validation");
-  const [pending, setPending] = useState(false);
-  const [passError, setPassError] = useState<string | null>(null);
-
-  const handlePass = async () => {
-    if (pending) return;
-    if (!window.confirm(t("actions.confirmPassToActual"))) return;
-    setPending(true);
-    setPassError(null);
-    const result = await passToActualAction({ lineId, monthId, year, month });
-    setPending(false);
-    if (!result.ok) {
-      setPassError(errorToMessagePass(result, tv));
-    }
-  };
 
   return (
     <span className="flex flex-col items-end gap-1">
@@ -201,26 +224,16 @@ function RowActions({
         <IconButton
           icon={<ArrowRightCircle className="size-4" />}
           label={t("actions.passToActual")}
-          disabled={pending}
-          onClick={handlePass}
+          disabled={passPending}
+          onClick={onPass}
         />
-        <form
-          action={async () => {
-            if (pending) return;
-            if (!window.confirm(t("actions.confirmDelete"))) return;
-            setPending(true);
-            await deleteMonthLineAction({ lineId, monthId, year, month });
-            setPending(false);
-          }}
-        >
-          <IconButton
-            icon={<Trash2 className="size-4" />}
-            label={t("actions.delete")}
-            destructive
-            disabled={pending}
-            type="submit"
-          />
-        </form>
+        <IconButton
+          icon={<Trash2 className="size-4" />}
+          label={t("actions.delete")}
+          destructive
+          disabled={deletePending}
+          onClick={onDelete}
+        />
       </span>
       {passError && (
         <span

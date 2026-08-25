@@ -20,8 +20,9 @@ import type { OverspendWarning } from "@/server/services/summary";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Pencil, Trash2, Undo2, ArrowRightCircle } from "lucide-react";
-import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
+import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
 import { Collapsible } from "@/components/ui/collapsible";
+import { SwipeAction } from "@/components/ui/swipe-action";
 
 // ============================================================================
 // Actuals screen (UC-08) — interactive part of the workspace's actuals block.
@@ -85,7 +86,7 @@ export function ActualsScreen({
 
   // Surface one badge per overspending category that has at least one
   // ticket in the open month (PRD §7.4). Same dedup rule as
-  // ReservedLinesScreen — never repeat a badge for the same category.
+  // EstimatedReservedLinesScreen — never repeat a badge for the same category.
   const warningByCategoryId = new Map<string, OverspendWarning>();
   for (const warning of overspendWarnings) {
     if (initialActuals.some((row) => row.categoryId === warning.categoryId)) {
@@ -343,6 +344,15 @@ function ActualRow({
 }) {
   const t = useTranslations("actuals");
   const [editing, setEditing] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+
+  const handleDelete = async () => {
+    if (deletePending) return;
+    if (!window.confirm(t("actions.confirmDelete"))) return;
+    setDeletePending(true);
+    await deleteActualAction({ id: row.id, monthId, year, month });
+    setDeletePending(false);
+  };
 
   if (editing) {
     return (
@@ -359,37 +369,46 @@ function ActualRow({
   }
 
   return (
-    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
-      <span className="min-w-0 flex-1 flex flex-col">
-        <span className="truncate">{row.name}</span>
-        <span className="text-muted-foreground truncate text-xs">
-          {row.categoryName}
-        </span>
-        {row.observations && (
-          <span className="text-muted-foreground truncate text-xs italic">
-            {row.observations}
+    <SwipeAction
+      onSwipeLeft={handleDelete}
+      rightIcon={<Trash2 className="size-5" />}
+      rightLabel={t("actions.delete")}
+      className="rounded-md border"
+    >
+      <div className="flex items-center gap-2 px-4 py-2 text-sm">
+        <span className="min-w-0 flex-1 flex flex-col">
+          <span className="truncate">{row.name}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {row.categoryName}
           </span>
-        )}
-      </span>
-      <span className="flex shrink-0 items-center gap-2">
-        <span className="tabular-nums whitespace-nowrap">
-          {formatMoney(row.amountCents, currency)}
+          {row.observations && (
+            <span className="text-muted-foreground truncate text-xs italic">
+              {row.observations}
+            </span>
+          )}
         </span>
-        <RowActions
-          rowId={row.id}
-          canUndoPass={row.convertedFromLineId !== null && !row.editedAfterConversion}
-          monthId={monthId}
-          year={year}
-          month={month}
-          onEdit={() => setEditing(true)}
-        />
-      </span>
-      {!row.categoryActive && (
-        <p className="text-muted-foreground basis-full text-xs">
-          {t("historicalInactiveNote")}
-        </p>
-      )}
-    </li>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="tabular-nums whitespace-nowrap">
+            {formatMoney(row.amountCents, currency)}
+          </span>
+          <RowActions
+            rowId={row.id}
+            canUndoPass={row.convertedFromLineId !== null && !row.editedAfterConversion}
+            monthId={monthId}
+            year={year}
+            month={month}
+            onEdit={() => setEditing(true)}
+            onDelete={handleDelete}
+            deletePending={deletePending}
+          />
+        </span>
+        {!row.categoryActive && (
+          <p className="text-muted-foreground basis-full text-xs">
+            {t("historicalInactiveNote")}
+          </p>
+        )}
+      </div>
+    </SwipeAction>
   );
 }
 
@@ -400,6 +419,8 @@ function RowActions({
   year,
   month,
   onEdit,
+  onDelete,
+  deletePending,
 }: {
   rowId: string;
   canUndoPass: boolean;
@@ -407,6 +428,8 @@ function RowActions({
   year: number;
   month: number;
   onEdit: () => void;
+  onDelete: () => void;
+  deletePending: boolean;
 }) {
   const t = useTranslations("actuals");
   const tv = useTranslations("validation");
@@ -441,23 +464,13 @@ function RowActions({
             onClick={handleUndo}
           />
         )}
-        <form
-          action={async () => {
-            if (pending) return;
-            if (!window.confirm(t("actions.confirmDelete"))) return;
-            setPending(true);
-            await deleteActualAction({ id: rowId, monthId, year, month });
-            setPending(false);
-          }}
-        >
-          <IconButton
-            icon={<Trash2 className="size-4" />}
-            label={t("actions.delete")}
-            destructive
-            disabled={pending}
-            type="submit"
-          />
-        </form>
+        <IconButton
+          icon={<Trash2 className="size-4" />}
+          label={t("actions.delete")}
+          destructive
+          disabled={deletePending}
+          onClick={onDelete}
+        />
       </span>
       {undoError && (
         <span
@@ -693,58 +706,65 @@ function CommittedReservedRow({
   const isDirty = row.remainingCents !== row.originalCents;
 
   return (
-    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
-      <span className="min-w-0 flex-1 flex flex-col">
-        <span className="truncate">{row.name}</span>
-        <span className="text-muted-foreground truncate text-xs">
-          {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
-        </span>
-        {row.observations && (
-          <span className="text-muted-foreground truncate text-xs italic">
-            {row.observations}
+    <SwipeAction
+      onSwipeRight={handlePass}
+      leftIcon={<ArrowRightCircle className="size-5" />}
+      leftLabel={t("actions.passToActual")}
+      className="rounded-md border"
+    >
+      <div className="flex items-center gap-2 px-4 py-2 text-sm">
+        <span className="min-w-0 flex-1 flex flex-col">
+          <span className="truncate">{row.name}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
           </span>
-        )}
-      </span>
-      <span className="flex shrink-0 items-center gap-2">
-        <span className="flex flex-col items-end">
-          <span
-            className={
-              isDirty
-                ? "tabular-nums whitespace-nowrap font-medium"
-                : "tabular-nums whitespace-nowrap"
-            }
-            aria-label={t("remaining")}
-          >
-            {formatMoney(row.remainingCents, currency)}
-          </span>
-          {isDirty && (
-            <span className="text-muted-foreground text-xs whitespace-nowrap">
-              {t("amount")} {formatMoney(row.originalCents, currency)}
+          {row.observations && (
+            <span className="text-muted-foreground truncate text-xs italic">
+              {row.observations}
             </span>
           )}
         </span>
-        <IconButton
-          icon={<ArrowRightCircle className="size-4" />}
-          label={t("actions.passToActual")}
-          disabled={pending}
-          onClick={handlePass}
-        />
-      </span>
-      {!row.categoryActive && (
-        <p className="text-muted-foreground basis-full text-xs">
-          {t("historicalInactiveNote")}
-        </p>
-      )}
-      {passError && (
-        <span
-          role="alert"
-          aria-live="polite"
-          className="text-destructive basis-full text-xs"
-        >
-          {passError}
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="flex flex-col items-end">
+            <span
+              className={
+                isDirty
+                  ? "tabular-nums whitespace-nowrap font-medium"
+                  : "tabular-nums whitespace-nowrap"
+              }
+              aria-label={t("remaining")}
+            >
+              {formatMoney(row.remainingCents, currency)}
+            </span>
+            {isDirty && (
+              <span className="text-muted-foreground text-xs whitespace-nowrap">
+                {t("amount")} {formatMoney(row.originalCents, currency)}
+              </span>
+            )}
+          </span>
+          <IconButton
+            icon={<ArrowRightCircle className="size-4" />}
+            label={t("actions.passToActual")}
+            disabled={pending}
+            onClick={handlePass}
+          />
         </span>
-      )}
-    </li>
+        {!row.categoryActive && (
+          <p className="text-muted-foreground basis-full text-xs">
+            {t("historicalInactiveNote")}
+          </p>
+        )}
+        {passError && (
+          <span
+            role="alert"
+            aria-live="polite"
+            className="text-destructive basis-full text-xs"
+          >
+            {passError}
+          </span>
+        )}
+      </div>
+    </SwipeAction>
   );
 }
 

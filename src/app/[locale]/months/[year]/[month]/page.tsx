@@ -21,7 +21,7 @@ import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-tou
 import {
   type ReservedLineGroup,
   type ReservedLineRowData,
-} from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
+} from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
 import {
   IncomesScreen,
   type IncomeRowData,
