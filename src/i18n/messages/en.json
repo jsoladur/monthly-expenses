@@ -286,6 +286,11 @@
   },
   "templates": {
     "title": "Fixed and estimated templates",
+    "totalMonthlyExpenses": "Total monthly expenses",
+    "distribution": "Distribution by category",
+    "percent": "Percentage",
+    "absolute": "Absolute",
+    "noData": "No templates to display.",
     "new": "New template",
     "kind": {
       "committed": "Committed",

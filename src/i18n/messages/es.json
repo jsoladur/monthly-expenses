@@ -286,6 +286,11 @@
   },
   "templates": {
     "title": "Plantillas fijas y estimadas",
+    "totalMonthlyExpenses": "Gastos mensuales totales",
+    "distribution": "Distribución por categoría",
+    "percent": "Porcentaje",
+    "absolute": "Absoluto",
+    "noData": "No hay plantillas para mostrar.",
     "new": "Nueva plantilla",
     "kind": {
       "committed": "Comprometida",
