@@ -179,7 +179,7 @@ function AddIncomeFormBody({
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-2">
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-income-category" className="sr-only">
           {t("category")}
         </label>
@@ -188,7 +188,7 @@ function AddIncomeFormBody({
           name="categoryId"
           required
           defaultValue={incomeCategories[0]?.id ?? ""}
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         >
           {incomeCategories.map((option) => (
             <option key={option.id} value={option.id}>
@@ -196,6 +196,8 @@ function AddIncomeFormBody({
             </option>
           ))}
         </select>
+      </div>
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-income-name" className="sr-only">
           {t("name")}
         </label>
@@ -207,7 +209,7 @@ function AddIncomeFormBody({
           placeholder={t("actions.placeholder")}
           required
           maxLength={80}
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
       <div className="flex items-stretch gap-2">
@@ -278,29 +280,27 @@ function IncomeRow({
   }
 
   return (
-    <li className="bg-card text-card-foreground flex flex-col gap-1 rounded-md border px-4 py-2 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex flex-col">
-          <span>{row.name}</span>
-          <span className="text-muted-foreground text-xs">
-            {row.categoryName}
-          </span>
+    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
+      <span className="min-w-0 flex-1 flex flex-col">
+        <span className="truncate">{row.name}</span>
+        <span className="text-muted-foreground truncate text-xs">
+          {row.categoryName}
         </span>
-        <span className="flex items-center gap-2">
-          <span className="tabular-nums">
-            {formatMoney(row.amountCents, currency)}
-          </span>
-          <RowActions
-            rowId={row.id}
-            monthId={monthId}
-            year={year}
-            month={month}
-            onEdit={() => setEditing(true)}
-          />
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="tabular-nums whitespace-nowrap">
+          {formatMoney(row.amountCents, currency)}
         </span>
-      </div>
+        <RowActions
+          rowId={row.id}
+          monthId={monthId}
+          year={year}
+          month={month}
+          onEdit={() => setEditing(true)}
+        />
+      </span>
       {!row.categoryActive && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground basis-full text-xs">
           {t("historicalInactiveNote")}
         </p>
       )}
@@ -397,7 +397,7 @@ function EditIncomeForm({
   return (
     <li className="bg-card text-card-foreground flex flex-col gap-2 rounded-md border px-4 py-2 text-sm">
       <form action={formAction} className="flex flex-col gap-2">
-        <div className="flex items-stretch gap-2">
+        <div className="flex flex-wrap items-stretch gap-2">
           <label
             htmlFor={`edit-income-category-${row.id}`}
             className="sr-only"
@@ -409,7 +409,7 @@ function EditIncomeForm({
             name="categoryId"
             required
             defaultValue={row.categoryId}
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
           >
             {incomeCategories.map((option) => (
               <option key={option.id} value={option.id}>
@@ -417,6 +417,8 @@ function EditIncomeForm({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-wrap items-stretch gap-2">
           <label htmlFor={`edit-income-name-${row.id}`} className="sr-only">
             {t("name")}
           </label>
@@ -428,7 +430,7 @@ function EditIncomeForm({
             defaultValue={row.name}
             required
             maxLength={80}
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
           />
         </div>
         <div className="flex items-stretch gap-2">
