@@ -53,7 +53,7 @@
     "history": "Historial",
     "annuals": "Anuales",
     "categories": "Categorías",
-    "templates": "Plantillas",
+    "templates": "Fijos",
     "settings": "Ajustes",
     "signOut": "Cerrar sesión"
   },
@@ -67,7 +67,7 @@
     "currencyInvalid": "La moneda debe ser un código ISO 4217 de 3 letras.",
     "duplicateCategoryName": "Ya existe una categoría con este nombre.",
     "categoryNotFound": "Esa categoría ya no existe. Recarga la página.",
-    "incomeCategoryNotAllowed": "Las plantillas solo pueden usar categorías de gasto.",
+    "incomeCategoryNotAllowed": "Los gastos fijos solo pueden usar categorías de gasto.",
     "expenseCategoryNotAllowed": "Los ingresos solo pueden usar categorías de ingreso.",
     "noActiveExpenseCategories": "Crea primero una categoría de gasto activa.",
     "noActiveIncomeCategories": "Crea primero una categoría de ingreso activa.",
@@ -80,8 +80,8 @@
   },
   "warnings": {
     "pastMonth": "ATENCIÓN: Este mes no es el mes natural actual.",
-    "overspend": "Los tickets reales en esta categoría superan el plan definido en tus plantillas.",
-    "overspendPlan": "Plan en plantillas: {plan}",
+    "overspend": "Los tickets reales en esta categoría superan el plan definido en tus gastos fijos.",
+    "overspendPlan": "Plan en gastos fijos: {plan}",
     "overspendOver": "Excedido por {amount}",
     "inactiveCategory": "Esta categoría está inactiva. No puede elegirse para entradas nuevas."
   },
@@ -104,7 +104,7 @@
       "submit": "Crear",
       "cancel": "Cancelar"
     },
-    "clone": "Las líneas fijas y estimadas se copian al crear el mes. Este mes es independiente a partir de ahí.",
+    "clone": "Los gastos fijos se copian al crear el mes. Este mes es independiente a partir de ahí.",
     "summary": {
       "income": "Ingresos",
       "actuals": "Gastos reales",
@@ -191,7 +191,7 @@
     "committedReserved": "Líneas reservadas comprometidas",
     "remaining": "Restante",
     "origin": {
-      "cloned": "Copiada de plantilla",
+      "cloned": "Copiada de gasto fijo",
       "monthOnly": "Solo para este mes"
     },
     "actions": {
@@ -223,7 +223,7 @@
       "estimated": "Estimada"
     },
     "origin": {
-      "cloned": "Copiada de plantilla",
+      "cloned": "Copiada de gasto fijo",
       "monthOnly": "Solo para este mes"
     },
     "amount": "Importe",
@@ -285,13 +285,13 @@
     "help": "Las categorías son globales en todos los meses. Desactivar una categoría la mantiene visible en meses pasados pero la oculta para nuevas entradas."
   },
   "templates": {
-    "title": "Plantillas fijas y estimadas",
+    "title": "Gastos fijos",
     "totalMonthlyExpenses": "Gastos mensuales totales",
     "distribution": "Distribución por categoría",
     "percent": "Porcentaje",
     "absolute": "Absoluto",
-    "noData": "No hay plantillas para mostrar.",
-    "new": "Nueva plantilla",
+    "noData": "No hay gastos fijos para mostrar.",
+    "new": "Nuevo gasto fijo",
     "kind": {
       "committed": "Comprometida",
       "estimated": "Estimada"
@@ -302,7 +302,7 @@
     "amount": "Importe",
     "active": "Activa",
     "inactive": "Inactiva",
-    "empty": "Aún no hay plantillas.",
+    "empty": "Aún no hay gastos fijos.",
     "actions": {
       "add": "Añadir",
       "edit": "Editar",
@@ -313,8 +313,8 @@
       "placeholder": "p. ej. Alquiler",
       "selectCategory": "Elige una categoría"
     },
-    "help": "Las plantillas se copian en un mes nuevo una sola vez al crearlo. Las plantillas inactivas no se clonan.",
-    "cloneCopy": "Las líneas fijas y estimadas se copian al crear el mes. Este mes es independiente a partir de ahí."
+    "help": "Los gastos fijos se copian en un mes nuevo una sola vez al crearlo. Los gastos fijos inactivos no se clonan.",
+    "cloneCopy": "Los gastos fijos se copian al crear el mes. Este mes es independiente a partir de ahí."
   },
   "annuals": {
     "title": "Anuales",

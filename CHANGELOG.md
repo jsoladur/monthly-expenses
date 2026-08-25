@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-08-25
+
+### Changed
+- Renamed "Templates" to "Fixed expenses" (English) / "Gastos fijos" (Spanish) throughout the UI for better intuitiveness. The term "Fixed expenses" more clearly describes what these items are (recurring planned expenses) rather than the technical term "Templates".
+- Navigation menu item renamed to "Fixed" (English) / "Fijos" (Spanish) with a DollarSign icon for better visual recognition.
+- Updated all related UI text: page titles, form labels, help text, empty states, validation messages, and warnings to reflect the new terminology.
+- Updated origin labels from "Cloned from template" to "Cloned from fixed expense" (English) / "Copiada de gasto fijo" (Spanish).
+
 ## [0.3.0] - 2026-08-25
 
 ### Added

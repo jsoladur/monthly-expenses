@@ -53,7 +53,7 @@
     "history": "History",
     "annuals": "Annuals",
     "categories": "Categories",
-    "templates": "Templates",
+    "templates": "Fixed",
     "settings": "Settings",
     "signOut": "Sign out"
   },
@@ -67,7 +67,7 @@
     "currencyInvalid": "Currency must be a 3-letter ISO 4217 code.",
     "duplicateCategoryName": "A category with this name already exists.",
     "categoryNotFound": "That category no longer exists. Reload the page.",
-    "incomeCategoryNotAllowed": "Templates can only target expense categories.",
+    "incomeCategoryNotAllowed": "Fixed expenses can only target expense categories.",
     "expenseCategoryNotAllowed": "Incomes can only target income categories.",
     "noActiveExpenseCategories": "Create an active expense category first.",
     "noActiveIncomeCategories": "Create an active income category first.",
@@ -80,8 +80,8 @@
   },
   "warnings": {
     "pastMonth": "ATTENTION: This month is not the current calendar month.",
-    "overspend": "Actual tickets in this category are higher than the plan in your templates.",
-    "overspendPlan": "Plan in templates: {plan}",
+    "overspend": "Actual tickets in this category are higher than the plan in your fixed expenses.",
+    "overspendPlan": "Plan in fixed expenses: {plan}",
     "overspendOver": "Over by {amount}",
     "inactiveCategory": "This category is inactive. It cannot be chosen for new entries."
   },
@@ -104,7 +104,7 @@
       "submit": "Create",
       "cancel": "Cancel"
     },
-    "clone": "Fixed and estimated lines are copied when the month is created. This month is independent after that.",
+    "clone": "Fixed expenses are copied when the month is created. This month is independent after that.",
     "summary": {
       "income": "Income",
       "actuals": "Actuals",
@@ -191,7 +191,7 @@
     "committedReserved": "Committed reserved lines",
     "remaining": "Remaining",
     "origin": {
-      "cloned": "Cloned from template",
+      "cloned": "Cloned from fixed expense",
       "monthOnly": "One-off this month"
     },
     "actions": {
@@ -223,7 +223,7 @@
       "estimated": "Estimated"
     },
     "origin": {
-      "cloned": "Cloned from template",
+      "cloned": "Cloned from fixed expense",
       "monthOnly": "One-off this month"
     },
     "amount": "Amount",
@@ -285,13 +285,13 @@
     "help": "Categories are global across every month. Deactivating a category keeps it visible on past months but hides it from new entries."
   },
   "templates": {
-    "title": "Fixed and estimated templates",
+    "title": "Fixed expenses",
     "totalMonthlyExpenses": "Total monthly expenses",
     "distribution": "Distribution by category",
     "percent": "Percentage",
     "absolute": "Absolute",
-    "noData": "No templates to display.",
-    "new": "New template",
+    "noData": "No fixed expenses to display.",
+    "new": "New fixed expense",
     "kind": {
       "committed": "Committed",
       "estimated": "Estimated"
@@ -302,7 +302,7 @@
     "amount": "Amount",
     "active": "Active",
     "inactive": "Inactive",
-    "empty": "No templates yet.",
+    "empty": "No fixed expenses yet.",
     "actions": {
       "add": "Add",
       "edit": "Edit",
@@ -313,8 +313,8 @@
       "placeholder": "e.g. Rent",
       "selectCategory": "Pick a category"
     },
-    "help": "Templates are copied into a new month exactly once when that month is created. Inactive templates are not cloned.",
-    "cloneCopy": "Fixed and estimated lines are copied when the month is created. This month is independent after that."
+    "help": "Fixed expenses are copied into a new month exactly once when that month is created. Inactive fixed expenses are not cloned.",
+    "cloneCopy": "Fixed expenses are copied when the month is created. This month is independent after that."
   },
   "annuals": {
     "title": "Annuals",

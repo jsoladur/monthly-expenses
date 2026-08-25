@@ -3,7 +3,7 @@
 import { usePathname } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Calendar, Tags, Layers, Settings, Bell } from "lucide-react";
+import { Calendar, Tags, DollarSign, Settings, Bell } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { ProfileMenu } from "./profile-menu";
@@ -24,7 +24,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home" },
-  { href: "/templates", icon: Layers, labelKey: "templates" },
+  { href: "/templates", icon: DollarSign, labelKey: "templates" },
   { href: "/annuals", icon: Bell, labelKey: "annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories" },
   { href: "/settings", icon: Settings, labelKey: "settings" },
