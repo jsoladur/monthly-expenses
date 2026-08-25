@@ -246,7 +246,7 @@ function AddActualFormBody({
 
   return (
     <form key={formKey} action={formAction} className="flex flex-col gap-2">
-      <div className="flex items-stretch gap-2">
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-actual-category" className="sr-only">
           {t("category")}
         </label>
@@ -255,7 +255,7 @@ function AddActualFormBody({
           name="categoryId"
           required
           defaultValue={expenseCategories[0]?.id ?? ""}
-          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         >
           {expenseCategories.map((option) => (
             <option key={option.id} value={option.id}>
@@ -263,6 +263,8 @@ function AddActualFormBody({
             </option>
           ))}
         </select>
+      </div>
+      <div className="flex flex-wrap items-stretch gap-2">
         <label htmlFor="new-actual-name" className="sr-only">
           {t("name")}
         </label>
@@ -274,7 +276,7 @@ function AddActualFormBody({
           placeholder={t("actions.placeholder")}
           required
           maxLength={80}
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
       <label htmlFor="new-actual-observations" className="sr-only">
@@ -357,35 +359,33 @@ function ActualRow({
   }
 
   return (
-    <li className="bg-card text-card-foreground flex flex-col gap-1 rounded-md border px-4 py-2 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex flex-col">
-          <span>{row.name}</span>
-          <span className="text-muted-foreground text-xs">
-            {row.categoryName}
-          </span>
-          {row.observations && (
-            <span className="text-muted-foreground text-xs italic">
-              {row.observations}
-            </span>
-          )}
+    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
+      <span className="min-w-0 flex-1 flex flex-col">
+        <span className="truncate">{row.name}</span>
+        <span className="text-muted-foreground truncate text-xs">
+          {row.categoryName}
         </span>
-        <span className="flex items-center gap-2">
-          <span className="tabular-nums">
-            {formatMoney(row.amountCents, currency)}
+        {row.observations && (
+          <span className="text-muted-foreground truncate text-xs italic">
+            {row.observations}
           </span>
-          <RowActions
-            rowId={row.id}
-            canUndoPass={row.convertedFromLineId !== null && !row.editedAfterConversion}
-            monthId={monthId}
-            year={year}
-            month={month}
-            onEdit={() => setEditing(true)}
-          />
+        )}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="tabular-nums whitespace-nowrap">
+          {formatMoney(row.amountCents, currency)}
         </span>
-      </div>
+        <RowActions
+          rowId={row.id}
+          canUndoPass={row.convertedFromLineId !== null && !row.editedAfterConversion}
+          monthId={monthId}
+          year={year}
+          month={month}
+          onEdit={() => setEditing(true)}
+        />
+      </span>
       {!row.categoryActive && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground basis-full text-xs">
           {t("historicalInactiveNote")}
         </p>
       )}
@@ -519,7 +519,7 @@ function EditActualForm({
   return (
     <li className="bg-card text-card-foreground flex flex-col gap-2 rounded-md border px-4 py-2 text-sm">
       <form action={formAction} className="flex flex-col gap-2">
-        <div className="flex items-stretch gap-2">
+        <div className="flex flex-wrap items-stretch gap-2">
           <label
             htmlFor={`edit-actual-category-${row.id}`}
             className="sr-only"
@@ -531,7 +531,7 @@ function EditActualForm({
             name="categoryId"
             required
             defaultValue={row.categoryId}
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
           >
             {expenseCategories.map((option) => (
               <option key={option.id} value={option.id}>
@@ -539,6 +539,8 @@ function EditActualForm({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-wrap items-stretch gap-2">
           <label htmlFor={`edit-actual-name-${row.id}`} className="sr-only">
             {t("name")}
           </label>
@@ -550,7 +552,7 @@ function EditActualForm({
             defaultValue={row.name}
             required
             maxLength={80}
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
+            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
           />
         </div>
         <label
@@ -691,47 +693,45 @@ function CommittedReservedRow({
   const isDirty = row.remainingCents !== row.originalCents;
 
   return (
-    <li className="bg-card text-card-foreground flex flex-col gap-1 rounded-md border px-4 py-2 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex flex-col">
-          <span>{row.name}</span>
-          <span className="text-muted-foreground text-xs">
-            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
+    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
+      <span className="min-w-0 flex-1 flex flex-col">
+        <span className="truncate">{row.name}</span>
+        <span className="text-muted-foreground truncate text-xs">
+          {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
+        </span>
+        {row.observations && (
+          <span className="text-muted-foreground truncate text-xs italic">
+            {row.observations}
           </span>
-          {row.observations && (
-            <span className="text-muted-foreground text-xs italic">
-              {row.observations}
+        )}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="flex flex-col items-end">
+          <span
+            className={
+              isDirty
+                ? "tabular-nums whitespace-nowrap font-medium"
+                : "tabular-nums whitespace-nowrap"
+            }
+            aria-label={t("remaining")}
+          >
+            {formatMoney(row.remainingCents, currency)}
+          </span>
+          {isDirty && (
+            <span className="text-muted-foreground text-xs whitespace-nowrap">
+              {t("amount")} {formatMoney(row.originalCents, currency)}
             </span>
           )}
         </span>
-        <span className="flex items-center gap-2">
-          <span className="flex flex-col items-end">
-            <span
-              className={
-                isDirty
-                  ? "tabular-nums font-medium"
-                  : "tabular-nums"
-              }
-              aria-label={t("remaining")}
-            >
-              {formatMoney(row.remainingCents, currency)}
-            </span>
-            {isDirty && (
-              <span className="text-muted-foreground text-xs">
-                {t("amount")} {formatMoney(row.originalCents, currency)}
-              </span>
-            )}
-          </span>
-          <IconButton
-            icon={<ArrowRightCircle className="size-4" />}
-            label={t("actions.passToActual")}
-            disabled={pending}
-            onClick={handlePass}
-          />
-        </span>
-      </div>
+        <IconButton
+          icon={<ArrowRightCircle className="size-4" />}
+          label={t("actions.passToActual")}
+          disabled={pending}
+          onClick={handlePass}
+        />
+      </span>
       {!row.categoryActive && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground basis-full text-xs">
           {t("historicalInactiveNote")}
         </p>
       )}
@@ -739,7 +739,7 @@ function CommittedReservedRow({
         <span
           role="alert"
           aria-live="polite"
-          className="text-destructive text-xs"
+          className="text-destructive basis-full text-xs"
         >
           {passError}
         </span>

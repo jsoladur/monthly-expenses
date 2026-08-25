@@ -188,7 +188,7 @@
     "amount": "Importe",
     "category": "Categoría",
     "empty": "Aún no hay tickets de gasto.",
-    "committedReserved": "Líneas reservadas comprometidas",
+    "committedReserved": "Comprometidas",
     "remaining": "Restante",
     "origin": {
       "cloned": "Copiada de gasto fijo",

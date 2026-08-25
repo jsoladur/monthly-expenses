@@ -188,7 +188,7 @@
     "amount": "Amount",
     "category": "Category",
     "empty": "No expense tickets yet.",
-    "committedReserved": "Committed reserved lines",
+    "committedReserved": "Committed",
     "remaining": "Remaining",
     "origin": {
       "cloned": "Cloned from fixed expense",

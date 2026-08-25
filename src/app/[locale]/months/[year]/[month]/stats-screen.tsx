@@ -77,88 +77,6 @@ export function StatsScreen({
     <div className="flex flex-col gap-6">
       <section className="bg-card text-card-foreground rounded-lg border p-4">
         <h3 className="mb-4 text-sm font-medium">
-          {t("distribution")}
-        </h3>
-        {hasDistributionData ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("percent")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionPercentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="percent"
-                      nameKey="name"
-                    >
-                      {distributionPercentData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={percentTooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("absolute")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {distributionData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={tooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-muted-foreground py-8 text-center text-sm">
-            {t("noData")}
-          </p>
-        )}
-      </section>
-
-      <section className="bg-card text-card-foreground rounded-lg border p-4">
-        <h3 className="mb-4 text-sm font-medium">
           {t("expensesByCategory")}
         </h3>
         {hasCategoryData ? (
@@ -216,6 +134,88 @@ export function StatsScreen({
                     >
                       {categoryData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={tooltipFormatter}
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-muted-foreground py-8 text-center text-sm">
+            {t("noData")}
+          </p>
+        )}
+      </section>
+
+      <section className="bg-card text-card-foreground rounded-lg border p-4">
+        <h3 className="mb-4 text-sm font-medium">
+          {t("distribution")}
+        </h3>
+        {hasDistributionData ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <p className="text-muted-foreground mb-2 text-center text-xs">
+                {t("percent")}
+              </p>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distributionPercentData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="percent"
+                      nameKey="name"
+                    >
+                      {distributionPercentData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={percentTooltipFormatter}
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-2 text-center text-xs">
+                {t("absolute")}
+              </p>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {distributionData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip

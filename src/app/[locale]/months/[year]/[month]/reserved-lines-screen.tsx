@@ -227,48 +227,46 @@ function ReservedLineRow({
   const isDirty = row.remainingCents !== row.originalCents;
 
   return (
-    <li className="bg-card text-card-foreground flex flex-col gap-1 rounded-md border px-4 py-2 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex flex-col">
-          <span>{row.name}</span>
-          <span className="text-muted-foreground text-xs">
-            {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
+    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
+      <span className="min-w-0 flex-1 flex flex-col">
+        <span className="truncate">{row.name}</span>
+        <span className="text-muted-foreground truncate text-xs">
+          {row.categoryName} · {t(`origin.${toCamelCase(row.origin)}`)}
+        </span>
+        {row.observations && (
+          <span className="text-muted-foreground truncate text-xs italic">
+            {row.observations}
           </span>
-          {row.observations && (
-            <span className="text-muted-foreground text-xs italic">
-              {row.observations}
+        )}
+      </span>
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="flex flex-col items-end">
+          <span
+            className={
+              isDirty
+                ? "tabular-nums whitespace-nowrap font-medium"
+                : "tabular-nums whitespace-nowrap"
+            }
+            aria-label={t("remaining")}
+          >
+            {formatMoney(row.remainingCents, currency)}
+          </span>
+          {isDirty && (
+            <span className="text-muted-foreground text-xs whitespace-nowrap">
+              {t("amount")} {formatMoney(row.originalCents, currency)}
             </span>
           )}
         </span>
-        <span className="flex items-center gap-2">
-          <span className="flex flex-col items-end">
-            <span
-              className={
-                isDirty
-                  ? "tabular-nums font-medium"
-                  : "tabular-nums"
-              }
-              aria-label={t("remaining")}
-            >
-              {formatMoney(row.remainingCents, currency)}
-            </span>
-            {isDirty && (
-              <span className="text-muted-foreground text-xs">
-                {t("amount")} {formatMoney(row.originalCents, currency)}
-              </span>
-            )}
-          </span>
-          <RowActions
-            lineId={row.id}
-            monthId={monthId}
-            year={year}
-            month={month}
-            onEdit={() => setEditing(true)}
-          />
-        </span>
-      </div>
+        <RowActions
+          lineId={row.id}
+          monthId={monthId}
+          year={year}
+          month={month}
+          onEdit={() => setEditing(true)}
+        />
+      </span>
       {!row.categoryActive && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground basis-full text-xs">
           {t("historicalInactiveNote")}
         </p>
       )}
