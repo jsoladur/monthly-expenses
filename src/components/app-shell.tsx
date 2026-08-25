@@ -26,8 +26,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home" },
   { href: "/templates", icon: DollarSign, labelKey: "templates" },
   { href: "/annuals", icon: Bell, labelKey: "annuals" },
-  { href: "/history", icon: History, labelKey: "history" },
   { href: "/categories", icon: Tags, labelKey: "categories" },
+  { href: "/history", icon: History, labelKey: "history" },
   { href: "/settings", icon: Settings, labelKey: "settings" },
 ];
 
@@ -41,11 +41,11 @@ function isActiveRoute(pathname: string, href: string): boolean {
   if (href === "/annuals") {
     return pathname.startsWith("/annuals");
   }
-  if (href === "/history") {
-    return pathname.startsWith("/history");
-  }
   if (href === "/categories") {
     return pathname.startsWith("/categories");
+  }
+  if (href === "/history") {
+    return pathname.startsWith("/history");
   }
   return pathname.startsWith(href);
 }
