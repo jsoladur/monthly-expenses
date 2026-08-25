@@ -10,7 +10,7 @@ export function Collapsible({
   defaultOpen = false,
   variant = "default",
 }: {
-  title: string;
+  title: React.ReactNode;
   count?: number;
   children: React.ReactNode;
   defaultOpen?: boolean;

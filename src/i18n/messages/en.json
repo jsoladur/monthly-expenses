@@ -51,6 +51,7 @@
   "nav": {
     "home": "Home",
     "history": "History",
+    "annuals": "Annuals",
     "categories": "Categories",
     "templates": "Templates",
     "settings": "Settings",
@@ -315,6 +316,37 @@
     },
     "help": "Templates are copied into a new month exactly once when that month is created. Inactive templates are not cloned.",
     "cloneCopy": "Fixed and estimated lines are copied when the month is created. This month is independent after that."
+  },
+  "annuals": {
+    "title": "Annuals",
+    "subtitle": "Yearly recurring expense reminders",
+    "new": "New annual",
+    "category": "Category",
+    "name": "Name",
+    "observations": "Observations",
+    "chargeMonth": "Charge month",
+    "isDirectDebit": "Direct debit",
+    "active": "Active",
+    "inactive": "Inactive",
+    "empty": "No annuals yet.",
+    "actions": {
+      "add": "Add",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "placeholder": "e.g. Annual insurance",
+      "selectCategory": "Pick a category",
+      "selectMonth": "Pick a month"
+    },
+    "help": "Annuals remind you when a recurring expense is due. They do not auto-create lines — you add them manually when needed.",
+    "noActiveCategories": "Create an active expense category first."
+  },
+  "reminders": {
+    "annual": "Usually charged in {month}. Add an estimated/committed line manually if it applies this year.",
+    "quickAdd": "Quick-add",
+    "title": "Annual reminders"
   },
   "settings": {
     "title": "Profile settings",

@@ -2,11 +2,11 @@
 
 > **App:** Monthly Expenses PWA (`https://expenses.jmsola.dev`)
 > **Behavior source of truth:** `docs/prds/GLOBAL.md` · **Tech source of truth:** `docs/architecture/ARCHITECTURE.md`
-> **Database:** defined once in `docs/database/database.dbml` → created in a single first migration in **UC-00**. No other use-case file changes the schema; they only consume the 8 tables.
+> **Database:** defined in `docs/database/database.dbml`. UC-00 creates everything in one migration — EXCEPT `annual`, which arrives with UC-14 (migration 0002, the only post-UC-00 schema change).
 
 ## How to work with these files
 
-- Implement **UC-00 first**: it scaffolds the repo and applies the entire database in one migration. Every other file assumes all tables, enums, and indexes already exist.
+- Implement **UC-00 first**: it scaffolds the repo and applies the database migration. Every other file assumes the schema exists.
 - One file = one implementable slice: server actions + service + repository + screen, following the layering in ARCH §5 (RSC reads, server actions for mutations, Zod validation, services own domain rules and transactions, repositories own SQL).
 - Definition of done per file (ARCH §10): typecheck + lint clean, mapped PRD §15 test scenarios green, no `userId`-less repository call.
 
@@ -14,9 +14,10 @@
 
 - **Tenancy:** every repository function takes `userId` as first argument and filters by it in every `WHERE` (PRD §5.1 — a missing filter is a P0 bug; ARCH §5 rule 1).
 - **Money:** amounts cross the wire as strings matching `^-?\d{1,12}\.\d{2}$`; domain code uses integer cents; DB uses `numeric(14,2)`; never floats (ADR-5, ARCH §8).
-- **Deletes:** soft delete for catalogs (`category`, `template`); hard delete for month-scoped money rows (PRD §13).
+- **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
-- **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12).
+- **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind.
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002.
 
 ## Build order and dependencies
 
@@ -36,6 +37,7 @@
 | UC-11 | Summary, savings & warnings | UC-13, UC-14, §7.1, §7.4, C8, C18 | UC-07, UC-08, UC-09 |
 | UC-12 | PWA install | UC-04, C11 | UC-00 (slot anywhere) |
 | UC-13 | One-off month expenses (special occasions) | UC-18, §6.6, §7.8 | UC-09 (reuses its `addMonthOnlyLine`; no new backend) |
+| UC-14 | Annuals (yearly expense reminders) | PO decision 2026-08-25 — pending PRD merge; extends §6/§10/§13 | UC-03, UC-06 (recommend after UC-11 + UC-13). **Adds `annual` table (migration 0002)** |
 
 ```mermaid
 flowchart TD
@@ -46,6 +48,8 @@ flowchart TD
     UC08 & UC09 --> UC10
     UC07 & UC08 & UC09 --> UC11
     UC09 --> UC13
+    UC03 & UC06 --> UC14
+    UC13 --> UC14
     UC00 --> UC12
 ```
 
@@ -72,3 +76,5 @@ flowchart TD
 | 17 One-off August 30 → September has no 30 | UC-09 + UC-06 (E2E flow in UC-13) |
 | 18 August remaining 100 → September remaining is template 400 | UC-09 + UC-06 |
 | 19 Overspend: templates 400+50, actuals 500 → warning | UC-11 |
+
+UC-14 has no PRD §15 scenario (feature postdates PRD v1); its acceptance tests live in the UC-14 file.

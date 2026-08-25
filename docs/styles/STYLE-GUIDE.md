@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | `navy` | `#1B3A6B` | `217 60% 26%` | Primary actions, headers, committed lines, brand anchor |
 | `blue` | `#2E7DB2` | `204 59% 44%` | Primary hover, links, focus ring |
-| `sky` | `#3E9BD8` | `204 66% 55%` | Info accents, one-off badge, gradient start |
+| `sky` | `#3E9BD8` | `204 66% 55%` | Info accents, one-off badge, reminder cards, gradient start |
 | `teal` | `#2AA198` | `175 59% 40%` | Estimated (envelope) lines |
 | `green` | `#7CB342` | `89 46% 48%` | Savings-positive, income, gradient end |
 | `green-deep` | `#4C7A1F` | `90 59% 30%` | Text/icons on green tints (AA-safe) |
@@ -22,7 +22,7 @@
 | `slate` | `#5B6B7F` | `213 17% 43%` | Muted/secondary text |
 | `offwhite` | `#F6F8FB` | `216 38% 97%` | App background tint (light mode) |
 | `border` | `#E2E8F0` | `214 32% 91%` | Hairline borders |
-| `sky-tint` | `#E8F4FD` | `206 84% 95%` | Accent surfaces, selected states |
+| `sky-tint` | `#E8F4FD` | `206 84% 95%` | Accent surfaces, selected states, reminder cards |
 | `green-tint` | `#EFF7E3` | `84 56% 93%` | Success/income surfaces |
 
 **Brand gradient** (from the logo arrow): `linear-gradient(135deg, #3E9BD8 0%, #7CB342 100%)`. Use ONLY for the potential-savings hero number background card and the PWA install banner. One gradient per screen, maximum.
@@ -115,7 +115,7 @@ Replace the blank defaults in `globals.css`. Light mode:
   /* Domain tokens (Monthly Expenses) */
   --committed: 217 60% 26%;         /* navy — fixed/committed lines */
   --estimated: 175 59% 40%;         /* teal — envelope lines */
-  --one-off: 204 66% 55%;           /* sky — month_only badge */
+  --one-off: 204 66% 55%;           /* sky — month_only badge + reminders */
   --income: 89 46% 48%;             /* green */
   --brand-gradient: linear-gradient(135deg, #3E9BD8 0%, #7CB342 100%);
 }
@@ -169,9 +169,9 @@ Tailwind v4 mapping (same file):
 ## 4. Layout — mobile-first, adaptive
 
 - **Base = 360px phone.** Design every screen mobile-first; enhance at `md` (768px) and `lg` (1024px). Never design desktop-first and shrink.
-- **App shell, mobile:** single column; sticky summary header; bottom navigation (Month · Categories · Templates · Settings) with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode.
-- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted) + content column `max-w-4xl mx-auto`. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
-- **Month workspace on `lg+`:** two-column grid — summary + incomes left, reserved lines + actuals right (`lg:grid-cols-2 lg:gap-8`). On mobile they stack: summary → actuals → reserved → incomes.
+- **App shell, mobile:** single column; sticky summary header; bottom navigation with 5 items (Month · Annuals · Categories · Templates · Settings) — five is the maximum allowed; with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode.
+- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted, same 5 items) + content column `max-w-4xl mx-auto`. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
+- **Month workspace on `lg+`:** two-column grid — summary + incomes left, reserved lines + actuals right (`lg:grid-cols-2 lg:gap-8`). On mobile they stack: summary → reminders (if any) → actuals → reserved → incomes.
 - **Touch targets ≥ 44×44px** everywhere; the add-actual button is a floating action button (bottom-right, above the bottom nav) on mobile and a regular primary button in the header on desktop.
 - **Forms:** bottom sheet on mobile, centered dialog on `md+` (shadcn `Drawer`/`Dialog` responsive pattern). Amount field is the first field, `inputMode="decimal"`, right-aligned, `.amount` utility.
 - **Spacing:** 4pt scale (`p-4` base screen padding, `gap-3` list rows, `gap-6`/`gap-8` between sections). Generous whitespace is the minimalism — not extra borders or dividers.
@@ -186,6 +186,7 @@ Tailwind v4 mapping (same file):
   - Committed → solid navy bg, white text (11.3:1).
   - Estimated → teal-tint bg (`#2AA198` at 12% opacity) + teal text, or solid teal with white text ONLY at badge size (3.16:1 = AA-large, acceptable for short bold labels).
   - Month-only (UC-13) → sky-tint bg + navy text + "one-off" label.
+- **Reminders (UC-14 Annuals):** sky-tint info card + navy text + bell icon — informational, visually DISTINCT from amber warnings. One card per matching annual, stacked directly under the summary hero, with a ghost "Quick-add" action. Never amber, never red.
 - **Potential-savings hero:** the only gradient element — brand gradient card, white tabular-nums number, label from i18n keys. Positive number in white; if negative, switch the card to solid `--destructive` (no gradient) so the state is unmistakable.
 - **Warnings:** amber, never blocking (PRD §7.4). Overspend = amber badge on the category row; past-month = amber banner under the header. Red is reserved for destructive actions, not warnings.
 - **Lists:** one row per money line — name (truncated), category badge, right-aligned tabular amount. Tap row → edit sheet. Delete lives inside the edit sheet, not as a row trash icon (prevents mis-taps on mobile).
@@ -197,7 +198,7 @@ Tailwind v4 mapping (same file):
 
 ## 6. Accessibility (verified)
 
-Contrast ratios computed for this palette: white-on-navy 11.27:1 (AAA), ink-on-white 16.75:1 (AAA), slate-on-white 5.45:1 (AA), white-on-amber 5.02:1 (AA), white-on-red 4.83:1 (AA), navy-on-sky-tint 10.08:1 (AAA), dark-mode body 15.65:1 (AAA). Rules: never put white text on `green` (use `green-deep` on `green-tint` instead); never put small white text on teal; warnings always amber, errors always paired with an icon + text, never color alone.
+Contrast ratios computed for this palette: white-on-navy 11.27:1 (AAA), ink-on-white 16.75:1 (AAA), slate-on-white 5.45:1 (AA), white-on-amber 5.02:1 (AA), white-on-red 4.83:1 (AA), navy-on-sky-tint 10.08:1 (AAA), dark-mode body 15.65:1 (AAA). Rules: never put white text on `green` (use `green-deep` on `green-tint` instead); never put small white text on teal; warnings always amber, reminders always sky-tint, errors always paired with an icon + text, never color alone.
 
 ---
 

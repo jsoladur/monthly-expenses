@@ -4,8 +4,6 @@
 // Tech source of truth:     docs/architecture.md §4 (physical model, ADR-4, ADR-5)
 // Target: PostgreSQL 16 · money = numeric(14,2) · tenancy = user-scoped rows
 // Paste at https://dbdiagram.io/d to visualize.
-// The WHOLE schema ships in the first migration (UC-00). Use-case files never
-// alter the schema — they only use these tables.
 // ============================================================================
 
 Project monthly_expenses {
@@ -97,6 +95,26 @@ Table template {
   }
 
   Note: 'Reusable fixed/estimated definitions (management form). CLONE SOURCE ONLY at month creation — never updated from month edits (PRD §6.3). Soft delete (PRD §13).'
+}
+
+Table annual {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, ref: > app_user.id]
+  category_id uuid [not null, ref: > category.id, note: 'Expense category; must be ACTIVE at creation']
+  name text [not null]
+  observations text [note: 'Optional notes (UC-14)']
+  charge_month int [not null, note: '1-12. Month of the year when the expense is usually charged (any year). Add CHECK (charge_month BETWEEN 1 AND 12) in the migration SQL.']
+  is_direct_debit boolean [not null, default: false, note: '¿Domiciliado? (UC-14). Informational badge only.']
+  active boolean [not null, default: true, note: 'Soft delete (catalog rule, PRD §13): inactive annuals raise NO reminders']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz
+
+  indexes {
+    (user_id, charge_month) [name: 'annual_reminder_idx', note: 'Reminder query: ACTIVE annuals of the user whose charge_month equals the open month number (UC-14).']
+  }
+
+  Note: 'UC-14 — yearly recurring expenses used ONLY as reminders in the month workspace. NO amount column by design: the reminder prompts a MANUAL one-off line (UC-09/UC-13); annuals never auto-create anything and are never cloned. Added in migration 0002 — the only post-UC-00 table.'
 }
 
 // -------------------- Month instance (HARD delete children) -----------------

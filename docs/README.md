@@ -13,7 +13,7 @@ The single source of truth for WHAT to build and HOW to build it. Code that cont
 | --- | --- | --- |
 | `prds/GLOBAL.md` | **PRD — source of truth for BEHAVIOR.** Constraints C1–C18, money rules §7, use cases UC-01…UC-19, test scenarios §15, copy snippets §19. | Before ANY feature work. |
 | `architecture/ARCHITECTURE.md` | **Source of truth for TECH.** ADR-1…ADR-10, auth flow §3, data model §4, layering §5, project structure §6, money handling §8, scaffolding §10. | Before ANY feature work. |
-| `database/database.dbml` | Physical schema (dbdiagram.io DBML): 8 tables, singular names, PostgreSQL 16. Migrated ONCE in UC-00 — later use cases never change it. | When writing repositories or the first migration. |
+| `database/database.dbml` | Physical schema (dbdiagram.io DBML): 9 tables, singular names, PostgreSQL 16. UC-00 migrates everything except `annual`, which arrives with UC-14 (migration 0002). | When writing repositories or migrations. |
 | `style/STYLE-GUIDE.md` | **Visual system:** brand palette from the logo, mandated typography, shadcn/Tailwind v4 tokens (light + dark), layout rules (mobile-first, adaptive), component recipes, accessibility, minimalism rules. | Before ANY UI/styling work (every slice with a screen). |
 | `usecases/UC-INDEX.md` | **Map of the implementation slices** (see below). | At the start of every work session. |
 | `usecases/UC-XX-*.md` | One implementable slice each: server actions, services, routes, i18n keys, acceptance criteria, mapped tests. | When implementing that slice. |
@@ -29,13 +29,13 @@ The single source of truth for WHAT to build and HOW to build it. Code that cont
 
 ## What UC-INDEX.md means
 
-The PRD is split into 14 implementation slices, `UC-00` … `UC-13`, so the app can be built in steps. `UC-INDEX.md` is the entry point that ties them together:
+The PRD is split into 15 implementation slices, `UC-00` … `UC-14`, so the app can be built in steps. `UC-INDEX.md` is the entry point that ties them together:
 
 - **Build order & dependency table** — a slice is implementable ONLY when every slice in its "Depends on" column is DONE in `IMPLEMENTATION-STATUS.md`.
 - **Dependency graph** (mermaid) — the same information visually.
 - **Global invariants** — rules that apply to EVERY slice (tenancy, money, deletes, i18n, no auto-months).
 - **PRD §15 test-scenario map** — which of the 19 normative test scenarios each slice must turn into green tests.
-- **Key architectural fact:** UC-00 creates the ENTIRE database in one migration (from `database.dbml`). Slices UC-01…UC-13 contain NO schema work — they only use the existing tables. Do not add tables or columns when implementing a slice.
+- **Key architectural fact:** UC-00 creates the database in one migration. Slices contain NO schema work — the sole exception is **UC-14**, which adds the `annual` table via migration 0002. UC-14 is a Product Owner decision (2026-08-25) not yet merged into the PRD; until then the UC-14 file is the behavior source of truth for Annuals.
 
 ## Standard work loop (agents)
 
@@ -51,8 +51,8 @@ The PRD is split into 14 implementation slices, `UC-00` … `UC-13`, so the app 
 
 - **Tenancy:** every query/mutation filters by the session `user_id`. A missing filter is a P0 bug (PRD §5.1).
 - **Money:** `numeric(14,2)` in DB, integer cents in domain code, `"1234.56"` strings on the wire. Never floats (ADR-5).
-- **Deletes:** soft for catalogs (`category`, `template`); hard for month-scoped money rows (PRD §13).
+- **Deletes:** soft for catalogs (`category`, `template`, `annual`); hard for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string keyed, `en`/`es`; month names from locale; amount input always dot-decimal (PRD §11).
 - **Months:** never auto-created; cloned once from active templates at creation; fully independent afterwards (PRD C6/C17/§7.8).
-- **Schema:** table names are singular; the users table is `app_user` because `user` is reserved in PostgreSQL.
+- **Schema:** table names are singular; the users table is `app_user` because `user` is reserved in PostgreSQL. Only UC-14 adds a table (`annual`).
 - **Styling:** all UI follows `style/STYLE-GUIDE.md` — no colors, fonts, or radii outside its tokens.

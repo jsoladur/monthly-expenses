@@ -109,6 +109,31 @@ export const template = pgTable(
   ],
 );
 
+export const annual = pgTable(
+  "annual",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => category.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    observations: text("observations"),
+    chargeMonth: integer("charge_month").notNull(),
+    isDirectDebit: boolean("is_direct_debit").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    check("annual_charge_month_ck", sql`${table.chargeMonth} BETWEEN 1 AND 12`),
+    index("annual_reminder_idx").on(table.userId, table.chargeMonth),
+  ],
+);
+
 // ============================================================================
 // Month instance and money rows — HARD delete on the money rows (PRD §13)
 //
@@ -224,6 +249,8 @@ export type Category = typeof category.$inferSelect;
 export type NewCategory = typeof category.$inferInsert;
 export type Template = typeof template.$inferSelect;
 export type NewTemplate = typeof template.$inferInsert;
+export type Annual = typeof annual.$inferSelect;
+export type NewAnnual = typeof annual.$inferInsert;
 export type Month = typeof month.$inferSelect;
 export type NewMonth = typeof month.$inferInsert;
 export type MonthIncome = typeof monthIncome.$inferSelect;

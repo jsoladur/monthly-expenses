@@ -51,6 +51,7 @@
   "nav": {
     "home": "Inicio",
     "history": "Historial",
+    "annuals": "Anuales",
     "categories": "Categorías",
     "templates": "Plantillas",
     "settings": "Ajustes",
@@ -315,6 +316,37 @@
     },
     "help": "Las plantillas se copian en un mes nuevo una sola vez al crearlo. Las plantillas inactivas no se clonan.",
     "cloneCopy": "Las líneas fijas y estimadas se copian al crear el mes. Este mes es independiente a partir de ahí."
+  },
+  "annuals": {
+    "title": "Anuales",
+    "subtitle": "Recordatorios de gastos recurrentes anuales",
+    "new": "Nuevo anual",
+    "category": "Categoría",
+    "name": "Nombre",
+    "observations": "Observaciones",
+    "chargeMonth": "Mes de cargo",
+    "isDirectDebit": "Domiciliado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "empty": "Aún no hay anuales.",
+    "actions": {
+      "add": "Añadir",
+      "edit": "Editar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "deactivate": "Desactivar",
+      "reactivate": "Reactivar",
+      "placeholder": "p. ej. Seguro anual",
+      "selectCategory": "Elige una categoría",
+      "selectMonth": "Elige un mes"
+    },
+    "help": "Los anuales te recuerdan cuándo vence un gasto recurrente. No crean líneas automáticamente — las añades manualmente cuando sea necesario.",
+    "noActiveCategories": "Crea primero una categoría de gasto activa."
+  },
+  "reminders": {
+    "annual": "Suele cargarse en {month}. Añade manualmente una línea estimada/comprometida si aplica este año.",
+    "quickAdd": "Añadir rápido",
+    "title": "Recordatorios anuales"
   },
   "settings": {
     "title": "Ajustes del perfil",

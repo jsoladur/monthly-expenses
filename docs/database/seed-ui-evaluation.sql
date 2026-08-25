@@ -187,7 +187,18 @@ BEGIN
         (v_user_id, v_cat_groceries, 'Miscellaneous', 100.00, 'estimated', true) RETURNING id INTO v_tmpl_miscellaneous;
     
     -- ============================================================================
-    -- 5. Create all months from January to July 2026
+    -- 5. Create 6 Annuals (yearly recurring expense reminders)
+    -- ============================================================================
+    INSERT INTO annual (user_id, category_id, name, observations, charge_month, is_direct_debit, active) VALUES
+        (v_user_id, v_cat_home, 'Annual Home Insurance', 'Yearly home insurance premium', 1, true, true),
+        (v_user_id, v_cat_transport, 'Vehicle Tax', 'Annual vehicle tax payment', 3, false, true),
+        (v_user_id, v_cat_education, 'AMPA Fee', 'School parent association annual fee', 9, true, true),
+        (v_user_id, v_cat_home, 'Home Insurance Renewal', 'Annual home insurance renewal', 7, true, true),
+        (v_user_id, v_cat_entertainment, 'Summer Camp', 'Annual summer camp for kids', 7, false, true),
+        (v_user_id, v_cat_personal, 'Holiday Bonus', 'Year-end bonus expense', 12, false, true);
+    
+    -- ============================================================================
+    -- 6. Create all months from January to July 2026
     -- ============================================================================
     INSERT INTO month (user_id, year, month) VALUES
         (v_user_id, 2026, 1) RETURNING id INTO v_month_jan_2026;
@@ -205,7 +216,7 @@ BEGIN
         (v_user_id, 2026, 7) RETURNING id INTO v_month_jul_2026;
     
     -- ============================================================================
-    -- 6. Create all months for 2020-2025 (72 months total)
+    -- 7. Create all months for 2020-2025 (72 months total)
     -- ============================================================================
     FOR i IN 2020..2025 LOOP
         FOR j IN 1..12 LOOP
@@ -214,7 +225,7 @@ BEGIN
     END LOOP;
     
     -- ============================================================================
-    -- 7. July 2026: Clone templates to month_fixed_line (20 rows)
+    -- 8. July 2026: Clone templates to month_fixed_line (20 rows)
     -- ============================================================================
     
     -- Clone committed templates
@@ -246,7 +257,7 @@ BEGIN
         (v_month_jul_2026, v_cat_groceries, 'Miscellaneous', 'Monthly miscellaneous budget', 100.00, 100.00, 'estimated', 'cloned');
     
     -- ============================================================================
-    -- 8. July 2026: Create 200 actual expense records
+    -- 9. July 2026: Create 200 actual expense records
     -- ============================================================================
     
     -- Groceries (20 records)
@@ -411,7 +422,7 @@ BEGIN
     END LOOP;
     
     -- ============================================================================
-    -- 9. July 2026: Create income records
+    -- 10. July 2026: Create income records
     -- ============================================================================
     
     -- Salary (2 records)
@@ -457,6 +468,7 @@ BEGIN
     RAISE NOTICE '- 10 income categories';
     RAISE NOTICE '- 10 committed templates';
     RAISE NOTICE '- 10 estimated templates';
+    RAISE NOTICE '- 6 annuals (yearly recurring expense reminders)';
     RAISE NOTICE '- 79 months (2020-2025 full + Jan-Jul 2026)';
     RAISE NOTICE '- 20 cloned fixed lines in Jul 2026';
     RAISE NOTICE '- 200 actual expenses in Jul 2026';

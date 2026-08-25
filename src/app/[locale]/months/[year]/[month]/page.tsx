@@ -11,6 +11,7 @@ import {
   getOverspendWarnings,
   isPastMonth,
 } from "@/server/services/summary";
+import { getAnnualReminders } from "@/server/services/annuals";
 import { getProfileSettings } from "@/server/services/settings";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
@@ -33,6 +34,7 @@ import { SummaryBlock } from "@/app/[locale]/months/[year]/[month]/summary-block
 import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month-banner";
 import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
 import { StatsScreen } from "@/app/[locale]/months/[year]/[month]/stats-screen";
+import { AnnualReminderCards, type AnnualReminder } from "@/app/[locale]/months/[year]/[month]/annual-reminder-cards";
 import { AppShell } from "@/components/app-shell";
 import { redirect } from "@/i18n/navigation";
 import { auth, signOut } from "@/auth";
@@ -139,9 +141,10 @@ export default async function MonthWorkspacePage({
     rows: orderRows(reservedLineRows.filter((r) => r.kind === kind)),
   }));
 
-  const [summary, overspendWarnings] = await Promise.all([
+  const [summary, overspendWarnings, annualReminders] = await Promise.all([
     getMonthSummary(userId, workspace.month.id),
     getOverspendWarnings(userId, workspace.month.id),
+    getAnnualReminders(userId, workspace.month.month),
   ]);
   const now = new Date();
   const showPastMonthBanner = isPastMonth(
@@ -160,6 +163,13 @@ export default async function MonthWorkspacePage({
   const committedLines = reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? [];
   const committedTotalCents = committedLines.reduce((sum, line) => sum + line.originalCents, 0);
 
+  const reminderData: AnnualReminder[] = annualReminders.map((r) => ({
+    id: r.id,
+    name: r.name,
+    categoryName: expenseCategoryMap.get(r.categoryId)?.name ?? "—",
+    isDirectDebit: r.isDirectDebit,
+  }));
+
   async function startSignOut() {
     "use server";
     await signOut({ redirectTo: `/${locale}/sign-in` });
@@ -176,6 +186,13 @@ export default async function MonthWorkspacePage({
         {showPastMonthBanner && <PastMonthBanner />}
 
         <SummaryBlock summary={summary} currency={currency} />
+
+        {reminderData.length > 0 && (
+          <AnnualReminderCards
+            reminders={reminderData}
+            monthName={monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
+          />
+        )}
 
         <MonthWorkspaceTabs
           actualsTab={
