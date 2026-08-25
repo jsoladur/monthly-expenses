@@ -225,6 +225,7 @@ export const monthActualExpense = pgTable(
       scale: 2,
     }),
     convertedLineOrigin: lineOriginEnum("converted_line_origin"),
+    convertedLineKind: lineKindEnum("converted_line_kind"),
     editedAfterConversion: boolean("edited_after_conversion").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

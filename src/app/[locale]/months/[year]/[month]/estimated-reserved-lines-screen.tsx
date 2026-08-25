@@ -10,10 +10,14 @@ import {
   updateRemainingAmountAction,
   type ReservedLineActionResult,
 } from "@/actions/reserved-lines";
+import {
+  passToActualAction,
+  type PassToActualActionResult,
+} from "@/actions/pass-to-actual";
 import type { ReservedLineRowData, CategoryOption } from "@/app/[locale]/months/[year]/[month]/reserved-lines-screen";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowRightCircle } from "lucide-react";
 
 // ============================================================================
 // Estimated reserved lines screen — separate section for estimated lines only.
@@ -172,7 +176,21 @@ function RowActions({
   onEdit: () => void;
 }) {
   const t = useTranslations("reservedLines");
+  const tv = useTranslations("validation");
   const [pending, setPending] = useState(false);
+  const [passError, setPassError] = useState<string | null>(null);
+
+  const handlePass = async () => {
+    if (pending) return;
+    if (!window.confirm(t("actions.confirmPassToActual"))) return;
+    setPending(true);
+    setPassError(null);
+    const result = await passToActualAction({ lineId, monthId, year, month });
+    setPending(false);
+    if (!result.ok) {
+      setPassError(errorToMessagePass(result, tv));
+    }
+  };
 
   return (
     <span className="flex flex-col items-end gap-1">
@@ -181,6 +199,12 @@ function RowActions({
           icon={<Pencil className="size-4" />}
           label={t("actions.edit")}
           onClick={onEdit}
+        />
+        <IconButton
+          icon={<ArrowRightCircle className="size-4" />}
+          label={t("actions.passToActual")}
+          disabled={pending}
+          onClick={handlePass}
         />
         <form
           action={async () => {
@@ -200,6 +224,15 @@ function RowActions({
           />
         </form>
       </span>
+      {passError && (
+        <span
+          role="alert"
+          aria-live="polite"
+          className="text-destructive text-xs"
+        >
+          {passError}
+        </span>
+      )}
     </span>
   );
 }
@@ -505,4 +538,22 @@ function readRemainingAmount(formData: FormData, fallback: string): string {
 
 function toCamelCase(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function errorToMessagePass(
+  state: Extract<PassToActualActionResult, { ok: false }>,
+  tv: ReturnType<typeof useTranslations<"validation">>,
+): string {
+  switch (state.error) {
+    case "monthLineNotFound":
+      return tv("reservedLineNotFound");
+    case "actualNotFound":
+      return tv("actualNotFound");
+    case "notUndoable":
+      return tv("notUndoable");
+    case "undoForbiddenAfterEdit":
+      return tv("cannotUndoPass");
+    case "validation":
+      return tv("required");
+  }
 }

@@ -75,7 +75,6 @@
     "monthNotFound": "Ese mes ya no existe. Recarga la página.",
     "actualNotFound": "Ese gasto ya no existe. Recarga la página.",
     "reservedLineNotFound": "Esa línea reservada ya no existe. Recarga la página.",
-    "estimatedLineCannotPassToActual": "Las líneas estimadas no pueden pasarse a gastos reales.",
     "cannotUndoPass": "No se puede deshacer después de editar el gasto.",
     "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer."
   },
@@ -244,8 +243,8 @@
       "selectCategory": "Elige una categoría",
       "selectKind": "Elige un tipo",
       "passToActual": "Pasar a gastos reales",
-      "passToActualHelp": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover.",
-      "confirmPassToActual": "¿Pasar esta línea comprometida a gasto real?"
+      "passToActualHelp": "Mueve esta línea reservada a gasto real.",
+      "confirmPassToActual": "¿Pasar esta línea reservada a gasto real?"
     },
     "noActiveCategories": "Crea primero una categoría de gasto activa.",
     "historicalInactiveNote": "La categoría de esta línea está inactiva. Sigue mostrándose porque la línea se añadió antes."

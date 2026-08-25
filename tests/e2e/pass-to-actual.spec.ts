@@ -112,7 +112,7 @@ test.describe("UC-10 pass-to-actual & undo", () => {
     expect(finalActual).toBe(0);
   });
 
-  test("estimated line exposes no pass-to-actual button in the UI (PRD §7.5, #12)", async ({
+  test("estimated line exposes pass-to-actual button in the UI (PRD §7.5 extended)", async ({
     context,
     page,
   }) => {
@@ -132,11 +132,10 @@ test.describe("UC-10 pass-to-actual & undo", () => {
       page.getByRole("heading", { level: 2, name: "Estimated reserved lines" }),
     ).toBeVisible();
 
-    // No "Pass to actual" button anywhere — estimated rows must not expose
-    // the action.
-    expect(
-      await page.getByRole("button", { name: "Pass to actual", exact: true }).count(),
-    ).toBe(0);
+    // "Pass to actual" button should be visible for estimated lines
+    await expect(
+      page.getByRole("button", { name: "Pass to actual", exact: true }).first(),
+    ).toBeVisible();
   });
 
   test("Spanish variant renders translated pass + undo copy", async ({

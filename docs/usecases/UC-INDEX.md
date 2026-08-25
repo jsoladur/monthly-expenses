@@ -68,7 +68,7 @@ flowchart TD
 | 9 Undo pass (unedited) → back in fixed | UC-10 |
 | 10 Edit actual after pass → no undo | UC-10 |
 | 11 Inactive category blocked on new ticket; old ticket visible | UC-03 + UC-08 |
-| 12 Estimated line has no pass-to-actual | UC-10 |
+| 12 Estimated line can pass to actual (extended) | UC-10 |
 | 13 Edit July in August → warning + persist | UC-11 |
 | 14 Actual −20 increases savings by 20 | UC-08 + UC-11 |
 | 15 Hard-delete actual → gone from sums | UC-08 |

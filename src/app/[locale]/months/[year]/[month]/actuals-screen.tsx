@@ -649,8 +649,6 @@ function errorToMessageUndo(
       return tv("cannotUndoPass");
     case "monthLineNotFound":
       return tv("reservedLineNotFound");
-    case "estimatedLineCannotPass":
-      return tv("estimatedLineCannotPassToActual");
     case "validation":
       return tv("required");
   }
@@ -757,8 +755,6 @@ function errorToMessagePass(
   switch (state.error) {
     case "monthLineNotFound":
       return tv("reservedLineNotFound");
-    case "estimatedLineCannotPass":
-      return tv("estimatedLineCannotPassToActual");
     case "actualNotFound":
       return tv("actualNotFound");
     case "notUndoable":

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-25
+
+### Added
+- Pass to actual for estimated reserved lines: users can now move estimated reserved lines to actuals, same as committed lines. The undo functionality works identically — only allowed while the actual has not been edited. Migration 0004 adds `converted_line_kind` column to `month_actual_expense` to properly restore the original line kind on undo.
+
+### Changed
+- PRD §7.5 updated to allow both committed and estimated lines to be passed to actuals (previously committed-only).
+- UC-10 documentation updated to reflect the extension.
+- Help text updated to remove the note that estimates cannot be moved.
+
+### Removed
+- `EstimatedLineCannotPassError` no longer thrown — estimated lines can now be passed to actuals.
+- `estimatedLineCannotPass` error code removed from pass-to-actual actions.
+- `estimatedLineCannotPassToActual` i18n key removed from both locales.
+
 ## [0.2.1] - 2026-08-25
 
 ### Added

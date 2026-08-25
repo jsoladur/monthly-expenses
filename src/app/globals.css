@@ -161,14 +161,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans overflow-x-hidden;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     font-family: "Pilat Wide Bold", "Pilat Wide Bold Fallback", -apple-system,
       BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     letter-spacing: -0.01em;
-  }
-  html {
-    @apply font-sans;
   }
 }
 

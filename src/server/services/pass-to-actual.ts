@@ -18,14 +18,12 @@ import { deleteActual, insertActual } from "@/server/repositories/actual";
 //
 // Domain rules:
 //   - passToActual:
-//       * REJECT unless `kind = 'committed'` (PRD §7.5 / #12). Estimated
-//         lines throw `EstimatedLineCannotPassError` — there is no
-//         "promote estimate to actual" path.
 //       * Insert `month_actual_expense` with: monthId, categoryId, name,
 //         observations copied verbatim; amount = line.remaining_amount;
 //         converted_from_line_id = line.id; converted_line_original_amount
 //         = line.original_amount; converted_line_origin = line.origin;
-//         edited_after_conversion = false (PRD §7.5).
+//         converted_line_kind = line.kind; edited_after_conversion = false
+//         (PRD §7.5).
 //       * HARD-delete the source line in the SAME transaction
 //         (PRD C15 / §13 / §7.5). After the move the money exists ONLY in
 //         actuals (PRD §7.2) — savings algebra is unchanged because the
@@ -40,9 +38,9 @@ import { deleteActual, insertActual } from "@/server/repositories/actual";
 //         id is free for re-use) so any logical link the row used to have
 //         stays stable. remaining_amount = actual.amount (current state of
 //         the ticket), original_amount = converted_line_original_amount
-//         (the snapshot at the original clone/insert), kind = 'committed',
-//         origin = converted_line_origin; name / observations / categoryId
-//         copied back (PRD §7.5).
+//         (the snapshot at the original clone/insert), kind = converted_line_kind
+//         (preserves original kind: committed or estimated), origin = converted_line_origin;
+//         name / observations / categoryId copied back (PRD §7.5).
 //       * HARD-delete the actual in the SAME transaction (PRD C15 / §13).
 //   - Tenancy: every read uses the `userId`-first JOIN on `month.user_id`
 //     (PRD §5.1, ARCH §5 rule 1). A missing line / actual surfaces as
@@ -55,14 +53,6 @@ import { deleteActual, insertActual } from "@/server/repositories/actual";
 // into i18n keys at the boundary; this layer must NOT depend on next-intl so
 // the service stays unit-testable without a React tree.
 // ============================================================================
-
-export class EstimatedLineCannotPassError extends Error {
-  readonly code = "estimated_line_cannot_pass" as const;
-  constructor() {
-    super("Estimated lines cannot be passed to actuals (PRD §7.5)");
-    this.name = "EstimatedLineCannotPassError";
-  }
-}
 
 export class MonthLineNotFoundError extends Error {
   readonly code = "month_line_not_found" as const;
@@ -112,15 +102,11 @@ export async function passToActual(
   userId: string,
   input: PassToActualInput,
 ): Promise<MonthActualExpense> {
-  // Tenancy pre-flight + kind gate (PRD §5.1, §7.5 / #12). Done OUTSIDE the
-  // transaction so the read is independent and a rejected-estimated row
-  // leaves no writes behind.
+  // Tenancy pre-flight (PRD §5.1). Done OUTSIDE the transaction so the read
+  // is independent.
   const line = await findMonthLineById(userId, input.lineId);
   if (!line) {
     throw new MonthLineNotFoundError();
-  }
-  if (line.kind !== "committed") {
-    throw new EstimatedLineCannotPassError();
   }
 
   // ONE transaction: insert the new actual + hard-delete the source line.
@@ -136,6 +122,7 @@ export async function passToActual(
         convertedFromLineId: line.id,
         convertedLineOriginalAmount: line.originalAmount,
         convertedLineOrigin: line.origin,
+        convertedLineKind: line.kind,
         editedAfterConversion: false,
       },
       tx,
@@ -183,9 +170,10 @@ export async function undoPassToActual(
         // original_amount is the snapshot at clone/insert time
         // (PRD §7.5) — not the current actual.amount.
         originalAmount: actual.convertedLineOriginalAmount ?? actual.amount,
-        // The undo'd line is always a committed line (PRD §7.5) with the
-        // origin the original line had at the moment it was passed.
-        kind: "committed",
+        // The undo'd line restores its original kind (committed or estimated)
+        // from the conversion metadata (PRD §7.5).
+        kind: actual.convertedLineKind ?? "committed",
+        // The origin is the original line's origin at the moment it was passed.
         origin: actual.convertedLineOrigin ?? "cloned",
       },
       tx,

@@ -1,0 +1,1 @@
+ALTER TABLE "month_actual_expense" ADD COLUMN "converted_line_kind" "line_kind";

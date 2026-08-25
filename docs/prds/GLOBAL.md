@@ -219,14 +219,14 @@ If a category has **only committed** templates and no estimated templates, **no*
 
 **Warn only. Never block.** Remaining on a month line may be zero or negative if the user types it.
 
-### 7.5 Pass to actual (committed only)
+### 7.5 Pass to actual (committed and estimated)
 
-- Allowed **only** if `kind = committed`.
-- **Forbidden** if `kind = estimated`.
+- Allowed for **both** `kind = committed` and `kind = estimated`.
 - One tap: remove fixed line; insert actual with same category, name, observations, amount = **current remaining_amount**.
 - **Undo:** only if the actual **has not been edited** after the move.
 - After the user edits the actual, **no** un-convert. They may hard-delete the actual and add a month line if needed.
 - After convert, user may edit the actual amount.
+- Undo restores the line with its original kind (committed or estimated).
 
 ### 7.6 Negative amounts
 

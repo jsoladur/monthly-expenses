@@ -75,7 +75,6 @@
     "monthNotFound": "That month no longer exists. Reload the page.",
     "actualNotFound": "That expense no longer exists. Reload the page.",
     "reservedLineNotFound": "That reserved line no longer exists. Reload the page.",
-    "estimatedLineCannotPassToActual": "Estimated lines cannot be passed to actuals.",
     "cannotUndoPass": "Cannot undo after the actual has been edited.",
     "notUndoable": "This expense was not created by pass-to-actual."
   },
@@ -244,8 +243,8 @@
       "selectCategory": "Pick a category",
       "selectKind": "Pick a kind",
       "passToActual": "Pass to actual",
-      "passToActualHelp": "Move this commitment to actual spend. Estimates cannot be moved.",
-      "confirmPassToActual": "Pass this committed line to actual spend?"
+      "passToActualHelp": "Move this reserved line to actual spend.",
+      "confirmPassToActual": "Pass this reserved line to actual spend?"
     },
     "noActiveCategories": "Create an active expense category first.",
     "historicalInactiveNote": "The category for this line is inactive. It still shows because the line was added earlier."

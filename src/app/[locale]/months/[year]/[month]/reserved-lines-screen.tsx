@@ -154,11 +154,9 @@ function ReservedLineGroupSection({
       <h2 id={`reserved-${group.kind}`} className="text-base font-semibold">
         {title}
       </h2>
-      {group.kind === "committed" && (
-        <p className="text-muted-foreground text-xs">
-          {t("actions.passToActualHelp")}
-        </p>
-      )}
+      <p className="text-muted-foreground text-xs">
+        {t("actions.passToActualHelp")}
+      </p>
       {group.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{empty}</p>
       ) : (
@@ -262,7 +260,6 @@ function ReservedLineRow({
           </span>
           <RowActions
             lineId={row.id}
-            lineKind={row.kind}
             monthId={monthId}
             year={year}
             month={month}
@@ -281,14 +278,12 @@ function ReservedLineRow({
 
 function RowActions({
   lineId,
-  lineKind,
   monthId,
   year,
   month,
   onEdit,
 }: {
   lineId: string;
-  lineKind: ReservedLineKind;
   monthId: string;
   year: number;
   month: number;
@@ -298,7 +293,6 @@ function RowActions({
   const tv = useTranslations("validation");
   const [pending, setPending] = useState(false);
   const [passError, setPassError] = useState<string | null>(null);
-  const showPassToActual = lineKind === "committed";
 
   const handlePass = async () => {
     if (pending) return;
@@ -320,14 +314,12 @@ function RowActions({
           label={t("actions.edit")}
           onClick={onEdit}
         />
-        {showPassToActual && (
-          <IconButton
-            icon={<ArrowRightCircle className="size-4" />}
-            label={t("actions.passToActual")}
-            disabled={pending}
-            onClick={handlePass}
-          />
-        )}
+        <IconButton
+          icon={<ArrowRightCircle className="size-4" />}
+          label={t("actions.passToActual")}
+          disabled={pending}
+          onClick={handlePass}
+        />
         <form
           action={async () => {
             if (pending) return;
@@ -673,8 +665,6 @@ function errorToMessagePass(
   switch (state.error) {
     case "monthLineNotFound":
       return tv("reservedLineNotFound");
-    case "estimatedLineCannotPass":
-      return tv("estimatedLineCannotPassToActual");
     case "actualNotFound":
       return tv("actualNotFound");
     case "notUndoable":

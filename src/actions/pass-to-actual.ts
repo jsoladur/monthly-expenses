@@ -7,7 +7,6 @@ import { uuidSchema } from "@/server/validators";
 import { requireUserId } from "@/server/auth/require-user-id";
 import {
   ActualNotFoundOnUndoError,
-  EstimatedLineCannotPassError,
   MonthLineNotFoundError,
   NotUndoableError,
   UndoForbiddenAfterEditError,
@@ -52,7 +51,6 @@ const undoSchema = z.object({
 // Stable error codes — the client maps these to i18n keys.
 export type PassToActualActionError =
   | "monthLineNotFound"
-  | "estimatedLineCannotPass"
   | "actualNotFound"
   | "notUndoable"
   | "undoForbiddenAfterEdit"
@@ -77,9 +75,6 @@ export async function passToActualAction(input: {
   try {
     await servicePass(userId, { lineId: parsed.data.lineId });
   } catch (err) {
-    if (err instanceof EstimatedLineCannotPassError) {
-      return { ok: false, error: "estimatedLineCannotPass" };
-    }
     if (err instanceof MonthLineNotFoundError) {
       return { ok: false, error: "monthLineNotFound" };
     }

@@ -6,7 +6,6 @@ import { createCategory } from "@/server/services/categories";
 import { createTemplate } from "@/server/services/templates";
 import { createMonth } from "@/server/services/months";
 import {
-  EstimatedLineCannotPassError,
   MonthLineNotFoundError,
   NotUndoableError,
   UndoForbiddenAfterEditError,
@@ -24,12 +23,12 @@ import * as actualRepo from "@/server/repositories/actual";
 // when the database is unreachable so `pnpm test` stays usable without
 // Docker.
 //
-// Acceptance (PRD §15 #8, #9, #10, #12 + §7.5 / §7.2 / §7.8):
-//   - passToActual: ONLY `kind = 'committed'` lines qualify; estimated
-//     lines throw `EstimatedLineCannotPassError` (PRD §7.5, #12). The new
-//     actual's amount = line.remaining_amount, copies category_id / name /
-//     observations verbatim, stores converted_from_line_id, and sets
-//     edited_after_conversion = false so undo is allowed (#8, #9).
+// Acceptance (PRD §15 #8, #9, #10 + §7.5 / §7.2 / §7.8):
+//   - passToActual: BOTH `kind = 'committed'` AND `kind = 'estimated'` lines
+//     qualify (PRD §7.5 extended). The new actual's amount = line.remaining_amount,
+//     copies category_id / name / observations verbatim, stores converted_from_line_id,
+//     converted_line_kind, and sets edited_after_conversion = false so undo is
+//     allowed (#8, #9).
 //   - passToActual: HARD-deletes the source line (PRD C15 / §13) — after
 //     the move, the line is gone from `month_fixed_line` and only lives in
 //     `month_actual_expense`. The savings algebra is unchanged because
@@ -38,8 +37,9 @@ import * as actualRepo from "@/server/repositories/actual";
 //   - undoPassToActual: allowed ONLY if converted_from_line_id IS NOT NULL
 //     AND edited_after_conversion = false. Restores the line with
 //     remaining_amount = current actual.amount, original_amount =
-//     converted_line_original_amount, kind = 'committed', origin =
-//     converted_line_origin, re-using the original line id (#9).
+//     converted_line_original_amount, kind = converted_line_kind (preserves
+//     original kind: committed or estimated), origin = converted_line_origin,
+//     re-using the original line id (#9).
 //   - undoPassToActual: rejected with UndoForbiddenAfterEditError when
 //     edited_after_conversion = true (PRD §7.5, #10).
 //   - undoPassToActual: rejected with NotUndoableError when the actual was
@@ -174,8 +174,8 @@ suite("UC-10 pass-to-actual & undo", () => {
     expect(actual.editedAfterConversion).toBe(false);
   });
 
-  it("rejects passToActual on an ESTIMATED line with EstimatedLineCannotPassError (PRD §7.5, #12)", async () => {
-    const userId = await seedUser("google-sub-uc10-rejects-estimated");
+  it("allows passToActual on an ESTIMATED line (PRD §7.5 extended)", async () => {
+    const userId = await seedUser("google-sub-uc10-estimated-allowed");
     const groceries = await createCategory(userId, { kind: "expense", name: "Groceries" });
     await createTemplate(userId, {
       categoryId: groceries.id,
@@ -187,14 +187,19 @@ suite("UC-10 pass-to-actual & undo", () => {
     const line = (await getMonthWorkspace(userId, 2026, 8)).lines[0]!;
     expect(line.kind).toBe("estimated");
 
-    await expect(passToActual(userId, { lineId: line.id })).rejects.toBeInstanceOf(
-      EstimatedLineCannotPassError,
-    );
+    const actual = await passToActual(userId, { lineId: line.id });
 
-    // The line is still there — pass was rejected before any write.
+    expect(actual.amount).toBe("400.00");
+    expect(actual.convertedFromLineId).toBe(line.id);
+    expect(actual.convertedLineOrigin).toBe("cloned");
+    expect(actual.convertedLineKind).toBe("estimated");
+    expect(actual.editedAfterConversion).toBe(false);
+
+    // The line is gone from month_fixed_line
     const workspace = await getMonthWorkspace(userId, 2026, 8);
-    expect(workspace.lines.find((l) => l.id === line.id)).toBeDefined();
-    expect(workspace.actuals).toHaveLength(0);
+    expect(workspace.lines.find((l) => l.id === line.id)).toBeUndefined();
+    expect(workspace.actuals).toHaveLength(1);
+    expect(workspace.actuals[0]!.id).toBe(actual.id);
   });
 
   it("rejects passToActual on a missing line with MonthLineNotFoundError (PRD §5.1)", async () => {
@@ -320,6 +325,38 @@ suite("UC-10 pass-to-actual & undo", () => {
       .from(monthActualExpense)
       .where(sql`id = ${actual.id}`);
     expect(rows).toHaveLength(0);
+  });
+
+  it("undoPassToActual restores an ESTIMATED line with kind='estimated' (PRD §7.5 extended)", async () => {
+    const userId = await seedUser("google-sub-uc10-undo-estimated");
+    const groceries = await createCategory(userId, { kind: "expense", name: "Groceries" });
+    await createTemplate(userId, {
+      categoryId: groceries.id,
+      name: "Groceries",
+      amount: "400.00",
+      kind: "estimated",
+    });
+    await createMonth(userId, { year: 2026, month: 8 });
+    const line = (await getMonthWorkspace(userId, 2026, 8)).lines[0]!;
+    expect(line.kind).toBe("estimated");
+
+    const actual = await passToActual(userId, { lineId: line.id });
+    expect(actual.convertedLineKind).toBe("estimated");
+
+    const restoredId = await undoPassToActual(userId, { actualId: actual.id });
+
+    expect(restoredId).toBe(line.id);
+
+    const workspace = await getMonthWorkspace(userId, 2026, 8);
+    const restored = workspace.lines.find((l) => l.id === line.id)!;
+    expect(restored).toBeDefined();
+    expect(restored.kind).toBe("estimated"); // Restored with original kind
+    expect(restored.origin).toBe("cloned");
+    expect(restored.remainingAmount).toBe("400.00");
+    expect(restored.originalAmount).toBe("400.00");
+
+    // The actual is HARD-deleted.
+    expect(workspace.actuals.find((a) => a.id === actual.id)).toBeUndefined();
   });
 
   it("undoPassToActual restores an edited remaining if the actual amount was changed mid-flight (PRD §7.5)", async () => {
