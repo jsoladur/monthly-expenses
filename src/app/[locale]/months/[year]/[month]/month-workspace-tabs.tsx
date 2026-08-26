@@ -37,8 +37,8 @@ export function MonthWorkspaceTabs({
 
   const dataTabs = [
     { id: "actuals" as const, label: labels.actuals, count: counts.actuals },
-    { id: "incomes" as const, label: labels.incomes, count: counts.incomes },
     { id: "reserved" as const, label: labels.reserved, count: counts.reserved },
+    { id: "incomes" as const, label: labels.incomes, count: counts.incomes },
   ];
 
   return (
