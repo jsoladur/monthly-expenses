@@ -12,6 +12,7 @@ import {
 } from "@/actions/incomes";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
+import { SwipeAction } from "@/components/ui/swipe-action";
 import { Pencil, Trash2 } from "lucide-react";
 
 // ============================================================================
@@ -264,6 +265,15 @@ function IncomeRow({
 }) {
   const t = useTranslations("incomes");
   const [editing, setEditing] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+
+  const handleDelete = async () => {
+    if (deletePending) return;
+    if (!window.confirm(t("actions.confirmDelete"))) return;
+    setDeletePending(true);
+    await deleteIncomeAction({ id: row.id, monthId, year, month });
+    setDeletePending(false);
+  };
 
   if (editing) {
     return (
@@ -280,49 +290,49 @@ function IncomeRow({
   }
 
   return (
-    <li className="bg-card text-card-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
-      <span className="min-w-0 flex-1 flex flex-col">
-        <span className="truncate">{row.name}</span>
-        <span className="text-muted-foreground truncate text-xs">
-          {row.categoryName}
+    <SwipeAction
+      onSwipeLeft={handleDelete}
+      rightIcon={<Trash2 className="size-5" />}
+      rightLabel={t("actions.delete")}
+      className="rounded-md border"
+    >
+      <div className="flex items-center gap-2 px-4 py-2 text-sm">
+        <span className="min-w-0 flex-1 flex flex-col">
+          <span className="truncate">{row.name}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {row.categoryName}
+          </span>
         </span>
-      </span>
-      <span className="flex shrink-0 items-center gap-2">
-        <span className="tabular-nums whitespace-nowrap">
-          {formatMoney(row.amountCents, currency)}
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="tabular-nums whitespace-nowrap">
+            {formatMoney(row.amountCents, currency)}
+          </span>
+          <RowActions
+            onEdit={() => setEditing(true)}
+            onDelete={handleDelete}
+            deletePending={deletePending}
+          />
         </span>
-        <RowActions
-          rowId={row.id}
-          monthId={monthId}
-          year={year}
-          month={month}
-          onEdit={() => setEditing(true)}
-        />
-      </span>
-      {!row.categoryActive && (
-        <p className="text-muted-foreground basis-full text-xs">
-          {t("historicalInactiveNote")}
-        </p>
-      )}
-    </li>
+        {!row.categoryActive && (
+          <p className="text-muted-foreground basis-full text-xs">
+            {t("historicalInactiveNote")}
+          </p>
+        )}
+      </div>
+    </SwipeAction>
   );
 }
 
 function RowActions({
-  rowId,
-  monthId,
-  year,
-  month,
   onEdit,
+  onDelete,
+  deletePending,
 }: {
-  rowId: string;
-  monthId: string;
-  year: number;
-  month: number;
   onEdit: () => void;
+  onDelete: () => void;
+  deletePending: boolean;
 }) {
   const t = useTranslations("incomes");
-  const [pending, setPending] = useState(false);
   return (
     <span className="flex items-center gap-1">
       <IconButton
@@ -330,23 +340,13 @@ function RowActions({
         label={t("actions.edit")}
         onClick={onEdit}
       />
-      <form
-        action={async () => {
-          if (pending) return;
-          if (!window.confirm(t("actions.confirmDelete"))) return;
-          setPending(true);
-          await deleteIncomeAction({ id: rowId, monthId, year, month });
-          setPending(false);
-        }}
-      >
-        <IconButton
-          icon={<Trash2 className="size-4" />}
-          label={t("actions.delete")}
-          destructive
-          disabled={pending}
-          type="submit"
-        />
-      </form>
+      <IconButton
+        icon={<Trash2 className="size-4" />}
+        label={t("actions.delete")}
+        destructive
+        disabled={deletePending}
+        onClick={onDelete}
+      />
     </span>
   );
 }

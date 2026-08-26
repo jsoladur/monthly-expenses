@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-08-26
+
+### Added
+- Swipe-left to delete on income rows in the month workspace Incomes tab.
+
 ## [0.3.9] - 2026-08-26
 
 ### Changed
