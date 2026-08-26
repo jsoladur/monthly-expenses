@@ -23,7 +23,7 @@ test.describe("UC-02 i18n shell", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/en\/sign-in$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Sign in",
+      "Monthly Expenses",
     );
   });
 
@@ -38,7 +38,7 @@ test.describe("UC-02 i18n shell", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/es\/sign-in$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Iniciar sesión",
+      "Gastos mensuales",
     );
     await context.close();
   });
@@ -56,14 +56,14 @@ test.describe("UC-02 i18n shell", () => {
       .click();
     await expect(page).toHaveURL(/\/es\/sign-in$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Iniciar sesión",
+      "Gastos mensuales",
     );
 
     // Hard reload: cookie wins, no `Accept-Language` negotiation.
     await page.reload();
     await expect(page).toHaveURL(/\/es\/sign-in$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-      "Iniciar sesión",
+      "Gastos mensuales",
     );
 
     // Clean up: switch back so subsequent tests start on `en`.

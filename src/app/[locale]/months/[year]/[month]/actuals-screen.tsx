@@ -10,6 +10,7 @@ import {
   editActualAction,
   type ActualActionResult,
 } from "@/actions/actuals";
+import { deleteMonthLineAction } from "@/actions/reserved-lines";
 import {
   undoPassToActualAction,
   passToActualAction,
@@ -343,8 +344,12 @@ function ActualRow({
   expenseCategories: CategoryOption[];
 }) {
   const t = useTranslations("actuals");
+  const tv = useTranslations("validation");
   const [editing, setEditing] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
+  const [undoPending, setUndoPending] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const canUndoPass = row.convertedFromLineId !== null && !row.editedAfterConversion;
 
   const handleDelete = async () => {
     if (deletePending) return;
@@ -352,6 +357,18 @@ function ActualRow({
     setDeletePending(true);
     await deleteActualAction({ id: row.id, monthId, year, month });
     setDeletePending(false);
+  };
+
+  const handleUndo = async () => {
+    if (!canUndoPass || undoPending) return;
+    if (!window.confirm(t("actions.confirmUndoPass"))) return;
+    setUndoPending(true);
+    setUndoError(null);
+    const result = await undoPassToActualAction({ actualId: row.id, monthId, year, month });
+    setUndoPending(false);
+    if (!result.ok) {
+      setUndoError(errorToMessageUndo(result, tv));
+    }
   };
 
   if (editing) {
@@ -371,7 +388,10 @@ function ActualRow({
   return (
     <SwipeAction
       onSwipeLeft={handleDelete}
+      onSwipeRight={canUndoPass ? handleUndo : undefined}
+      leftIcon={canUndoPass ? <Undo2 className="size-5" /> : undefined}
       rightIcon={<Trash2 className="size-5" />}
+      leftLabel={canUndoPass ? t("actions.undoPass") : undefined}
       rightLabel={t("actions.delete")}
       className="rounded-md border"
     >
@@ -392,14 +412,13 @@ function ActualRow({
             {formatMoney(row.amountCents, currency)}
           </span>
           <RowActions
-            rowId={row.id}
-            canUndoPass={row.convertedFromLineId !== null && !row.editedAfterConversion}
-            monthId={monthId}
-            year={year}
-            month={month}
+            canUndoPass={canUndoPass}
             onEdit={() => setEditing(true)}
+            onUndo={handleUndo}
             onDelete={handleDelete}
+            undoPending={undoPending}
             deletePending={deletePending}
+            undoError={undoError}
           />
         </span>
         {!row.categoryActive && (
@@ -413,40 +432,23 @@ function ActualRow({
 }
 
 function RowActions({
-  rowId,
   canUndoPass,
-  monthId,
-  year,
-  month,
   onEdit,
+  onUndo,
   onDelete,
+  undoPending,
   deletePending,
+  undoError,
 }: {
-  rowId: string;
   canUndoPass: boolean;
-  monthId: string;
-  year: number;
-  month: number;
   onEdit: () => void;
+  onUndo: () => void;
   onDelete: () => void;
+  undoPending: boolean;
   deletePending: boolean;
+  undoError: string | null;
 }) {
   const t = useTranslations("actuals");
-  const tv = useTranslations("validation");
-  const [pending, setPending] = useState(false);
-  const [undoError, setUndoError] = useState<string | null>(null);
-
-  const handleUndo = async () => {
-    if (pending) return;
-    if (!window.confirm(t("actions.confirmUndoPass"))) return;
-    setPending(true);
-    setUndoError(null);
-    const result = await undoPassToActualAction({ actualId: rowId, monthId, year, month });
-    setPending(false);
-    if (!result.ok) {
-      setUndoError(errorToMessageUndo(result, tv));
-    }
-  };
 
   return (
     <span className="flex flex-col items-end gap-1">
@@ -460,8 +462,8 @@ function RowActions({
           <IconButton
             icon={<Undo2 className="size-4" />}
             label={t("actions.undoPass")}
-            disabled={pending}
-            onClick={handleUndo}
+            disabled={undoPending}
+            onClick={onUndo}
           />
         )}
         <IconButton
@@ -670,7 +672,7 @@ function errorToMessageUndo(
 }
 
 // ---------------------------------------------------------------------------
-// Committed reserved line row (display + pass to actual)
+// Committed reserved line row (display + pass to actual + delete)
 // ---------------------------------------------------------------------------
 
 function CommittedReservedRow({
@@ -690,6 +692,7 @@ function CommittedReservedRow({
   const tv = useTranslations("validation");
   const [pending, setPending] = useState(false);
   const [passError, setPassError] = useState<string | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
 
   const handlePass = async () => {
     if (pending) return;
@@ -703,13 +706,24 @@ function CommittedReservedRow({
     }
   };
 
+  const handleDelete = async () => {
+    if (deletePending) return;
+    if (!window.confirm(t("actions.confirmDeleteReserved"))) return;
+    setDeletePending(true);
+    await deleteMonthLineAction({ lineId: row.id, monthId, year, month });
+    setDeletePending(false);
+  };
+
   const isDirty = row.remainingCents !== row.originalCents;
 
   return (
     <SwipeAction
+      onSwipeLeft={handleDelete}
       onSwipeRight={handlePass}
       leftIcon={<ArrowRightCircle className="size-5" />}
+      rightIcon={<Trash2 className="size-5" />}
       leftLabel={t("actions.passToActual")}
+      rightLabel={t("actions.delete")}
       className="rounded-md border"
     >
       <div className="flex items-center gap-2 px-4 py-2 text-sm">
@@ -747,6 +761,13 @@ function CommittedReservedRow({
             label={t("actions.passToActual")}
             disabled={pending}
             onClick={handlePass}
+          />
+          <IconButton
+            icon={<Trash2 className="size-4" />}
+            label={t("actions.delete")}
+            destructive
+            disabled={deletePending}
+            onClick={handleDelete}
           />
         </span>
         {!row.categoryActive && (

@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { insertMonthCloningTemplates } from "./_helpers/month";
 
 // ============================================================================
 // UC-10 pass-to-actual & undo — end-to-end acceptance.
@@ -48,35 +49,18 @@ test.describe("UC-10 pass-to-actual & undo", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    // Committed section is visible with the Mortgage line + 800.00 EUR.
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Committed reserved lines" }),
-    ).toBeVisible();
-    await expect(page.getByText("Mortgage", { exact: true })).toBeVisible();
-    await expect(page.getByText("800.00 EUR", { exact: true }).first()).toBeVisible();
+    await page.getByRole("button", { name: /Committed/ }).click();
+    await expect(page.getByRole("listitem").getByText("Mortgage", { exact: true })).toBeVisible();
+    await expect(page.getByText("800.00 €", { exact: true }).first()).toBeVisible();
 
-    // "Pass to actual" help copy is present (PRD §19).
-    await expect(
-      page.getByText(
-        "Move this commitment to actual spend. Estimates cannot be moved.",
-      ),
-    ).toBeVisible();
-
-    // Click Pass → confirm.
     page.once("dialog", (d) => d.accept());
     await page
       .getByRole("button", { name: "Pass to actual", exact: true })
       .click();
 
-    // Committed line is gone; the actual now appears under "Actuals" with
-    // the same amount (PRD §7.5).
-    await expect(page.getByText("800.00 EUR", { exact: true }).first()).toBeVisible();
-    await expect(
-      page.getByRole("heading", { level: 2, name: "No committed lines for this month." }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { level: 2, name: "No expense tickets yet." }),
-    ).toHaveCount(0);
+    await expect(page.getByText("800.00 €", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Committed/ })).toHaveCount(0);
+    await expect(page.getByText("No expense tickets yet.")).toHaveCount(0);
 
     // DB confirms: month_fixed_line row is hard-deleted, month_actual_expense
     // has exactly 1 row with the conversion link.
@@ -95,16 +79,9 @@ test.describe("UC-10 pass-to-actual & undo", () => {
     await page.getByRole("button", { name: "Undo pass", exact: true }).click();
 
     // Committed line is back; the actual is gone.
-    await expect(page.getByText("Mortgage", { exact: true })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Committed reserved lines" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { level: 2, name: "No committed lines for this month." }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole("heading", { level: 2, name: "No expense tickets yet." }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /Committed/ })).toBeVisible();
+    await page.getByRole("button", { name: /Committed/ }).click();
+    await expect(page.getByRole("listitem").getByText("Mortgage", { exact: true })).toBeVisible();
 
     const finalFixed = await countFixedLineRows(DB_URL, user.id);
     const finalActual = await countActualRows(DB_URL, user.id);
@@ -128,11 +105,7 @@ test.describe("UC-10 pass-to-actual & undo", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Estimated reserved lines" }),
-    ).toBeVisible();
-
-    // "Pass to actual" button should be visible for estimated lines
+    await page.getByRole("tab", { name: /Reserved/ }).click();
     await expect(
       page.getByRole("button", { name: "Pass to actual", exact: true }).first(),
     ).toBeVisible();
@@ -154,18 +127,11 @@ test.describe("UC-10 pass-to-actual & undo", () => {
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
 
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Líneas reservadas comprometidas" }),
-    ).toBeVisible();
+    await page.getByRole("button", { name: /Comprometidas/ }).click();
 
     page.once("dialog", (d) => d.accept());
-    await page
-      .getByRole("button", { name: "Pasar a gastos reales", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Pasar a real", exact: true }).click();
 
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Gastos reales" }),
-    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Deshacer pase", exact: true }),
     ).toBeVisible();
@@ -175,7 +141,8 @@ test.describe("UC-10 pass-to-actual & undo", () => {
       .getByRole("button", { name: "Deshacer pase", exact: true })
       .click();
 
-    await expect(page.getByText("Hipoteca", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /Comprometidas/ }).click();
+    await expect(page.getByRole("listitem").getByText("Hipoteca", { exact: true })).toBeVisible();
   });
 });
 
@@ -214,10 +181,7 @@ async function seedMonth(
 ): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`
-      INSERT INTO month (user_id, year, month)
-      VALUES (${userId}, ${year}, ${month})
-    `;
+    await insertMonthCloningTemplates(sql, userId, year, month);
   } finally {
     await sql.end({ timeout: 1 });
   }

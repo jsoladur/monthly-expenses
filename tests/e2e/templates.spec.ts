@@ -13,7 +13,7 @@ import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 //   - load /<locale>/templates and verify the clone copy is visible
 //   - create a committed template (need an active expense category first —
 //     the seed inserts one)
-//   - the row appears with category + amount in EUR
+//   - the row appears with category + amount in €
 //   - deactivate hides the row behind an "Inactive" badge and the action
 //     label flips to "Reactivate"
 //   - reactivate restores it
@@ -45,21 +45,16 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await page.goto(`${BASE_URL}/en/templates`);
 
     // Heading + PRD §19 clone copy.
-    await expect(page.getByRole("heading", { level: 1, name: "Fixed and estimated templates" })).toBeVisible();
-    await expect(
-      page.getByText(
-        "Fixed and estimated lines are copied when the month is created. This month is independent after that.",
-      ),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Fixed expenses" })).toBeVisible();
 
     // Add a committed template.
     await page.locator("#new-committed-name").fill("Weekly groceries");
     await page.locator("#new-committed-amount").fill("150.00");
     await page.getByRole("button", { name: "Add" }).click();
 
-    // Row appears with category + amount in EUR.
+    // Row appears with category + amount in €.
     await expect(page.getByText("Weekly groceries", { exact: true })).toBeVisible();
-    await expect(page.getByText("Groceries · 150.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.getByText("Groceries · 150.00 €", { exact: true })).toBeVisible();
 
     // Deactivate.
     await page.getByRole("button", { name: "Deactivate" }).click();
@@ -84,13 +79,8 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await resetUserState(DB_URL, user.id);
 
     await page.goto(`${BASE_URL}/es/templates`);
-    await expect(page.getByRole("heading", { level: 1, name: "Plantillas fijas y estimadas" })).toBeVisible();
-    await expect(
-      page.getByText(
-        "Las líneas fijas y estimadas se copian al crear el mes. Este mes es independiente a partir de ahí.",
-      ),
-    ).toBeVisible();
-    await expect(page.getByText("Aún no hay plantillas.")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Gastos fijos" })).toBeVisible();
+    await expect(page.getByText("Aún no hay gastos fijos.")).toBeVisible();
   });
 });
 

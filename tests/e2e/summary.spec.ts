@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { insertMonthCloningTemplates } from "./_helpers/month";
 
 // ============================================================================
 // UC-11 summary, savings & warnings — end-to-end acceptance.
@@ -10,8 +11,8 @@ import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 //
 // Acceptance criteria covered (PRD §15 #5, #8, #13, #19):
 //   - #5  Mortgage 800 committed + groceries 400 estimated + income 2000
-//        → savings 800.00 EUR on day one.
-//   - #8  Pass mortgage to actual → savings STILL 800.00 EUR; the money
+//        → savings 800.00 € on day one.
+//   - #8  Pass mortgage to actual → savings STILL 800.00 €; the money
 //        lives in exactly one place (PRD §7.2).
 //   - #13 Past-month banner shown when opening a non-current month; edits
 //        are still allowed.
@@ -29,7 +30,7 @@ const DB_URL =
   "postgres://expenses:devpassword@localhost:5432/expenses";
 
 test.describe("UC-11 summary, savings & warnings", () => {
-  test("#5 — fresh month: mortgage 800 + groceries 400 + income 2000 → savings 800.00 EUR", async ({
+  test("#5 — fresh month: mortgage 800 + groceries 400 + income 2000 → savings 800.00 €", async ({
     context,
     page,
   }) => {
@@ -49,23 +50,16 @@ test.describe("UC-11 summary, savings & warnings", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    // Savings hero number is 800.00 EUR (PRD #5).
-    await expect(page.getByTestId("summary-savings")).toHaveText("800.00 EUR");
+    // Savings hero number is 800.00 € (PRD #5).
+    await expect(page.getByTestId("summary-savings")).toHaveText("800.00 €");
 
     // Income / actuals / reserved cells render their own values.
-    await expect(page.getByTestId("summary-income")).toHaveText("2000.00 EUR");
-    await expect(page.getByTestId("summary-actuals")).toHaveText("0.00 EUR");
-    await expect(page.getByTestId("summary-reserved")).toHaveText("1200.00 EUR");
-
-    // Help copy (PRD §19).
-    await expect(
-      page.getByText(
-        "Income minus actual spend minus money still reserved in fixed/estimated lines.",
-      ),
-    ).toBeVisible();
+    await expect(page.getByTestId("summary-income")).toHaveText("2000.00 €");
+    await expect(page.getByTestId("summary-actuals")).toHaveText("0.00 €");
+    await expect(page.getByTestId("summary-reserved")).toHaveText("1200.00 €");
   });
 
-  test("#8 — pass mortgage to actual: savings stays 800.00 EUR; only the cells change (PRD §7.2)", async ({
+  test("#8 — pass mortgage to actual: savings stays 800.00 €; only the cells change (PRD §7.2)", async ({
     context,
     page,
   }) => {
@@ -84,14 +78,15 @@ test.describe("UC-11 summary, savings & warnings", () => {
     await seedIncome(DB_URL, user.id, 2026, 8, "Salary", "Salary name", "2000.00");
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
+    await page.getByRole("button", { name: /Committed/ }).click();
     page.once("dialog", (d) => d.accept());
     await page.getByRole("button", { name: "Pass to actual", exact: true }).click();
 
-    // After the move, savings remains 800.00 EUR (PRD §7.2: money in
+    // After the move, savings remains 800.00 € (PRD §7.2: money in
     // exactly one place). Actuals = 800.00, Reserved = 400.00 (groceries).
-    await expect(page.getByTestId("summary-savings")).toHaveText("800.00 EUR");
-    await expect(page.getByTestId("summary-actuals")).toHaveText("800.00 EUR");
-    await expect(page.getByTestId("summary-reserved")).toHaveText("400.00 EUR");
+    await expect(page.getByTestId("summary-savings")).toHaveText("800.00 €");
+    await expect(page.getByTestId("summary-actuals")).toHaveText("800.00 €");
+    await expect(page.getByTestId("summary-reserved")).toHaveText("400.00 €");
   });
 
   test("#19 — overspend badge appears when actuals exceed estimated template plan", async ({
@@ -112,14 +107,9 @@ test.describe("UC-11 summary, savings & warnings", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    // Warning copy from PRD §19.
-    await expect(
-      page.getByText(
-        "Actual tickets in this category are higher than the plan in your templates.",
-      ),
-    ).toBeVisible();
-    // Plan + overrun details follow the same row.
-    await expect(page.getByText(/Plan in templates:/)).toBeVisible();
+    await page.getByRole("button", { name: /Warnings/ }).click();
+    await expect(page.getByTestId("overspend-badge")).toBeVisible();
+    await expect(page.getByText(/Plan in fixed expenses:/)).toBeVisible();
     await expect(page.getByText(/Over by/)).toBeVisible();
     // Overspend does NOT block — the add form is still usable.
     await expect(page.locator("#new-actual-name")).toBeVisible();
@@ -155,8 +145,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
-    // Use a year that's GUARANTEED not to be the current calendar year so
-    // the past-month banner fires regardless of when the test runs.
+    await seedExpenseCategory(DB_URL, user.id, "Groceries");
     await seedMonth(DB_URL, user.id, 2099, 1);
 
     await page.goto(`${BASE_URL}/en/months/2099/1`);
@@ -164,9 +153,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
     // Banner copy from PRD §19 / #13.
     await expect(page.getByTestId("past-month-banner")).toBeVisible();
     await expect(
-      page.getByText(
-        "This month is not the current calendar month. Changes are allowed.",
-      ),
+      page.getByText("ATTENTION: This month is not the current calendar month."),
     ).toBeVisible();
 
     // Edits ARE allowed in past months (PRD §7.7). The add-actual form is
@@ -196,13 +183,9 @@ test.describe("UC-11 summary, savings & warnings", () => {
     await expect(
       page.getByRole("heading", { level: 2, name: "Ahorro potencial" }),
     ).toBeVisible();
-    // Spanish warning copy.
-    await expect(
-      page.getByText(
-        "Los tickets reales en esta categoría superan el plan definido en tus plantillas.",
-      ),
-    ).toBeVisible();
-    await expect(page.getByText(/Plan en plantillas:/)).toBeVisible();
+    await page.getByRole("button", { name: /Avisos/ }).click();
+    await expect(page.getByTestId("overspend-badge")).toBeVisible();
+    await expect(page.getByText(/Plan en gastos fijos:/)).toBeVisible();
     await expect(page.getByText(/Excedido por/)).toBeVisible();
   });
 });
@@ -242,10 +225,7 @@ async function seedMonth(
 ): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`
-      INSERT INTO month (user_id, year, month)
-      VALUES (${userId}, ${year}, ${month})
-    `;
+    await insertMonthCloningTemplates(sql, userId, year, month);
   } finally {
     await sql.end({ timeout: 1 });
   }

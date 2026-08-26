@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.3.8] - 2026-08-26
+
+### Added
+- Delete affordance on committed reserved lines in the actuals screen: trash button plus swipe-left, matching estimated reserved lines.
+- Swipe-right on an actual ticket restores the reserved line when Undo is available (unedited pass-to-actual), matching the Undo button.
+
+### Changed
+- GitHub Actions (`common.yml`) runs only Vitest unit tests (`pnpm test:unit`). Integration and Playwright e2e stay local.
+
+### Fixed
+- Month workspace rows no longer steal vertical scrolling: swipe actions wait for a clear horizontal gesture and use `touch-action: pan-y` so the page can scroll over the list.
+- Playwright webServer now starts Next.js with `-p` on the Next command (not via `pnpm run dev -- -p`, which Next.js 16 treated as a project directory) and defaults to port 3000 so it can reuse a running local server.
+- End-to-end specs now match the tabbed month workspace, collapsible committed/warnings sections, and current i18n copy; month seeds clone active templates the same way create-month does.
+
 ## [0.3.7] - 2026-08-25
 
 ### Added

@@ -11,7 +11,7 @@ import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 // sign-in.
 //
 // Acceptance criteria covered:
-//   - Add an income → row appears with name + amount in EUR (ADR-5, §7.6).
+//   - Add an income → row appears with name + amount in € (ADR-5, §7.6).
 //   - Edit the income → amount + name update; the row reflects the change.
 //   - Delete (with confirm) → row disappears; DB row is gone (PRD C15 / §13).
 //   - Adding an income with no active income category shows the
@@ -39,15 +39,15 @@ test.describe("UC-07 month incomes", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    // Add form is rendered with the seeded category preselected.
-    await expect(page.getByRole("heading", { level: 2, name: "Incomes" })).toBeVisible();
+    await page.getByRole("tab", { name: /Incomes/ }).click();
+    await expect(page.locator("#new-income-name")).toBeVisible();
     await page.locator("#new-income-name").fill("Monthly salary");
     await page.locator("#new-income-amount").fill("2000.00");
     await page.getByRole("button", { name: "Add" }).click();
 
     // Row appears with the expected name + amount label.
     await expect(page.getByText("Monthly salary", { exact: true })).toBeVisible();
-    await expect(page.getByText("2000.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-incomes").getByText("2000.00 €", { exact: true })).toBeVisible();
 
     // Edit: switch to edit mode, change the amount, save.
     await page.getByRole("button", { name: "Edit" }).click();
@@ -57,13 +57,13 @@ test.describe("UC-07 month incomes", () => {
     await page.locator('input[id^="edit-income-amount-"]').fill("2500.00");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Year-end bonus", { exact: true })).toBeVisible();
-    await expect(page.getByText("2500.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-incomes").getByText("2500.00 €", { exact: true })).toBeVisible();
 
     // Delete (auto-accept the confirm dialog).
     page.once("dialog", (d) => d.accept());
     await page.getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText("Year-end bonus", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("2500.00 EUR", { exact: true })).toHaveCount(0);
+    await expect(page.locator("#tabpanel-incomes").getByText("2500.00 €", { exact: true })).toHaveCount(0);
     await expect(page.getByText("No incomes yet.")).toBeVisible();
 
     // Verify the DB row is GONE (PRD C15 / §13 hard delete).
@@ -84,6 +84,7 @@ test.describe("UC-07 month incomes", () => {
     await seedMonth(DB_URL, user.id, 2026, 8);
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
+    await page.getByRole("tab", { name: /Incomes/ }).click();
     await expect(
       page.getByText("Create an active income category first."),
     ).toBeVisible();
@@ -100,12 +101,13 @@ test.describe("UC-07 month incomes", () => {
     await seedIncomeCategory(DB_URL, user.id, "Salario");
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
-    await expect(page.getByRole("heading", { level: 2, name: "Ingresos" })).toBeVisible();
+    await page.getByRole("tab", { name: /Ingresos/ }).click();
+    await expect(page.locator("#new-income-name")).toBeVisible();
     await page.locator("#new-income-name").fill("Salario mensual");
     await page.locator("#new-income-amount").fill("2000.00");
     await page.getByRole("button", { name: "Añadir" }).click();
     await expect(page.getByText("Salario mensual", { exact: true })).toBeVisible();
-    await expect(page.getByText("2000.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-incomes").getByText("2000.00 €", { exact: true })).toBeVisible();
   });
 });
 

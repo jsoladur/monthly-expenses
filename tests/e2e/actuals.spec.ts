@@ -10,7 +10,7 @@ import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 //
 // Acceptance criteria covered:
 //   - Add an actual ticket → row appears with name + observations + amount
-//     in EUR (ADR-5, §7.6).
+//     in € (ADR-5, §7.6).
 //   - Edit the actual → amount + name + category + observations update; the
 //     row reflects the change.
 //   - Delete (with confirm) → row disappears; DB row is gone (PRD C15 / §13).
@@ -43,9 +43,7 @@ test.describe("UC-08 actual expenses", () => {
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
     // Add form is rendered with the seeded category preselected.
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Actuals" }),
-    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Actuals/ })).toBeVisible();
     await page.locator("#new-actual-name").fill("Bread");
     await page
       .locator("#new-actual-observations")
@@ -56,7 +54,7 @@ test.describe("UC-08 actual expenses", () => {
     // Row appears with the expected name + observations + amount label.
     await expect(page.getByText("Bread", { exact: true })).toBeVisible();
     await expect(page.getByText("Bakery on 5th", { exact: true })).toBeVisible();
-    await expect(page.getByText("5.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-actuals").getByText("5.00 €", { exact: true })).toBeVisible();
 
     // Edit: switch to edit mode, change the name + observations + amount.
     await page.getByRole("button", { name: "Edit" }).click();
@@ -70,7 +68,7 @@ test.describe("UC-08 actual expenses", () => {
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Bread + milk", { exact: true })).toBeVisible();
     await expect(page.getByText("Combo trip", { exact: true })).toBeVisible();
-    await expect(page.getByText("12.50 EUR", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-actuals").getByText("12.50 €", { exact: true })).toBeVisible();
 
     // Delete (auto-accept the confirm dialog).
     page.once("dialog", (d) => d.accept());
@@ -143,14 +141,12 @@ test.describe("UC-08 actual expenses", () => {
     await seedExpenseCategory(DB_URL, user.id, "Supermercado");
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Gastos reales" }),
-    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Gastos/ })).toBeVisible();
     await page.locator("#new-actual-name").fill("Pan");
     await page.locator("#new-actual-amount").fill("5.00");
     await page.getByRole("button", { name: "Añadir" }).click();
     await expect(page.getByText("Pan", { exact: true })).toBeVisible();
-    await expect(page.getByText("5.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-actuals").getByText("5.00 €", { exact: true })).toBeVisible();
   });
 });
 

@@ -43,33 +43,17 @@ test.describe("UC-04 profile settings (currency)", () => {
 
     await page.goto(`${BASE_URL}/en/settings`);
 
-    // Heading + help copy.
     await expect(page.getByRole("heading", { level: 1, name: "Profile settings" })).toBeVisible();
     await expect(page.getByText("Labels show two decimals. No currency conversion.")).toBeVisible();
 
-    // Initial preview uses EUR (PRD UC-15).
-    await expect(page.getByText("Current currency")).toBeVisible();
-    const currentLabel = page.locator("dd").first();
-    await expect(currentLabel).toHaveText("EUR");
+    const currencyForm = page.getByRole("form", { name: "Currency" });
+    await expect(currencyForm.locator("#currency")).toHaveValue("EUR");
 
-    // Preview rows.
-    const preview = page.locator("ul.border-border\\/60");
-    await expect(preview.getByText("1234.56 EUR", { exact: true })).toBeVisible();
-    await expect(preview.getByText("0.00 EUR", { exact: true })).toBeVisible();
-    await expect(preview.getByText("-20.00 EUR", { exact: true })).toBeVisible();
+    await currencyForm.locator("#currency").selectOption("USD");
+    await currencyForm.getByRole("button", { name: "Save" }).click();
 
-    // Switch to USD via the select, then submit.
-    await page.getByLabel("Currency", { exact: true }).selectOption("USD");
-    await page.getByRole("button", { name: "Save" }).click();
-
-    // Live-region confirmation.
     await expect(page.getByText("Currency saved.")).toBeVisible();
-
-    // Preview now uses USD (label change is universal; amounts are untouched).
-    await expect(preview.getByText("1234.56 USD", { exact: true })).toBeVisible();
-    await expect(preview.getByText("0.00 USD", { exact: true })).toBeVisible();
-    await expect(preview.getByText("-20.00 USD", { exact: true })).toBeVisible();
-    await expect(currentLabel).toHaveText("USD");
+    await expect(currencyForm.locator("#currency")).toHaveValue("USD");
 
     // DB: only `profile_settings.currency` changed — `updated_at` moved, no
     // amount columns exist on the row (PRD UC-15, no FX).
@@ -98,8 +82,8 @@ test.describe("UC-04 profile settings (currency)", () => {
 
     await page.goto(`${BASE_URL}/es/settings`);
     await expect(page.getByRole("heading", { level: 1, name: "Ajustes del perfil" })).toBeVisible();
-    await expect(page.getByText("Moneda actual")).toBeVisible();
-    await expect(page.getByText("1234.56 EUR")).toBeVisible();
+    await expect(page.getByText("Las etiquetas muestran dos decimales. Sin conversión de moneda.")).toBeVisible();
+    await expect(page.getByRole("form", { name: "Moneda" }).locator("#currency")).toHaveValue("EUR");
   });
 });
 

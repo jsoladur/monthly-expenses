@@ -201,6 +201,7 @@
       "cancel": "Cancelar",
       "delete": "Eliminar",
       "confirmDelete": "¿Eliminar este ticket de gasto?",
+      "confirmDeleteReserved": "¿Eliminar esta línea reservada?",
       "placeholder": "p. ej. Pan",
       "observationsPlaceholder": "Notas opcionales",
       "selectCategory": "Elige una categoría",

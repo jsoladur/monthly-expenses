@@ -201,6 +201,7 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "confirmDelete": "Delete this expense ticket?",
+      "confirmDeleteReserved": "Delete this reserved line?",
       "placeholder": "e.g. Bread",
       "observationsPlaceholder": "Optional notes",
       "selectCategory": "Pick a category",

@@ -11,7 +11,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const SWIPE_THRESHOLD = 30;
+const AXIS_LOCK_PX = 8;
 const AW = 80;
+
+type GestureAxis = "undecided" | "horizontal" | "vertical";
 
 interface SwipeActionProps {
   children: ReactNode;
@@ -35,7 +38,9 @@ export function SwipeAction({
   className,
 }: SwipeActionProps) {
   const startXRef = useRef(0);
+  const startYRef = useRef(0);
   const currentXRef = useRef(0);
+  const axisRef = useRef<GestureAxis>("undecided");
   const isDraggingRef = useRef(false);
   const [translateX, setTranslateX] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -49,7 +54,9 @@ export function SwipeAction({
       const touch = e.touches[0];
       if (!touch) return;
       startXRef.current = touch.clientX;
+      startYRef.current = touch.clientY;
       currentXRef.current = 0;
+      axisRef.current = "undecided";
       isDraggingRef.current = true;
       setIsAnimating(false);
     },
@@ -58,10 +65,22 @@ export function SwipeAction({
 
   const handleTouchMove = useCallback(
     (e: TouchEvent<HTMLLIElement>) => {
-      if (!isDraggingRef.current) return;
+      if (!isDraggingRef.current || axisRef.current === "vertical") return;
       const touch = e.touches[0];
       if (!touch) return;
+
       const deltaX = touch.clientX - startXRef.current;
+      const deltaY = touch.clientY - startYRef.current;
+
+      if (axisRef.current === "undecided") {
+        if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < AXIS_LOCK_PX) return;
+        if (Math.abs(deltaY) > Math.abs(deltaX)) {
+          axisRef.current = "vertical";
+          isDraggingRef.current = false;
+          return;
+        }
+        axisRef.current = "horizontal";
+      }
 
       let clampedDelta = deltaX;
       if (deltaX > 0 && !canSwipeRight) clampedDelta = 0;
@@ -76,6 +95,7 @@ export function SwipeAction({
 
   const reset = useCallback(() => {
     isDraggingRef.current = false;
+    axisRef.current = "undecided";
     setIsAnimating(true);
 
     const delta = currentXRef.current;
@@ -94,13 +114,17 @@ export function SwipeAction({
   }, [canSwipeLeft, canSwipeRight, onSwipeLeft, onSwipeRight]);
 
   const handleTouchEnd = useCallback(() => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || axisRef.current !== "horizontal") {
+      isDraggingRef.current = false;
+      axisRef.current = "undecided";
+      return;
+    }
     reset();
   }, [reset]);
 
   const handleTouchCancel = useCallback(() => {
-    if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    axisRef.current = "undecided";
     setIsAnimating(true);
     setTranslateX(0);
   }, []);
@@ -118,7 +142,7 @@ export function SwipeAction({
   return (
     <li
       className={cn(
-        "overflow-hidden touch-none",
+        "overflow-hidden touch-pan-y",
         showLeft && "bg-emerald-600",
         showRight && "bg-destructive",
         className,

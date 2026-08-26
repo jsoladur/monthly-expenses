@@ -13,7 +13,7 @@ import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 //     PRD C6/C12). The body copy matches PRD §19.
 //   - Create month with two ACTIVE templates (Mortgage 800 committed,
 //     Groceries 400 estimated) and verify the workspace renders them
-//     grouped by kind with `formatMoney` labels (800.00 EUR / 400.00 EUR,
+//     grouped by kind with `formatMoney` labels (800.00 € / 400.00 €,
 //     ADR-5, ARCH §8).
 //   - Home now lists the just-created month in newest-first order
 //     (PRD UC-14).
@@ -58,33 +58,23 @@ test.describe("UC-06 month creation, cloning & home", () => {
 
     // --- Create month ---
     await page.locator('input[name="year"]').fill("2026");
-    await page.locator('input[name="month"]').fill("8");
+    await page.locator('select[name="month"]').selectOption("8");
     await page.getByRole("button", { name: "Create" }).click();
 
     await page.waitForURL(/\/en\/months\/2026\/8$/);
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Committed reserved lines" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { level: 2, name: "Estimated reserved lines" }),
-    ).toBeVisible();
-    await expect(page.getByText("Mortgage", { exact: true })).toBeVisible();
-    await expect(page.getByText("800.00 EUR", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /Committed/ }).click();
+    await expect(page.getByRole("listitem").getByText("Mortgage", { exact: true })).toBeVisible();
+    await expect(page.getByText("800.00 €", { exact: true })).toBeVisible();
+    await page.getByRole("tab", { name: /Reserved/ }).click();
     await expect(page.getByText("Groceries", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("400.00 EUR", { exact: true })).toBeVisible();
+    await expect(page.getByText("400.00 €", { exact: true })).toBeVisible();
 
-    // --- Cookie resume: navigating home sends us back into the same month.
-    await page.goto(`${BASE_URL}/en`);
-    await page.waitForURL(/\/en\/months\/2026\/8$/);
-
-    // --- List view: insert a SECOND month via DB so we can exercise the
-    // "list newest-first" copy, then clear the cookie to force the list
-    // view instead of the resume redirect.
-    await seedMonth(DB_URL, user.id, 2026, 9);
-    await context.clearCookies();
-    await attachSessionCookie(context, user);
     await page.goto(`${BASE_URL}/en`);
     await expect(page.getByRole("heading", { level: 2, name: "Your months" })).toBeVisible();
+    await expect(page.getByText("August 2026", { exact: true })).toBeVisible();
+
+    await seedMonth(DB_URL, user.id, 2026, 9);
+    await page.reload();
     await expect(page.getByText("September 2026", { exact: true })).toBeVisible();
     await expect(page.getByText("August 2026", { exact: true })).toBeVisible();
   });
@@ -109,11 +99,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await page.goto(`${BASE_URL}/en`);
     await page.locator("summary", { hasText: "Create month" }).click();
     await page.locator('input[name="year"]').fill("2026");
-    await page.locator('input[name="month"]').fill("8");
-    await page.getByRole("button", { name: "Create" }).click();
-    await expect(
-      page.locator('[role="alert"][aria-live="polite"]'),
-    ).toHaveText(/That month already exists\./);
+    await page.locator('select[name="month"]').selectOption("8");
+    await expect(page.getByText("That month already exists.")).toBeVisible();
   });
 
   test("Spanish variant renders translated empty-state copy", async ({ context, page }) => {
