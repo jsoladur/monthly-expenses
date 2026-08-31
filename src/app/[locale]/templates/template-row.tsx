@@ -178,51 +178,53 @@ export function TemplateRow({
   return (
     <li
       className={
-        "bg-card flex items-center gap-2 rounded-md border p-3 " +
+        "bg-card flex flex-wrap items-start gap-2 rounded-md border p-3 " +
         (template.active ? "" : "opacity-60")
       }
     >
-      <div className="flex flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-sm font-medium">{template.name}</span>
         <span className="text-muted-foreground truncate text-xs">
           {template.categoryName} · {formatMoney(template.amountCents, currency)}
         </span>
         {template.observations && (
-          <span className="text-muted-foreground truncate text-xs italic">
+          <span className="text-muted-foreground text-xs italic wrap-break-word">
             {template.observations}
           </span>
         )}
       </div>
-      {!template.active && (
-        <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
-          {t("inactive")}
-        </span>
-      )}
-      <IconButton
-        icon={<Pencil className="size-4" />}
-        label={t("actions.edit")}
-        disabled={pending}
-        onClick={() => {
-          setIsEditing(true);
-          setError(null);
-          setDraftAmount(centsToInputString(template.amountCents));
-        }}
-      />
-      {template.active ? (
+      <div className="flex shrink-0 items-center gap-2">
+        {!template.active && (
+          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
+            {t("inactive")}
+          </span>
+        )}
         <IconButton
-          icon={<CircleOff className="size-4" />}
-          label={t("actions.deactivate")}
+          icon={<Pencil className="size-4" />}
+          label={t("actions.edit")}
           disabled={pending}
-          onClick={handleDeactivate}
+          onClick={() => {
+            setIsEditing(true);
+            setError(null);
+            setDraftAmount(centsToInputString(template.amountCents));
+          }}
         />
-      ) : (
-        <IconButton
-          icon={<RotateCcw className="size-4" />}
-          label={t("actions.reactivate")}
-          disabled={pending}
-          onClick={handleReactivate}
-        />
-      )}
+        {template.active ? (
+          <IconButton
+            icon={<CircleOff className="size-4" />}
+            label={t("actions.deactivate")}
+            disabled={pending}
+            onClick={handleDeactivate}
+          />
+        ) : (
+          <IconButton
+            icon={<RotateCcw className="size-4" />}
+            label={t("actions.reactivate")}
+            disabled={pending}
+            onClick={handleReactivate}
+          />
+        )}
+      </div>
       {error && (
         <p role="alert" className="text-destructive basis-full text-xs">
           {error}

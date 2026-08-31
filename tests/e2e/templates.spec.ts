@@ -67,6 +67,33 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await expect(page.getByRole("button", { name: "Deactivate" })).toBeVisible();
   });
 
+  test("long observations keep edit and deactivate buttons visible on a narrow viewport", async ({
+    context,
+    page,
+  }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc05-obs-${Date.now()}@example.com`,
+      googleSub: `e2e-uc05-obs-sub-${Date.now()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetUserState(DB_URL, user.id);
+    await seedActiveExpenseCategory(DB_URL, user.id, "Vivienda");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE_URL}/en/templates`);
+
+    const notes =
+      "84 meses - 1ª cuota Oct 2026 - Ult. Cuota Sept 2033 extra payment schedule notes";
+    await page.locator("#new-committed-name").fill("Tesla Model 3");
+    await page.locator("#new-committed-observations").fill(notes);
+    await page.locator("#new-committed-amount").fill("44.33");
+    await page.getByRole("button", { name: "Add" }).click();
+
+    const row = page.locator("li").filter({ hasText: "Tesla Model 3" });
+    await expect(row.getByRole("button", { name: "Edit" })).toBeInViewport();
+    await expect(row.getByRole("button", { name: "Deactivate" })).toBeInViewport();
+  });
+
   test("language switch renders the templates screen in Spanish", async ({
     context,
     page,

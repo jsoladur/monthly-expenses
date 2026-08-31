@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-08-31
+
+### Changed
+- Overspend warnings accordion now sits on the month workspace, immediately after Annual reminders, instead of inside the Actuals tab.
+
+### Fixed
+- Long observations on fixed-expense rows no longer push edit/deactivate buttons off the screen on mobile.
+
 ## [0.3.10] - 2026-08-26
 
 ### Added

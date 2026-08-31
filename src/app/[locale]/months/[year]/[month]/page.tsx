@@ -35,6 +35,7 @@ import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month
 import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
 import { StatsScreen } from "@/app/[locale]/months/[year]/[month]/stats-screen";
 import { AnnualReminderCards, type AnnualReminder } from "@/app/[locale]/months/[year]/[month]/annual-reminder-cards";
+import { OverspendWarnings } from "@/app/[locale]/months/[year]/[month]/overspend-warnings";
 import { AppShell } from "@/components/app-shell";
 import { redirect } from "@/i18n/navigation";
 import { auth, signOut } from "@/auth";
@@ -196,6 +197,8 @@ export default async function MonthWorkspacePage({
           />
         )}
 
+        <OverspendWarnings warnings={overspendWarnings} currency={currency} />
+
         <MonthWorkspaceTabs
           actualsTab={
             <ActualsScreen
@@ -208,7 +211,6 @@ export default async function MonthWorkspacePage({
                 id: c.id,
                 name: c.name,
               }))}
-              overspendWarnings={overspendWarnings}
               committedReservedLines={committedLines}
             />
           }

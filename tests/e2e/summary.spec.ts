@@ -107,7 +107,14 @@ test.describe("UC-11 summary, savings & warnings", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    await page.getByRole("button", { name: /Warnings/ }).click();
+    const warningsToggle = page.getByRole("button", { name: /Warnings/ });
+    const dataTab = page.getByRole("tab", { name: "Data" });
+    await expect(warningsToggle).toBeVisible();
+    const warningsBox = await warningsToggle.boundingBox();
+    const dataBox = await dataTab.boundingBox();
+    expect(warningsBox?.y).toBeLessThan(dataBox?.y ?? Number.POSITIVE_INFINITY);
+
+    await warningsToggle.click();
     await expect(page.getByTestId("overspend-badge")).toBeVisible();
     await expect(page.getByText(/Plan in fixed expenses:/)).toBeVisible();
     await expect(page.getByText(/Over by/)).toBeVisible();

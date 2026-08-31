@@ -79,6 +79,7 @@
     "notUndoable": "This expense was not created by pass-to-actual."
   },
   "warnings": {
+    "title": "Warnings",
     "pastMonth": "ATTENTION: This month is not the current calendar month.",
     "overspend": "Actual tickets in this category are higher than the plan in your fixed expenses.",
     "overspendPlan": "Plan in fixed expenses: {plan}",
@@ -181,7 +182,6 @@
   },
   "actuals": {
     "title": "Actuals",
-    "warnings": "Warnings",
     "new": "New expense ticket",
     "name": "Name",
     "observations": "Observations",

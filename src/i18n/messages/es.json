@@ -79,6 +79,7 @@
     "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer."
   },
   "warnings": {
+    "title": "Avisos",
     "pastMonth": "ATENCIÓN: Este mes no es el mes natural actual.",
     "overspend": "Los tickets reales en esta categoría superan el plan definido en tus gastos fijos.",
     "overspendPlan": "Plan en gastos fijos: {plan}",
@@ -181,7 +182,6 @@
   },
   "actuals": {
     "title": "Gastos reales",
-    "warnings": "Avisos",
     "new": "Nuevo ticket de gasto",
     "name": "Nombre",
     "observations": "Observaciones",

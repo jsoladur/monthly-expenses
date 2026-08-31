@@ -16,8 +16,6 @@ import {
   passToActualAction,
   type PassToActualActionResult,
 } from "@/actions/pass-to-actual";
-import { OverspendBadge } from "@/app/[locale]/months/[year]/[month]/overspend-badge";
-import type { OverspendWarning } from "@/server/services/summary";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Pencil, Trash2, Undo2, ArrowRightCircle } from "lucide-react";
@@ -71,7 +69,6 @@ export function ActualsScreen({
   currency,
   initialActuals,
   expenseCategories,
-  overspendWarnings = [],
   committedReservedLines = [],
 }: {
   monthId: string;
@@ -80,20 +77,9 @@ export function ActualsScreen({
   currency: string;
   initialActuals: ActualRowData[];
   expenseCategories: CategoryOption[];
-  overspendWarnings?: OverspendWarning[];
   committedReservedLines?: ReservedLineRowData[];
 }) {
   const t = useTranslations("actuals");
-
-  // Surface one badge per overspending category that has at least one
-  // ticket in the open month (PRD §7.4). Same dedup rule as
-  // EstimatedReservedLinesScreen — never repeat a badge for the same category.
-  const warningByCategoryId = new Map<string, OverspendWarning>();
-  for (const warning of overspendWarnings) {
-    if (initialActuals.some((row) => row.categoryId === warning.categoryId)) {
-      warningByCategoryId.set(warning.categoryId, warning);
-    }
-  }
 
   return (
     <section className="flex flex-col gap-3">
@@ -104,20 +90,6 @@ export function ActualsScreen({
         currency={currency}
         expenseCategories={expenseCategories}
       />
-
-      {warningByCategoryId.size > 0 && (
-        <Collapsible title={t("warnings")} count={warningByCategoryId.size} variant="warning">
-          <div className="flex flex-col gap-1">
-            {Array.from(warningByCategoryId.values()).map((warning) => (
-              <OverspendBadge
-                key={warning.categoryId}
-                warning={warning}
-                currency={currency}
-              />
-            ))}
-          </div>
-        </Collapsible>
-      )}
 
       {initialActuals.length > 0 && (
         <ul className="flex flex-col gap-1">
