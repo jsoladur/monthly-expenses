@@ -10,7 +10,7 @@ import { Collapsible } from "@/components/ui/collapsible";
 import {
   ChartTooltip,
   CHART_LEGEND_WRAPPER,
-  CHART_TOOLTIP_WRAPPER,
+  CHART_TOOLTIP_PROPS,
 } from "@/components/chart-tooltip";
 
 type Kind = "committed" | "estimated";
@@ -68,15 +68,13 @@ export function TemplatesScreen({
   const moneyTip = (
     <Tooltip
       content={<ChartTooltip formatValue={(v) => formatMoney(v, currency)} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
   const percentTip = (
     <Tooltip
       content={<ChartTooltip formatValue={(v) => `${v.toFixed(1)}%`} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
 

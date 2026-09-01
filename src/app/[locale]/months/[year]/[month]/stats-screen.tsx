@@ -6,7 +6,7 @@ import { formatMoney } from "@/i18n/format";
 import {
   ChartTooltip,
   CHART_LEGEND_WRAPPER,
-  CHART_TOOLTIP_WRAPPER,
+  CHART_TOOLTIP_PROPS,
 } from "@/components/chart-tooltip";
 import { StatsGlossary } from "@/components/stats-glossary";
 
@@ -72,15 +72,13 @@ export function StatsScreen({
   const moneyTip = (
     <Tooltip
       content={<ChartTooltip formatValue={(v) => formatMoney(v, currency)} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
   const percentTip = (
     <Tooltip
       content={<ChartTooltip formatValue={(v) => `${v.toFixed(1)}%`} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
 

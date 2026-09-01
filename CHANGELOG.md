@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-09-01
+
+### Fixed
+- Chart popups stay inside the chart (and the phone screen) and wrap long series names instead of running off in one line.
+
 ## [0.4.1] - 2026-09-01
 
 ### Fixed

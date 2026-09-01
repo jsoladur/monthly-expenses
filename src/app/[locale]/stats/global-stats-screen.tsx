@@ -28,7 +28,8 @@ import { Collapsible } from "@/components/ui/collapsible";
 import {
   ChartTooltip,
   CHART_LEGEND_WRAPPER,
-  CHART_TOOLTIP_WRAPPER,
+  CHART_TOOLTIP_BOX,
+  CHART_TOOLTIP_PROPS,
 } from "@/components/chart-tooltip";
 import {
   CHART_COLORS,
@@ -129,8 +130,7 @@ function moneyTooltipEl(money: (cents: number) => string) {
   return (
     <Tooltip
       content={<ChartTooltip formatValue={money} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
 }
@@ -143,8 +143,7 @@ function sparklineTooltipEl(
   return (
     <Tooltip
       content={<SparklineTooltip money={money} rollingLabel={rollingLabel} monthLabel={monthLabel} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
 }
@@ -168,16 +167,16 @@ function SparklineTooltip({
   const row = payload[0].payload;
   if (typeof row.cents !== "number") return null;
   return (
-    <div className="bg-card text-card-foreground border-border relative z-50 min-w-[10rem] rounded-lg border px-3 py-2 shadow-sm">
-      {row.period ? <p className="mb-1.5 text-xs font-medium">{row.period}</p> : null}
+    <div className={CHART_TOOLTIP_BOX}>
+      {row.period ? <p className="mb-1.5 text-xs font-medium wrap-break-word">{row.period}</p> : null}
       <ul className="flex flex-col gap-1 text-xs">
-        <li className="flex items-baseline justify-between gap-3">
-          <span className="text-muted-foreground">{rollingLabel}</span>
+        <li className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3">
+          <span className="text-muted-foreground min-w-0 wrap-break-word">{rollingLabel}</span>
           <span className="amount shrink-0 tabular-nums">{money(row.cents)}</span>
         </li>
         {typeof row.monthCents === "number" ? (
-          <li className="flex items-baseline justify-between gap-3">
-            <span className="text-muted-foreground">{monthLabel}</span>
+          <li className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3">
+            <span className="text-muted-foreground min-w-0 wrap-break-word">{monthLabel}</span>
             <span className="amount shrink-0 tabular-nums">{money(row.monthCents)}</span>
           </li>
         ) : null}
@@ -190,8 +189,7 @@ function percentTooltipEl() {
   return (
     <Tooltip
       content={<ChartTooltip formatValue={formatPercentPoint} />}
-      wrapperStyle={CHART_TOOLTIP_WRAPPER}
-      allowEscapeViewBox={{ x: true, y: true }}
+      {...CHART_TOOLTIP_PROPS}
     />
   );
 }

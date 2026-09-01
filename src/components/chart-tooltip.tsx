@@ -19,12 +19,22 @@ export const CHART_TOOLTIP_WRAPPER = {
   zIndex: 50,
   pointerEvents: "none" as const,
   outline: "none",
+  maxWidth: "min(16rem, calc(100vw - 2rem))",
+};
+
+/** Keep the popup inside the chart so it never runs off the phone screen. */
+export const CHART_TOOLTIP_PROPS = {
+  wrapperStyle: CHART_TOOLTIP_WRAPPER,
+  allowEscapeViewBox: { x: false, y: false } as const,
 };
 
 export const CHART_LEGEND_WRAPPER = {
   fontSize: "0.75rem",
   zIndex: 0,
 };
+
+export const CHART_TOOLTIP_BOX =
+  "bg-card text-card-foreground border-border relative z-50 w-max max-w-full rounded-lg border px-3 py-2 shadow-sm";
 
 type PayloadItem = {
   name?: string | number;
@@ -50,9 +60,9 @@ export function ChartTooltip({
   if (rows.length === 0) return null;
 
   return (
-    <div className="bg-card text-card-foreground border-border relative z-50 min-w-[10rem] rounded-lg border px-3 py-2 shadow-sm">
+    <div className={CHART_TOOLTIP_BOX}>
       {label !== undefined && label !== "" && (
-        <p className="mb-1.5 text-xs font-medium">{String(label)}</p>
+        <p className="mb-1.5 text-xs font-medium wrap-break-word">{String(label)}</p>
       )}
       <ul className="flex flex-col gap-1">
         {rows.map((item, i) => {
@@ -62,19 +72,24 @@ export function ChartTooltip({
           const key = String(item.dataKey ?? item.name ?? i);
           const name = seriesLabel(item);
           return (
-            <li key={`${key}-${i}`} className="flex items-baseline justify-between gap-3 text-xs">
+            <li
+              key={`${key}-${i}`}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 text-xs"
+            >
               {name ? (
-                <span className="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate">
+                <span className="text-muted-foreground flex min-w-0 items-start gap-1.5">
                   {item.color ? (
                     <span
-                      className="size-2 shrink-0 rounded-full"
+                      className="mt-1 size-2 shrink-0 rounded-full"
                       style={{ backgroundColor: item.color }}
                       aria-hidden
                     />
                   ) : null}
-                  <span className="truncate">{name}</span>
+                  <span className="min-w-0 wrap-break-word">{name}</span>
                 </span>
-              ) : null}
+              ) : (
+                <span />
+              )}
               <span className="amount shrink-0 tabular-nums">{formatValue(num)}</span>
             </li>
           );
