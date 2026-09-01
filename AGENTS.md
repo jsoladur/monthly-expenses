@@ -18,7 +18,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 1. Sources of truth
 
-- `docs/prds/GLOBAL.md` — behavior (PRD). Constraints C1–C18 and money rules §7 are normative.
+- `docs/prds/GLOBAL.md` — behavior (PRD). Constraints C1–C19 and money rules §7 are normative.
 - `docs/architecture/ARCHITECTURE.md` — tech. ADR-1…ADR-10 are binding; do not deviate without asking the Product Owner (ARCH §10).
 - `docs/usecases/UC-INDEX.md` + `docs/IMPLEMENTATION-STATUS.md` — the work plan and its live state.
 - Conflicts: the PRD wins for behavior, the architecture wins for tech. Gaps: ask — never invent libraries, vendors, or behavior.

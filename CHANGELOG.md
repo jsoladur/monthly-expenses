@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- PRD now includes Annuals at a high level (UC-20, C19): yearly reminder catalog, month-workspace reminders by charge month, never auto-create lines. Implementation slice remains `docs/usecases/UC-14-annuals.md`.
+- Docs use only generic fixtures in committed files. Local tenant dumps stay gitignored under `docs/database/prod/`.
+
 ## [0.3.12] - 2026-09-01
 
 ### Added

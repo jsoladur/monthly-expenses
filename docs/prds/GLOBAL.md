@@ -9,7 +9,7 @@
 
 ## 1. Mission
 
-A personal Progressive Web App where an allowlisted user tracks **one calendar month at a time**: incomes, reusable categories, **fixed** commitments, **estimated** envelopes, and **actual** tickets. From day one of a new month, committed/estimated money is already reserved so **potential savings** is visible immediately.
+A personal Progressive Web App where an allowlisted user tracks **one calendar month at a time**: incomes, reusable categories, **fixed** commitments, **estimated** envelopes, and **actual** tickets. From day one of a new month, committed/estimated money is already reserved so **potential savings** is visible immediately. A separate **Annuals** catalog reminds the user of once-a-year charges in the matching calendar month; it never creates money rows by itself.
 
 **Primary job-to-be-done:** open a month, see remaining savings, add a real expense in a few taps, optionally reduce an estimate by hand.
 
@@ -39,6 +39,7 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 | C16 | Reports (year view, category totals) = **not V1**, planned later. |
 | C17 | At **create month**, active fixed + estimated **templates are cloned** into that month instance. After that, the month lives on its own. |
 | C18 | Overspend warning: actuals in a category vs **sum of estimated template amounts** in that category. Warn only, never block. |
+| C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
 
 ---
 
@@ -48,7 +49,7 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 | --- | --- |
 | Visitor | Not signed in. Can only start Google sign-in. |
 | Blocked Google user | Authenticated with Google, email not on allowlist. Sees 403 only. |
-| User | Allowlisted. Owns categories, months, incomes, fixed/estimated lines, actuals, profile settings. |
+| User | Allowlisted. Owns categories, months, incomes, fixed/estimated lines, actuals, annuals, profile settings. |
 | Coding agent / implementer | Builds exactly this spec. Must not share data across users. |
 
 There is **no household sharing** in MVP. Tenancy = one user account.
@@ -69,7 +70,8 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Plan amount (overspend baseline)** | Sum of **estimated** amounts on the **template form** for that category. Not the remaining box in the month. |
 | **Potential savings** | See §7. |
 | **Pass to actual** | One-tap **cut and paste**: remove committed fixed line from the month’s fixed block; create an equivalent actual row. Undo = reverse **only while the actual was not edited**. |
-| **Logical erase** | Soft-delete / deactivate catalogs (categories, templates). Hidden from new pickers. History keeps the id. |
+| **Annual** | Yearly recurring expense reminder (insurance, vehicle tax). Catalog only — not cloned, not a spend series. |
+| **Logical erase** | Soft-delete / deactivate catalogs (categories, templates, annuals). Hidden from new pickers and from annual reminders. Month rows that already reference a category/template keep the id. |
 | **Hard delete** | Row removed. Used for month incomes, month actuals, month fixed lines. |
 
 ---
@@ -78,7 +80,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 
 ### 5.1 Isolation invariant
 
-Every query/mutation for months, categories, incomes, expenses, templates, and settings **must** be scoped to `user_id` of the session. No user can read or write another user’s rows. Agents: treat missing `user_id` filter as a **P0 bug**.
+Every query/mutation for months, categories, incomes, expenses, templates, annuals, and settings **must** be scoped to `user_id` of the session. No user can read or write another user’s rows. Agents: treat missing `user_id` filter as a **P0 bug**.
 
 ### 5.2 Allowlist
 
@@ -177,6 +179,20 @@ No observations. **Hard delete.** Not cloned from templates.
 
 **Hard delete.** Unlimited actuals per month. Never cloned.
 
+### 6.8 Annual (per user, global catalog)
+
+| Field | Rules |
+| --- | --- |
+| expense_category | Mandatory; must be **active** at creation |
+| name | Mandatory |
+| observations | Optional |
+| amount | Optional reference amount (2 decimals, may be negative). Shown on the reminder when set |
+| charge_month | 1–12 — month of the year when it is usually charged |
+| is_direct_debit | Boolean; display badge only |
+| active | Soft-delete; inactive annuals raise **no** reminders |
+
+Catalog only. Not cloned into months. Nothing on a month row references an annual.
+
 ---
 
 ## 7. Money rules (normative)
@@ -261,6 +277,15 @@ Rules:
 - Unused remaining in August does **not** roll into September.
 
 **Incomes are not cloned** (not MVP).
+
+### 7.9 Annual reminders
+
+When the open month’s month-number matches an annual’s `charge_month`, show one **informational** reminder per matching **active** annual (any year — September 2026 and September 2027 both match `charge_month = 9`). Reminders are **not** overspend warnings (those stay amber per §7.4).
+
+- **Never** auto-create a reserved line or actual (C6/C12/C19).
+- Quick-add may **prefill** a month-only reserved-line form (name + category); the user still confirms kind and amount.
+- Reminders do **not** disappear after the user adds a line (no dismissal in V1).
+- Soft-deleted annuals raise no reminders.
 
 ---
 
@@ -374,6 +399,16 @@ potential_savings already subtracts all remainings
 
 - Edit August remaining or add August actuals. Create September → September matches **current templates**, not August’s working copy.
 
+### UC-20 — Annuals (yearly reminders)
+
+Implementation slice: `docs/usecases/UC-14-annuals.md` (PRD **UC-14** remains home / month navigation).
+
+- Per-user catalog of yearly expenses (category, name, optional amount, charge month 1–12, optional direct-debit flag). Soft-delete.
+- Management screen sorted by charge month (locale month names).
+- Open month whose month-number matches `charge_month` → one reminder card per active annual. Inactive → no reminder.
+- User B never sees user A’s annuals.
+- Never auto-creates month lines. Quick-add prefills a one-off reserved line; nothing is written until the user confirms.
+
 ---
 
 ## 10. Screens (logical)
@@ -381,13 +416,14 @@ potential_savings already subtracts all remainings
 1. Sign-in  
 2. 403  
 3. Month list / empty + create month  
-4. Month workspace — summary + incomes + reserved lines + actuals  
+4. Month workspace — summary + **annual reminders (when the month-number matches)** + incomes + reserved lines + actuals  
 5. Expense categories  
 6. Income categories  
 7. Fixed/estimated templates  
 8. Profile settings — currency  
 9. Language switcher  
 10. Install PWA — if not installed  
+11. Annuals catalog — yearly reminders, grouped by charge month  
 
 Mobile-first: add an actual from the month workspace.
 
@@ -398,7 +434,7 @@ Mobile-first: add an actual from the month workspace.
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders.
 
 ---
 
@@ -416,6 +452,7 @@ Mobile-first: add an actual from the month workspace.
 | --- | --- |
 | Expense / income categories | Soft |
 | Templates (fixed/estimated catalog) | Soft |
+| Annuals (yearly reminder catalog) | Soft |
 | Other catalog/settings CRUDs | Soft |
 | Month incomes | Hard |
 | Month actual expenses | Hard |
@@ -442,6 +479,8 @@ Mobile-first: add an actual from the month workspace.
 - Reports (year view, category totals, charts) — future
 - Export/backup UI
 - Income templates / cloning incomes
+- Auto-create reserved lines or actuals from annuals
+- Dismiss / hide an annual reminder after adding a line (future)
 
 ---
 
@@ -466,6 +505,9 @@ Mobile-first: add an actual from the month workspace.
 17. One-off August reserved 30; create September from templates → September has no 30.
 18. Change August grocery remaining to 100; create September → September grocery remaining is template 400, not 100.
 19. Overspend: Food templates 400+50, actuals 500 → warning; month remaining ignored for that warning.
+20. Annual “Home insurance” charge_month = 9, amount 250 → reminder in Sep 2026 and Sep 2027, not in Oct; amount visible when set.
+21. Soft-delete that annual → no reminder; reactivate → reminder returns.
+22. Quick-add from the reminder prefills name + category; no month line exists until the user confirms.
 
 ---
 
@@ -493,8 +535,9 @@ Mobile-first: add an actual from the month workspace.
 | Undo after actual edit | Out of scope. |
 | Missing current month | Do not create. List + create. Cookie resumes last opened if it exists. |
 | Decimal input | `1234.56` only. |
-| Deletes | Soft catalogs; hard month money rows. |
+| Deletes | Soft catalogs (including annuals); hard month money rows. |
 | Cookie | Language + last opened month. |
+| Annuals | Remind by month-number, any year. Never auto-create lines. |
 
 No blocking product questions remain for V1 money behavior.
 
@@ -511,7 +554,8 @@ No blocking product questions remain for V1 money behavior.
 7. Pass-to-actual + undo-if-unedited  
 8. Warnings (past month, overspend vs estimated templates)  
 9. Last-month cookie + PWA install  
-10. Tests: isolation, clone snapshot, August must not leak into September  
+10. Annuals catalog + month-workspace reminders (never auto-create)  
+11. Tests: isolation, clone snapshot, August must not leak into September  
 
 ---
 
@@ -525,3 +569,4 @@ No blocking product questions remain for V1 money behavior.
 - No month: “Create a month to start. Nothing is created automatically.”
 - Overspend: “Actual tickets in this category are higher than the plan in your templates.”
 - Clone: “Fixed and estimated lines are copied when the month is created. This month is independent after that.”
+- Annual reminder: “Usually charged in {month}. Add an estimated/committed line manually if it applies this year.”

@@ -7,13 +7,13 @@
 
 ## Goal
 
-Make adding a one-off fixed/estimated expense to an already-created month an explicit, discoverable flow — for months with exceptional expenses (school books, an annual AMPA fee, a birthday) that must NOT propagate to future months.
+Make adding a one-off fixed/estimated expense to an already-created month an explicit, discoverable flow — for months with exceptional expenses (school books, an annual insurance bill, a birthday) that must NOT propagate to future months.
 
 ## The reference flow (September 2026 example)
 
 1. Create September 2026 (UC-06) → active templates are cloned once (mortgage as committed, groceries as estimated, …).
 2. Add the month's income (UC-07). Actual expenses start at zero — nothing to do.
-3. In the reserved-lines (fixed/estimated) section, use **Add one-off expense**: pick `kind` (`estimated` for school books / AMPA; `committed` for a one-off hard commitment), an ACTIVE expense category, a free-text name ("School books — Enzo"), and the amount.
+3. In the reserved-lines (fixed/estimated) section, use **Add one-off expense**: pick `kind` (`estimated` for school books; `committed` for a one-off hard commitment), an ACTIVE expense category, a free-text name ("School books"), and the amount.
 4. The line appears in the month's reserved block with `origin = 'month_only'`, `remaining_amount = original_amount = amount`, and immediately reduces potential savings (UC-11).
 5. When October 2026 is created later, it clones ONLY the templates — the school-books line is NOT there (PRD §7.8; test scenario #17).
 
@@ -41,7 +41,7 @@ Make adding a one-off fixed/estimated expense to an already-created month an exp
 
 ## Acceptance criteria / tests
 
-- E2E of the reference flow, mirroring PRD §15 #17: create Sep 2026 (mortgage template cloned) → add one-off estimated "School books — Enzo" 120.00 → potential savings drop by 120 → create Oct 2026 → October has NO school-books line.
+- E2E of the reference flow, mirroring PRD §15 #17: create Sep 2026 (mortgage template cloned) → add one-off estimated "School books" 120.00 → potential savings drop by 120 → create Oct 2026 → October has NO school-books line.
 - One-off `committed` line exposes pass-to-actual; one-off `estimated` line does not (PRD §7.5).
 - Undo of a pass-to-actual on a one-off committed line restores it with `origin = 'month_only'`.
 - Inactive expense categories are rejected by the picker.

@@ -192,7 +192,7 @@ BEGIN
     INSERT INTO annual (user_id, category_id, name, observations, amount, charge_month, is_direct_debit, active) VALUES
         (v_user_id, v_cat_home, 'Annual Home Insurance', 'Yearly home insurance premium', 520.00, 1, true, true),
         (v_user_id, v_cat_transport, 'Vehicle Tax', 'Annual vehicle tax payment', 145.50, 3, false, true),
-        (v_user_id, v_cat_education, 'AMPA Fee', 'School parent association annual fee', 225.00, 9, true, true),
+        (v_user_id, v_cat_education, 'School association fee', 'Annual school association fee', 225.00, 9, true, true),
         (v_user_id, v_cat_home, 'Home Insurance Renewal', 'Annual home insurance renewal', NULL, 7, true, true),
         (v_user_id, v_cat_entertainment, 'Summer Camp', 'Annual summer camp for kids', 650.00, 7, false, true),
         (v_user_id, v_cat_personal, 'Holiday Bonus', 'Year-end bonus expense', NULL, 12, false, true);

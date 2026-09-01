@@ -17,7 +17,7 @@
 - **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind.
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002.
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats) is read-only and adds no tables.
 
 ## Build order and dependencies
 
@@ -37,7 +37,8 @@
 | UC-11 | Summary, savings & warnings | UC-13, UC-14, §7.1, §7.4, C8, C18 | UC-07, UC-08, UC-09 |
 | UC-12 | PWA install | UC-04, C11 | UC-00 (slot anywhere) |
 | UC-13 | One-off month expenses (special occasions) | UC-18, §6.6, §7.8 | UC-09 (reuses its `addMonthOnlyLine`; no new backend) |
-| UC-14 | Annuals (yearly expense reminders) | PO decision 2026-08-25 — pending PRD merge; extends §6/§10/§13 | UC-03, UC-06 (recommend after UC-11 + UC-13). **Adds `annual` table (migration 0002)** |
+| UC-14 | Annuals (yearly expense reminders) | UC-20, C19, §6.8, §7.9 | UC-03, UC-06 (recommend after UC-11 + UC-13). **Adds `annual` table (migration 0002)** |
+| UC-15 | Global Stats (multi-year household analysis) | PO decision 2026-09-01 — pending PRD merge; **is** C16 / §14 reports (year view, category totals, charts). THIS file is SoT until merged | UC-01, UC-02, UC-03, UC-04, UC-06, UC-07, UC-08, UC-11. **UC-14 is DONE** — Annuals is in nav and will move into **More**. **No schema change** |
 
 ```mermaid
 flowchart TD
@@ -51,6 +52,7 @@ flowchart TD
     UC03 & UC06 --> UC14
     UC13 --> UC14
     UC00 --> UC12
+    UC04 & UC07 & UC08 & UC11 & UC14 --> UC15
 ```
 
 ## PRD §15 test-scenario map
@@ -76,5 +78,8 @@ flowchart TD
 | 17 One-off August 30 → September has no 30 | UC-09 + UC-06 (E2E flow in UC-13) |
 | 18 August remaining 100 → September remaining is template 400 | UC-09 + UC-06 |
 | 19 Overspend: templates 400+50, actuals 500 → warning | UC-11 |
+| 20 Annual charge_month=9 reminds in Sep any year, not Oct | UC-14 |
+| 21 Soft-delete annual → no reminder; reactivate → reminder returns | UC-14 |
+| 22 Quick-add prefills; no line until confirm | UC-14 |
 
-UC-14 has no PRD §15 scenario (feature postdates PRD v1); its acceptance tests live in the UC-14 file.
+UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.

@@ -96,5 +96,9 @@ $RECYCLE.BIN/
 *.code-workspace
 
 
+# local database backups (prod dumps)
+/docs/database/prod/
+
+
 # misc
 *.pem

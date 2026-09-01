@@ -14,8 +14,8 @@
 
 ## Progress
 
-- Slices DONE: **13 / 14**
-- Next up: **UC-14 Annuals (IN_PROGRESS)**
+- Slices DONE: **15 / 16**
+- Next up: **UC-15 Global Stats** (requirements specified, not started — UC-14 is DONE so the mobile **More** sheet can absorb Annuals)
 
 ## Status table
 
@@ -36,4 +36,5 @@
 | UC-12 | PWA install | DONE | 2026-08-23 | Serwist service worker (`src/app/sw.ts`) now uses `runtimeCaching: []` — precache app shell only, no runtime caching of API/data responses (PRD C11, ARCH §7 / ADR-7). `src/app/manifest.ts` updated with `start_url` / `scope` from `NEXT_PUBLIC_APP_URL` (falls back to `https://expenses.jmsola.dev`), `display: 'standalone'`, icons 192 / 512 / maskable-512 in `public/icons/` (solid-color PNG placeholders generated at build time — swap for real artwork before production). New client component `src/components/pwa-install-prompt.tsx` implements the permanent install affordance (PRD UC-04): detects standalone mode via `display-mode: standalone` media query + iOS `navigator.standalone`, listens for `beforeinstallprompt` on Android Chrome to surface an install button, and shows iOS-specific "Add to Home Screen" instructions on Safari. Dismissable via an X button; hidden once installed. i18n keys expanded under `pwa.install.*` (button / prompt / iosInstructions / dismiss) in both `en.json` and `es.json`; `pwa.offlineNote` updated to match PRD C11 language. Affordance rendered on the home page (`src/app/[locale]/page.tsx`) below the language switcher. Typecheck + lint clean; all unit tests green. |
 | — | Theme preference | DONE | 2026-08-23 | Dark/light/auto theme support (post-MVP enhancement). New `theme_preference` enum (`auto` / `light` / `dark`) added to DBML and Drizzle schema; `profile_settings.theme` column defaults to `auto`. Migration `0001_wakeful_sebastian_shaw.sql` adds the enum and column. New `updateTheme` repository function and service with `InvalidThemeError` validation. New `updateThemeAction` server action. New `src/components/theme-provider.tsx` client component wraps the app, reads user preference, detects system preference via `prefers-color-scheme` media query, applies `dark` class to `<html>`, and persists resolved theme to cookie. Inline script in root layout prevents flash of wrong theme on load. Settings page now includes theme selector alongside currency. i18n keys added under `settings.theme*` in both locales. Typecheck + lint clean; all unit tests green. Note: Schema extended beyond single-migration rule per user request. |
 | UC-13 | One-off month expenses (special occasions) | DONE | | UX flow only — reuses `addMonthOnlyLine` from UC-09; no new backend |
-| UC-14 | Annuals (yearly expense reminders) | IN_PROGRESS | | SCHEMA CHANGE: adds `annual` table (new database migration). Not in PRD v1 — PO decision 2026-08-25 |
+| UC-14 | Annuals (yearly expense reminders) | DONE | 2026-09-01 | Catalog at `/[locale]/annuals` + month-workspace reminders (`getAnnualReminders` by `charge_month`, any year). Schema: `annual` table (migration 0002) + optional `amount` (migration 0003). Soft delete; inactive rows raise no reminders. Already in desktop/mobile nav. Feature shipped in 0.2.0; tracker catch-up. PRD: **UC-20** / C19 (implementation slice stays UC-14). |
+| UC-15 | Global Stats (multi-year household analysis) | PENDING | | Requirements specified (`docs/usecases/UC-15-global-stats.md`). Fulfills PRD C16 reports. No schema change. Recharts already installed. UC-14 is DONE — ready to start (nav reshuffle: mobile **More** sheet). |
