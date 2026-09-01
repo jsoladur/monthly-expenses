@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-01
+
+### Fixed
+- Watch category sparklines show a tooltip with the 12-month rolling total and that month’s spend.
+
 ## [0.4.0] - 2026-09-01
 
 ### Added

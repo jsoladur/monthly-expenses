@@ -1172,6 +1172,8 @@ function TrendsTab({
               copy={signalCopy(t, s, locale)}
               caption={signalCaption(t, s, locale)}
               sparkPoints={s.categoryId ? sparkByCat.get(s.categoryId) : undefined}
+              money={money}
+              locale={locale}
               hero={signalHero(s, money, locale) ?? { value: "—" }}
             />
           ))}
@@ -1415,36 +1417,51 @@ function TrendStatCard({
   copy,
   caption,
   sparkPoints,
+  money,
+  locale,
   hero: heroProp,
 }: {
   signal: TrendSignal;
   title: string;
   copy: string;
   caption: string;
-  sparkPoints?: Array<{ year: number; month: number; cents: number }>;
+  sparkPoints?: Array<{ year: number; month: number; cents: number; monthCents?: number }>;
+  money: (cents: number) => string;
+  locale: "en" | "es";
   hero?: { value: string } | null;
 }) {
+  const t = useTranslations("stats");
   const hero = heroProp ?? signalHero(signal);
   const tone = signalTone(signal);
   if (!hero) return null;
+  const sparkData = (sparkPoints ?? []).map((p) => ({
+    period: monthYear(locale, p.year, p.month),
+    cents: p.cents,
+    monthCents: p.monthCents,
+  }));
   return (
     <article
       data-testid={`signal-${signal.id}`}
-      className={`flex flex-col gap-1 rounded-lg border border-l-[3px] p-4 ${tone.stat}`}
+      className={`flex flex-col gap-1 overflow-visible rounded-lg border border-l-[3px] p-4 ${tone.stat}`}
     >
       <p className="sr-only">{copy}</p>
       <p className="text-muted-foreground truncate text-xs font-medium tracking-wide uppercase">{title}</p>
       <p className={`amount text-2xl font-semibold tabular-nums md:text-3xl ${tone.value}`}>{hero.value}</p>
       <p className="text-muted-foreground text-xs leading-snug">{caption}</p>
-      {sparkPoints && sparkPoints.length > 1 ? (
-        <div className={`mt-1 h-10 w-full ${tone.value}`}>
+      {sparkData.length > 1 ? (
+        <div className={`relative z-10 mt-1 h-10 w-full overflow-visible ${tone.value}`}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sparkPoints} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+            <LineChart data={sparkData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <XAxis dataKey="period" hide />
+              <YAxis hide domain={["auto", "auto"]} />
+              {sparklineTooltipEl(money, t("charts.sparklines.rolling"), t("charts.sparklines.thisMonth"))}
               <Line
                 type="monotone"
                 dataKey="cents"
+                name={title}
                 stroke="currentColor"
                 dot={false}
+                activeDot={{ r: 3 }}
                 strokeWidth={1.5}
                 isAnimationActive={false}
               />
