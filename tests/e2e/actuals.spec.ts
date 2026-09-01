@@ -210,27 +210,6 @@ async function seedExpenseCategory(
   }
 }
 
-async function seedTemplate(
-  dbUrl: string,
-  userId: string,
-  name: string,
-  amount: string,
-): Promise<void> {
-  const sql = postgres(dbUrl, { max: 1, prepare: false });
-  try {
-    const [category] = await sql<{ id: string }[]>`
-      SELECT id FROM category WHERE user_id = ${userId} AND active = true LIMIT 1
-    `;
-    if (!category) throw new Error("seedTemplate: no expense category seeded first");
-    await sql`
-      INSERT INTO template (user_id, category_id, name, amount, kind, active)
-      VALUES (${userId}, ${category.id}, ${name}, ${amount}, 'estimated', true)
-    `;
-  } finally {
-    await sql.end({ timeout: 1 });
-  }
-}
-
 async function seedReservedLine(
   dbUrl: string,
   userId: string,

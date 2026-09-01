@@ -42,7 +42,12 @@ export default async function SearchPage({
 
   return (
     <AppShell email={email} displayName={displayName} avatarUrl={avatarUrl} signOutAction={startSignOut}>
-      <SearchScreen currency={currency} rawQuery={rawQuery} result={result} />
+      <SearchScreen
+        key={rawQuery}
+        currency={currency}
+        rawQuery={rawQuery}
+        result={result}
+      />
     </AppShell>
   );
 }

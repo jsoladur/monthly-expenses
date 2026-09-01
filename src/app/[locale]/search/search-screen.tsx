@@ -27,10 +27,6 @@ export function SearchScreen({
   const [query, setQuery] = useState(rawQuery);
   const canSearch = query.trim().length >= SEARCH_TERM_MIN_LENGTH;
 
-  useEffect(() => {
-    setQuery(rawQuery);
-  }, [rawQuery]);
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     if (!canSearch) {
       event.preventDefault();
