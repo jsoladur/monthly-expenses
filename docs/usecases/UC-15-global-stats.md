@@ -85,6 +85,8 @@ STYLE-GUIDE §4 currently caps bottom nav at **5** items. The live app already h
 
 **More** is a bottom sheet (STYLE-GUIDE §4 forms pattern: `Drawer` on mobile) listing Annuals, Categories, History. Settings stays in the bar because it is how users reach language/theme/sign-out on phones that hide the profile chip.
 
+> **Nav follow-up:** UC-16 adds **Search** (magnifying glass) as the first More item and after History on desktop. STYLE-GUIDE §4 is the live nav spec.
+
 `max-w-4xl` on transactional screens stays. The Stats page is allowed **`max-w-6xl`** (or the full main column) so multi-year charts are readable. Document that exception in STYLE-GUIDE §4 when implementing.
 
 ---

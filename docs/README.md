@@ -11,7 +11,7 @@ The single source of truth for WHAT to build and HOW to build it. Code that cont
 
 | Path | Role | When to read |
 | --- | --- | --- |
-| `prds/GLOBAL.md` | **PRD — source of truth for BEHAVIOR.** Constraints C1–C19, money rules §7, use cases UC-01…UC-20, test scenarios §15, copy snippets §19. | Before ANY feature work. |
+| `prds/GLOBAL.md` | **PRD — source of truth for BEHAVIOR.** Constraints C1–C20, money rules §7, use cases UC-01…UC-21, test scenarios §15, copy snippets §19. | Before ANY feature work. |
 | `architecture/ARCHITECTURE.md` | **Source of truth for TECH.** ADR-1…ADR-10, auth flow §3, data model §4, layering §5, project structure §6, money handling §8, scaffolding §10. | Before ANY feature work. |
 | `database/database.dbml` | Physical schema (dbdiagram.io DBML): 9 tables, singular names, PostgreSQL 16. UC-00 migrates everything except `annual`, which arrives with UC-14 (migration 0002). | When writing repositories or migrations. |
 | `database/seed-ui-evaluation.sql` | Fake demo rows for UI evaluation. | When seeding a local DB for screenshots. |
@@ -31,13 +31,13 @@ The single source of truth for WHAT to build and HOW to build it. Code that cont
 
 ## What UC-INDEX.md means
 
-The PRD is split into implementation slices, `UC-00` … `UC-15`, so the app can be built in steps. `UC-INDEX.md` is the entry point that ties them together:
+The PRD is split into implementation slices, `UC-00` … `UC-16`, so the app can be built in steps. `UC-INDEX.md` is the entry point that ties them together:
 
 - **Build order & dependency table** — a slice is implementable ONLY when every slice in its "Depends on" column is DONE in `IMPLEMENTATION-STATUS.md`.
 - **Dependency graph** (mermaid) — the same information visually.
 - **Global invariants** — rules that apply to EVERY slice (tenancy, money, deletes, i18n, no auto-months).
-- **PRD §15 test-scenario map** — which of the 22 normative test scenarios each slice must turn into green tests.
-- **Key architectural fact:** UC-00 creates the database in one migration. Slices contain NO schema work — the sole exception is **UC-14**, which adds the `annual` table via migration 0002. Annuals are in the PRD as **UC-20** / C19. **UC-15 (Global Stats)** is a Product Owner decision (2026-09-01) that delivers PRD C16 reports; until merged, `docs/usecases/UC-15-global-stats.md` is the behavior source of truth. UC-15 adds **no** tables.
+- **PRD §15 test-scenario map** — which of the 25 normative test scenarios each slice must turn into green tests.
+- **Key architectural fact:** UC-00 creates the database in one migration. Slices contain NO schema work — the sole exception is **UC-14**, which adds the `annual` table via migration 0002. Annuals are in the PRD as **UC-20** / C19. **UC-15 (Global Stats)** is a Product Owner decision (2026-09-01) that delivers PRD C16 reports; until merged, `docs/usecases/UC-15-global-stats.md` is the behavior source of truth. UC-15 adds **no** tables. **UC-16 (Search)** is PRD **UC-21** / C20; it adds **no** tables.
 
 ## Standard work loop (agents)
 
@@ -56,5 +56,5 @@ The PRD is split into implementation slices, `UC-00` … `UC-15`, so the app can
 - **Deletes:** soft for catalogs (`category`, `template`, `annual`); hard for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string keyed, `en`/`es`; month names from locale; amount input always dot-decimal (PRD §11).
 - **Months:** never auto-created; cloned once from active templates at creation; fully independent afterwards (PRD C6/C17/§7.8).
-- **Schema:** table names are singular; the users table is `app_user` because `user` is reserved in PostgreSQL. Only UC-14 adds a table (`annual`).
+- **Schema:** table names are singular; the users table is `app_user` because `user` is reserved in PostgreSQL. Only UC-14 adds a table (`annual`). UC-16 (Search) adds none.
 - **Styling:** all UI follows `style/STYLE-GUIDE.md` — no colors, fonts, or radii outside its tokens.

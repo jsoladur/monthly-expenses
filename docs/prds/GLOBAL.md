@@ -13,6 +13,8 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 
 **Primary job-to-be-done:** open a month, see remaining savings, add a real expense in a few taps, optionally reduce an estimate by hand.
 
+A **Search** screen finds already-recorded actual tickets across years by name or notes (read-only). It does not replace History or the month workspace.
+
 **Not V1 (explicit future):** year view, category totals across months, and other reports. Do not build them now. Keep the model compatible later (stable categories, months, amounts).
 
 ---
@@ -40,6 +42,7 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 | C17 | At **create month**, active fixed + estimated **templates are cloned** into that month instance. After that, the month lives on its own. |
 | C18 | Overspend warning: actuals in a category vs **sum of active template amounts** (committed + estimated) in that category. Warn only, never block. |
 | C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
+| C20 | **Search** finds the user’s own `month_actual_expense` rows by **name or observations** across every created month. Read-only. Explicit submit (not autocomplete — C13). |
 
 ---
 
@@ -71,6 +74,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Potential savings** | See §7. |
 | **Pass to actual** | One-tap **cut and paste**: remove committed fixed line from the month’s fixed block; create an equivalent actual row. Undo = reverse **only while the actual was not edited**. |
 | **Annual** | Yearly recurring expense reminder (insurance, vehicle tax). Catalog only — not cloned, not a spend series. |
+| **Search** | Read-only finder of actual tickets by name or observations, any year. Not History (browse months) and not Stats (aggregates). |
 | **Logical erase** | Soft-delete / deactivate catalogs (categories, templates, annuals). Hidden from new pickers and from annual reminders. Month rows that already reference a category/template keep the id. |
 | **Hard delete** | Row removed. Used for month incomes, month actuals, month fixed lines. |
 
@@ -409,6 +413,16 @@ Implementation slice: `docs/usecases/UC-14-annuals.md` (PRD **UC-14** remains ho
 - User B never sees user A’s annuals.
 - Never auto-creates month lines. Quick-add prefills a one-off reserved line; nothing is written until the user confirms.
 
+### UC-21 — Search (find actual expenses)
+
+Implementation slice: `docs/usecases/UC-16-search.md` (PRD **UC-16** remains negative amounts).
+
+- Signed-in user opens **Search** (first-class destination; on mobile it lives under **More**).
+- Form: one text field + **Search** button. Submit runs a tenant-scoped SQL `LIKE` on `month_actual_expense.name` **OR** `observations` after sanitizing the query (trim, collapse spaces, fold accents, lowercase, escape `LIKE` wildcards).
+- Results are **read-only** ticket rows (same visual as the month-workspace actuals list, without edit/delete/undo). Grouped by year then month. Tapping a row opens that month workspace.
+- User B never sees user A’s tickets.
+- Does not search incomes, reserved lines, templates, or categories. Does not autocomplete (C13).
+
 ---
 
 ## 10. Screens (logical)
@@ -424,8 +438,9 @@ Implementation slice: `docs/usecases/UC-14-annuals.md` (PRD **UC-14** remains ho
 9. Language switcher  
 10. Install PWA — if not installed  
 11. Annuals catalog — yearly reminders, grouped by charge month  
+12. Search — find actual tickets by name or note, any year  
 
-Mobile-first: add an actual from the month workspace.
+Mobile-first: add an actual from the month workspace. Search is first-mobile: field + button, then a year-banded ticket list.
 
 ---
 
@@ -434,7 +449,7 @@ Mobile-first: add an actual from the month workspace.
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning, annual reminders.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short.
 
 ---
 
@@ -508,6 +523,9 @@ Mobile-first: add an actual from the month workspace.
 20. Annual “Home insurance” charge_month = 9, amount 250 → reminder in Sep 2026 and Sep 2027, not in Oct; amount visible when set.
 21. Soft-delete that annual → no reminder; reactivate → reminder returns.
 22. Quick-add from the reminder prefills name + category; no month line exists until the user confirms.
+23. User B searching the same fragment as user A sees none of A’s tickets.
+24. Query `cafe` matches a ticket named `Café Central`; a note-only match also returns; Spanish shell uses “Buscar”.
+25. Hard-delete that ticket → it disappears from Search.
 
 ---
 
@@ -538,6 +556,7 @@ Mobile-first: add an actual from the month workspace.
 | Deletes | Soft catalogs (including annuals); hard month money rows. |
 | Cookie | Language + last opened month. |
 | Annuals | Remind by month-number, any year. Never auto-create lines. |
+| Search | Name or observations, sanitized `LIKE`, read-only. Not autocomplete. |
 
 No blocking product questions remain for V1 money behavior.
 
@@ -556,6 +575,7 @@ No blocking product questions remain for V1 money behavior.
 9. Last-month cookie + PWA install  
 10. Annuals catalog + month-workspace reminders (never auto-create)  
 11. Tests: isolation, clone snapshot, August must not leak into September  
+12. Search actuals by name or notes (read-only) 
 
 ---
 
@@ -570,3 +590,5 @@ No blocking product questions remain for V1 money behavior.
 - Overspend: “Actual tickets in this category are higher than the plan in your templates.”
 - Clone: “Fixed and estimated lines are copied when the month is created. This month is independent after that.”
 - Annual reminder: “Usually charged in {month}. Add an estimated/committed line manually if it applies this year.”
+- Search idle: “Find a ticket from any year. Search matches the name or the note.”
+- Search empty: “No tickets match that text. Try another word.”

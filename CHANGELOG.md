@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Search page specification (UC-16 / PRD UC-21): find actual expenses across years by name or notes.
+
 ## [0.4.2] - 2026-09-01
 
 ### Fixed

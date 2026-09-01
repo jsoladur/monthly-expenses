@@ -169,11 +169,11 @@ Tailwind v4 mapping (same file):
 ## 4. Layout — mobile-first, adaptive
 
 - **Base = 360px phone.** Design every screen mobile-first; enhance at `md` (768px) and `lg` (1024px). Never design desktop-first and shrink.
-- **App shell, mobile:** single column; sticky summary header; bottom navigation with **exactly 5** items — **Home · Stats · Fixed · More · Settings** — with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode. **More** opens a bottom sheet (`Drawer`) listing Annuals, Categories, History. Settings stays in the bar.
-- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted) with **Home · Stats · Fixed · Annuals · Categories · History · Settings** + content column `max-w-4xl mx-auto`. **Exception:** Global Stats (`/stats`) may use `max-w-6xl` so multi-year charts stay readable. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
+- **App shell, mobile:** single column; sticky summary header; bottom navigation with **exactly 5** items — **Home · Stats · Fixed · More · Settings** — with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode. **More** opens a bottom sheet (`Drawer`) listing **Search** (magnifying glass, first), Annuals, Categories, History. Settings stays in the bar.
+- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted) with **Home · Stats · Fixed · Annuals · Categories · History · Search · Settings** + content column `max-w-4xl mx-auto`. **Exception:** Global Stats (`/stats`) may use `max-w-6xl` so multi-year charts stay readable. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
 - **Month workspace on `lg+`:** two-column grid — summary + incomes left, reserved lines + actuals right (`lg:grid-cols-2 lg:gap-8`). On mobile they stack: summary → reminders (if any) → actuals → reserved → incomes.
 - **Touch targets ≥ 44×44px** everywhere; the add-actual button is a floating action button (bottom-right, above the bottom nav) on mobile and a regular primary button in the header on desktop.
-- **Forms:** bottom sheet on mobile, centered dialog on `md+` (shadcn `Drawer`/`Dialog` responsive pattern). Amount field is the first field, `inputMode="decimal"`, right-aligned, `.amount` utility.
+- **Forms:** bottom sheet on mobile, centered dialog on `md+` (shadcn `Drawer`/`Dialog` responsive pattern). Amount field is the first field, `inputMode="decimal"`, right-aligned, `.amount` utility. **Exception (UC-16 Search):** the finder is a sticky on-page dock, not a drawer — submit is the primary Search button.
 - **Spacing:** 4pt scale (`p-4` base screen padding, `gap-3` list rows, `gap-6`/`gap-8` between sections). Generous whitespace is the minimalism — not extra borders or dividers.
 
 ---
@@ -190,7 +190,8 @@ Tailwind v4 mapping (same file):
 - **Potential-savings hero:** the only gradient element — brand gradient card, white tabular-nums number, label from i18n keys. Positive number in white; if negative, switch the card to solid `--destructive` (no gradient) so the state is unmistakable.
 - **Warnings:** amber, never blocking (PRD §7.4). Overspend = amber badge on the category row; past-month = amber banner under the header. Red is reserved for destructive actions, not warnings.
 - **Lists:** one row per money line — name (truncated), category badge, right-aligned tabular amount. Tap row → edit sheet. Delete lives inside the edit sheet, not as a row trash icon (prevents mis-taps on mobile).
-- **Empty states:** ink illustration-free — big tabular "0.00", one sentence of keyed copy (PRD §19), one primary button. No stock images.
+- **Search (UC-16):** mobile-first finder. Sticky **sky-tint** dock (input + primary Search button, 44px targets). Results grouped by **year spine** then locale month name; each row is the Actuals **read** layout with **no** edit/delete/undo/swipe. No gradient hero, no live-as-you-type. Whole row links to that month workspace. Idle/empty copy is directional (STYLE-GUIDE empty-state rule: one sentence + no illustration).
+- **Empty states:** ink illustration-free — big tabular "0.00", one sentence of keyed copy (PRD §19), one primary button. No stock images. Search idle is copy-only (no fake `0.00`).
 - **403 page:** centered, navy shield logo, keyed copy, no nav chrome (PRD C3 — no app shell).
 - **Focus:** 2px `--ring` outline, `focus-visible` only. Never remove outlines.
 

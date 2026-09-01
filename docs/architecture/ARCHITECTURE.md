@@ -204,7 +204,7 @@ Rules:
 
 1. **Repositories require `userId` as an explicit first parameter** and apply it in every `WHERE`. There is no way to call a repository without a tenant id. This is the enforcement mechanism for PRD §5.1.
 2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot, pass-to-actual (committed only), overspend vs **active template** sums.
-3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files.
+3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16) stay in RSC: GET `?q=` → service → repository SQL. Do not add a mutation-shaped server action for a search.
 4. Amounts cross the wire as **strings** (`"1234.56"`). Zod schema: `^-?\d{1,12}\.\d{2}$` (PRD C9: dot decimal, 2 places, may be negative).
 
 ---
@@ -237,6 +237,7 @@ expenses/
 │   │   │   ├── months/[year]/[month]/page.tsx   # month workspace (mobile-first)
 │   │   │   ├── stats/page.tsx                   # Global Stats (UC-15)
 │   │   │   ├── history/page.tsx
+│   │   │   ├── search/page.tsx                  # Search actuals (UC-16)
 │   │   │   ├── annuals/page.tsx
 │   │   │   ├── categories/page.tsx              # expense + income tabs
 │   │   │   ├── templates/page.tsx

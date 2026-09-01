@@ -14,8 +14,8 @@
 
 ## Progress
 
-- Slices DONE: **16 / 16**
-- Next up: **—** (all use-case slices shipped)
+- Slices DONE: **16 / 17**
+- Next up: **UC-16** (Search — find actual expenses across years)
 
 ## Status table
 
@@ -38,3 +38,4 @@
 | UC-13 | One-off month expenses (special occasions) | DONE | | UX flow only — reuses `addMonthOnlyLine` from UC-09; no new backend |
 | UC-14 | Annuals (yearly expense reminders) | DONE | 2026-09-01 | Catalog at `/[locale]/annuals` + month-workspace reminders (`getAnnualReminders` by `charge_month`, any year). Schema: `annual` table (migration 0002) + optional `amount` (migration 0003). Soft delete; inactive rows raise no reminders. Already in desktop/mobile nav. Feature shipped in 0.2.0; tracker catch-up. PRD: **UC-20** / C19 (implementation slice stays UC-14). |
 | UC-15 | Global Stats (multi-year household analysis) | DONE | 2026-09-01 | Read-only `/[locale]/stats` observatory (C16 reports). No schema change. Recharts only. Desktop: Stats after Home. Mobile: Home · Stats · Fixed · More · Settings; More lists Annuals, Categories, History. Stats width `max-w-6xl`. |
+| UC-16 | Search (find actual expenses across years) | PENDING | | Read-only `/[locale]/search`. SQL `LIKE` on `month_actual_expense.name` OR `observations` after accent-fold. Mobile: Search lives in **More** (magnifying glass). No schema change. |

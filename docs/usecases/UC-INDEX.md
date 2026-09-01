@@ -17,7 +17,7 @@
 - **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind.
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats) is read-only and adds no tables.
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats) and UC-16 (Search) are read-only and add no tables.
 
 ## Build order and dependencies
 
@@ -39,6 +39,7 @@
 | UC-13 | One-off month expenses (special occasions) | UC-18, §6.6, §7.8 | UC-09 (reuses its `addMonthOnlyLine`; no new backend) |
 | UC-14 | Annuals (yearly expense reminders) | UC-20, C19, §6.8, §7.9 | UC-03, UC-06 (recommend after UC-11 + UC-13). **Adds `annual` table (migration 0002)** |
 | UC-15 | Global Stats (multi-year household analysis) | PO decision 2026-09-01 — pending PRD merge; **is** C16 / §14 reports (year view, category totals, charts). THIS file is SoT until merged | UC-01, UC-02, UC-03, UC-04, UC-06, UC-07, UC-08, UC-11. **UC-14 is DONE** — Annuals is in nav and will move into **More**. **No schema change** |
+| UC-16 | Search (find actual expenses across years) | PRD **UC-21** / C20. THIS file is the detailed slice | UC-01, UC-02, UC-03, UC-04, UC-06, UC-08. **No schema change** |
 
 ```mermaid
 flowchart TD
@@ -53,6 +54,7 @@ flowchart TD
     UC13 --> UC14
     UC00 --> UC12
     UC04 & UC07 & UC08 & UC11 & UC14 --> UC15
+    UC01 & UC02 & UC08 --> UC16
 ```
 
 ## PRD §15 test-scenario map
@@ -81,5 +83,8 @@ flowchart TD
 | 20 Annual charge_month=9 reminds in Sep any year, not Oct | UC-14 |
 | 21 Soft-delete annual → no reminder; reactivate → reminder returns | UC-14 |
 | 22 Quick-add prefills; no line until confirm | UC-14 |
+| 23 Search is tenant-scoped (user B never sees user A’s tickets) | UC-16 |
+| 24 Search matches name OR observations after accent-fold; Spanish shell | UC-16 |
+| 25 Hard-deleted actual disappears from Search | UC-16 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.
