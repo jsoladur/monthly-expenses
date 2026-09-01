@@ -14,8 +14,8 @@
 
 ## Progress
 
-- Slices DONE: **16 / 17**
-- Next up: **UC-16** (Search — find actual expenses across years)
+- Slices DONE: **17 / 17**
+- Next up: —
 
 ## Status table
 
@@ -38,4 +38,4 @@
 | UC-13 | One-off month expenses (special occasions) | DONE | | UX flow only — reuses `addMonthOnlyLine` from UC-09; no new backend |
 | UC-14 | Annuals (yearly expense reminders) | DONE | 2026-09-01 | Catalog at `/[locale]/annuals` + month-workspace reminders (`getAnnualReminders` by `charge_month`, any year). Schema: `annual` table (migration 0002) + optional `amount` (migration 0003). Soft delete; inactive rows raise no reminders. Already in desktop/mobile nav. Feature shipped in 0.2.0; tracker catch-up. PRD: **UC-20** / C19 (implementation slice stays UC-14). |
 | UC-15 | Global Stats (multi-year household analysis) | DONE | 2026-09-01 | Read-only `/[locale]/stats` observatory (C16 reports). No schema change. Recharts only. Desktop: Stats after Home. Mobile: Home · Stats · Fixed · More · Settings; More lists Annuals, Categories, History. Stats width `max-w-6xl`. |
-| UC-16 | Search (find actual expenses across years) | PENDING | | Read-only `/[locale]/search`. SQL `LIKE` on `month_actual_expense.name` OR `observations` after accent-fold. Mobile: Search lives in **More** (magnifying glass). No schema change. |
+| UC-16 | Search (find actual expenses across years) | DONE | 2026-09-01 | Read-only `/[locale]/search`. SQL `LIKE` on folded `name` OR `observations` (no `pg_trgm`/`unaccent`). Desktop: Search after History. Mobile: 5 tabs unchanged; Search is first in More. GET `?q=`, cap 100, integer cents. Year spine is sticky on `lg+` (left eyebrow); month groups stay in-flow on mobile so the year label cannot cover a ticket row. |

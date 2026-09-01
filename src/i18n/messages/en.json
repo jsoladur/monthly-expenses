@@ -56,6 +56,7 @@
     "annuals": "Annuals",
     "categories": "Categories",
     "templates": "Fixed",
+    "search": "Search",
     "settings": "Settings",
     "signOut": "Sign out"
   },
@@ -178,6 +179,21 @@
     },
     "year": {
       "empty": "No months created for this year."
+    }
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Name or note",
+    "actions": {
+      "submit": "Search"
+    },
+    "idle": "Find a ticket from any year. Search matches the name or the note.",
+    "tooShort": "Type at least three letters.",
+    "empty": "No tickets match “{q}”. Try another word.",
+    "count": "{count, plural, one {# ticket} other {# tickets}}",
+    "truncated": "Showing the first 100. Narrow the search.",
+    "a11y": {
+      "results": "Results"
     }
   },
   "incomes": {

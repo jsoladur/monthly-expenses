@@ -7,6 +7,7 @@ import {
   BarChart3,
   Calendar,
   History,
+  Search,
   Settings,
   Bell,
   Tags,
@@ -49,6 +50,7 @@ const DESKTOP_ITEMS: NavItem[] = [
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
   { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
+  { href: "/search", icon: Search, labelKey: "search", testId: "nav-search" },
   { href: "/settings", icon: Settings, labelKey: "settings", testId: "nav-settings" },
 ];
 
@@ -59,6 +61,7 @@ const MOBILE_PRIMARY: NavItem[] = [
 ];
 
 const MORE_ITEMS: NavItem[] = [
+  { href: "/search", icon: Search, labelKey: "search", testId: "nav-search" },
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
   { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },

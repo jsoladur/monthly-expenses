@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Search page specification (UC-16 / PRD UC-21): find actual expenses across years by name or notes.
+- Search at `/[locale]/search` (UC-16 / PRD UC-21): find actual expense tickets across years by name or note.
+
+### Changed
+- Desktop sidebar: Home · Stats · Fixed · Annuals · Categories · History · Search · Settings.
+- Mobile More sheet: Search · Annuals · Categories · History.
 
 ## [0.4.2] - 2026-09-01
 

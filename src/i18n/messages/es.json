@@ -56,6 +56,7 @@
     "annuals": "Anuales",
     "categories": "Categorías",
     "templates": "Fijos",
+    "search": "Buscar",
     "settings": "Ajustes",
     "signOut": "Cerrar sesión"
   },
@@ -178,6 +179,21 @@
     },
     "year": {
       "empty": "No se han creado meses para este año."
+    }
+  },
+  "search": {
+    "title": "Buscar",
+    "placeholder": "Nombre o nota",
+    "actions": {
+      "submit": "Buscar"
+    },
+    "idle": "Encuentra un gasto de cualquier año. La búsqueda mira el nombre o la nota.",
+    "tooShort": "Escribe al menos tres letras.",
+    "empty": "Ningún gasto coincide con “{q}”. Prueba otra palabra.",
+    "count": "{count, plural, one {# gasto} other {# gastos}}",
+    "truncated": "Mostrando los primeros 100. Afina la búsqueda.",
+    "a11y": {
+      "results": "Resultados"
     }
   },
   "incomes": {

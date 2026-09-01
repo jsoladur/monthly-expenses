@@ -120,7 +120,7 @@ Canonical helper (unit-tested, used by the service **before** the repository run
 | 2. Unicode fold | `normalize('NFD')` then strip combining marks (`\p{M}`). This turns `é` → `e`, `ñ` → `n`, `ü` → `u`. |
 | 3. Case | Lowercase with a locale-independent transform (`toLowerCase` on the folded string is enough for `en`/`es`). |
 | 4. Trim + collapse | Trim; collapse internal whitespace to a **single space**. |
-| 5. Minimum | If the result is shorter than **2** characters, return `null` (do not query). |
+| 5. Minimum | If the result is shorter than **3** characters, return `null` (do not query). |
 | 6. LIKE escape | Escape `\`, `%`, and `_` so a user typing `%` does not mean “match everything”. |
 
 The repository binds the escaped term as a parameter. Pattern:
@@ -193,7 +193,7 @@ Return at most **100** hits. If the query finds 101 rows, return 100 and set `tr
 | `?q=` | Repository | UI |
 | --- | --- | --- |
 | Missing or whitespace-only | **Do not call** | Idle state (§8.4) |
-| Sanitizes to `null` (1 character after fold, etc.) | **Do not call** | Too-short error on the form |
+| Sanitizes to `null` (fewer than 3 characters after fold, etc.) | **Do not call** | Too-short error on the form |
 | Sanitizes to a term, 0 rows | Called | No-match empty state |
 | Sanitizes to a term, 1–100 rows | Called | Ledger |
 
@@ -325,7 +325,7 @@ Write from the user’s side. Same verb on the nav, the `h1`, and the button: Se
 | `search.placeholder` | Name or note | Nombre o nota |
 | `search.actions.submit` | Search | Buscar |
 | `search.idle` | Find a ticket from any year. Search matches the name or the note. | Encuentra un gasto de cualquier año. La búsqueda mira el nombre o la nota. |
-| `search.tooShort` | Type at least two letters. | Escribe al menos dos letras. |
+| `search.tooShort` | Type at least three letters. | Escribe al menos tres letras. |
 | `search.empty` | No tickets match “{q}”. Try another word. | Ningún gasto coincide con “{q}”. Prueba otra palabra. |
 | `search.count` | {count, plural, one {# ticket} other {# tickets}} | {count, plural, one {# gasto} other {# gastos}} |
 | `search.truncated` | Showing the first 100. Narrow the search. | Mostrando los primeros 100. Afina la búsqueda. |
@@ -370,7 +370,7 @@ Mapped PRD §15 scenarios: **#23, #24, #25**. Plus the slice tests below.
 
 1. `"  Café  "` → `"cafe"` (trim, fold, lower).
 2. `"niño"` → `"nino"`.
-3. `"a"` → `null` (too short).
+3. `"a"` / `"ab"` → `null` (too short; minimum is **3**).
 4. `"%all%"` → escaped so `%` and `_` are literals (`\%all\%` or equivalent).
 5. Internal `"oat    milk"` → `"oat milk"`.
 6. Empty / whitespace-only → `null`.
