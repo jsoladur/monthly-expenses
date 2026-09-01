@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-09-01
+
+### Added
+- Back link on the month workspace: "Back to home" by default, or "Back to {year}" when the month was opened from History.
+
+### Fixed
+- Row action tooltips on Actuals, Reserved, Committed, and Incomes no longer get clipped by the swipe-row container.
+
 ## [0.3.11] - 2026-08-31
 
 ### Changed

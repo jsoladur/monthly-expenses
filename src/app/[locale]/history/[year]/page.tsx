@@ -75,7 +75,7 @@ export default async function HistoryYearPage({
               {months.map((m) => (
                 <li key={m.id}>
                   <Link
-                    href={`/months/${m.year}/${m.month}`}
+                    href={`/months/${m.year}/${m.month}?from=history`}
                     className="bg-card text-card-foreground hover:bg-accent flex items-center justify-between rounded-lg border px-4 py-3 text-sm font-medium transition-colors"
                   >
                     <span>{monthYear(locale as AppLocale, m.year, m.month)}</span>

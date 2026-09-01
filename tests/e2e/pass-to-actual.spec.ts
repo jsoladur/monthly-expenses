@@ -51,7 +51,13 @@ test.describe("UC-10 pass-to-actual & undo", () => {
 
     await page.getByRole("button", { name: /Committed/ }).click();
     await expect(page.getByRole("listitem").getByText("Mortgage", { exact: true })).toBeVisible();
-    await expect(page.getByText("800.00 €", { exact: true }).first()).toBeVisible();
+
+    const passButton = page.getByRole("button", { name: "Pass to actual", exact: true });
+    await passButton.hover();
+    const tooltip = page.getByRole("tooltip", { name: "Pass to actual" });
+    await expect(tooltip).toBeVisible();
+    const tooltipBox = await tooltip.boundingBox();
+    expect(tooltipBox?.height).toBeGreaterThan(12);
 
     page.once("dialog", (d) => d.accept());
     await page

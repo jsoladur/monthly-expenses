@@ -119,6 +119,48 @@ test.describe("UC-06 month creation, cloning & home", () => {
       page.getByText("Nada se crea automáticamente. Elige un mes y un año para comenzar."),
     ).toBeVisible();
   });
+
+  test("month workspace shows Back to home and returns to the home list", async ({
+    context,
+    page,
+  }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc06-back-home-${Date.now()}@example.com`,
+      googleSub: `e2e-uc06-back-home-sub-${Date.now()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetMonthState(DB_URL, user.id);
+    await seedMonth(DB_URL, user.id, 2026, 8);
+
+    await page.goto(`${BASE_URL}/en/months/2026/8`);
+    await expect(page.getByRole("link", { name: "← Back to home" })).toBeVisible();
+    await page.getByRole("link", { name: "← Back to home" }).click();
+    await page.waitForURL(/\/en\/?$/);
+    await expect(page.getByRole("heading", { level: 2, name: "Your months" })).toBeVisible();
+  });
+
+  test("opening a month from History shows Back to the year and returns there", async ({
+    context,
+    page,
+  }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc06-back-hist-${Date.now()}@example.com`,
+      googleSub: `e2e-uc06-back-hist-sub-${Date.now()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetMonthState(DB_URL, user.id);
+    await seedMonth(DB_URL, user.id, 2025, 3);
+
+    await page.goto(`${BASE_URL}/en/history`);
+    await page.getByRole("link", { name: "2025" }).click();
+    await page.waitForURL(/\/en\/history\/2025$/);
+    await page.getByRole("link", { name: /March 2025/ }).click();
+    await page.waitForURL(/\/en\/months\/2025\/3\?from=history$/);
+    await expect(page.getByRole("link", { name: "← Back to 2025" })).toBeVisible();
+    await page.getByRole("link", { name: "← Back to 2025" }).click();
+    await page.waitForURL(/\/en\/history\/2025$/);
+    await expect(page.getByRole("heading", { name: "2025" })).toBeVisible();
+  });
 });
 
 // ----------------------------------------------------------------------------

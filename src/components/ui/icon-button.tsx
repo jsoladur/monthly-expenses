@@ -1,4 +1,7 @@
-import { type ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +18,25 @@ export function IconButton({
   variant?: "ghost" | "default" | "outline" | "secondary" | "destructive";
   destructive?: boolean;
 } & Omit<React.ComponentProps<typeof Button>, "children" | "title">) {
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const [tip, setTip] = useState<{ top: number; left: number } | null>(null);
+
+  const show = () => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setTip({ top: rect.top - 8, left: rect.left + rect.width / 2 });
+  };
+
   return (
-    <span className="group/icon-btn relative inline-flex">
+    <span
+      ref={wrapRef}
+      className="inline-flex"
+      onMouseEnter={show}
+      onMouseLeave={() => setTip(null)}
+      onFocus={show}
+      onBlur={() => setTip(null)}
+    >
       <Button
         type="button"
         variant={variant}
@@ -31,12 +51,17 @@ export function IconButton({
       >
         {icon}
       </Button>
-      <span
-        role="tooltip"
-        className="bg-popover text-popover-foreground pointer-events-none absolute -top-9 left-1/2 z-50 -translate-x-1/2 rounded-md px-2 py-1 text-xs font-medium opacity-0 shadow-md transition-opacity group-hover/icon-btn:opacity-100"
-      >
-        {label}
-      </span>
+      {tip &&
+        createPortal(
+          <span
+            role="tooltip"
+            className="bg-popover text-popover-foreground pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap shadow-md"
+            style={{ top: tip.top, left: tip.left }}
+          >
+            {label}
+          </span>,
+          document.body,
+        )}
     </span>
   );
 }

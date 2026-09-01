@@ -105,6 +105,8 @@
       "submit": "Crear",
       "cancel": "Cancelar"
     },
+    "backToHome": "Volver al inicio",
+    "backToYear": "Volver a {year}",
     "clone": "Los gastos fijos se copian al crear el mes. Este mes es independiente a partir de ahí.",
     "summary": {
       "income": "Ingresos",

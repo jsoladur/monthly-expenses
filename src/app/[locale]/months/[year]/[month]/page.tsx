@@ -37,16 +37,21 @@ import { StatsScreen } from "@/app/[locale]/months/[year]/[month]/stats-screen";
 import { AnnualReminderCards, type AnnualReminder } from "@/app/[locale]/months/[year]/[month]/annual-reminder-cards";
 import { OverspendWarnings } from "@/app/[locale]/months/[year]/[month]/overspend-warnings";
 import { AppShell } from "@/components/app-shell";
-import { redirect } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { auth, signOut } from "@/auth";
 import { MonthWorkspaceTabs } from "@/app/[locale]/months/[year]/[month]/month-workspace-tabs";
 
 export default async function MonthWorkspacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; year: string; month: string }>;
+  searchParams: Promise<{ from?: string | string[] }>;
 }) {
   const { locale, year: yearStr, month: monthStr } = await params;
+  const { from: fromRaw } = await searchParams;
+  const from = Array.isArray(fromRaw) ? fromRaw[0] : fromRaw;
+  const cameFromHistory = from === "history";
   if (!isAppLocale(locale)) {
     redirect({ href: "/", locale: routing.defaultLocale });
   }
@@ -160,6 +165,7 @@ export default async function MonthWorkspacePage({
   const avatarUrl = session?.user?.image ?? null;
 
   const t = await getTranslations({ locale, namespace: "months.tabs" });
+  const tMonths = await getTranslations({ locale, namespace: "months" });
 
   const committedLines = reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? [];
   const committedTotalCents = committedLines.reduce((sum, line) => sum + line.originalCents, 0);
@@ -181,6 +187,23 @@ export default async function MonthWorkspacePage({
     <AppShell email={email} displayName={displayName} avatarUrl={avatarUrl} signOutAction={startSignOut}>
       <MonthTouchClient year={workspace.month.year} month={workspace.month.month} />
       <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-2">
+          {cameFromHistory ? (
+            <Link
+              href={`/history/${year}`}
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              ← {tMonths("backToYear", { year })}
+            </Link>
+          ) : (
+            <Link
+              href="/"
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              ← {tMonths("backToHome")}
+            </Link>
+          )}
+        </div>
         <h1 className="text-2xl font-semibold tracking-tight">
           {monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
         </h1>

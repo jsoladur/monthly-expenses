@@ -105,6 +105,8 @@
       "submit": "Create",
       "cancel": "Cancel"
     },
+    "backToHome": "Back to home",
+    "backToYear": "Back to {year}",
     "clone": "Fixed expenses are copied when the month is created. This month is independent after that.",
     "summary": {
       "income": "Income",
