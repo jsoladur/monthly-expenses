@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-01
+
+### Added
+- Global Stats workspace at `/[locale]/stats` (UC-15): Overview, Incomes, Expenses, household cost change (not CPI), and Trends, over existing month money rows.
+
 ### Changed
+- Desktop sidebar: Home · Stats · History · Annuals · Categories · Templates · Settings. Mobile bottom nav is exactly five items (Home · Stats · History · More · Settings); Annuals, Categories, and Templates open from the More sheet.
 - PRD now includes Annuals at a high level (UC-20, C19): yearly reminder catalog, month-workspace reminders by charge month, never auto-create lines. Implementation slice remains `docs/usecases/UC-14-annuals.md`.
 - Docs use only generic fixtures in committed files. Local tenant dumps stay gitignored under `docs/database/prod/`.
 

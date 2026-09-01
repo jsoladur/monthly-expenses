@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   AmountFormatError,
+  cagrPercentTenths,
   formatCents,
+  formatPercentTenths,
   negateCents,
   parseAmount,
+  ratioChangeToPercentTenths,
   sumCents,
 } from "@/server/money";
 
@@ -110,5 +113,43 @@ describe("negateCents", () => {
     expect(negateCents(123_456)).toBe(-123_456);
     expect(negateCents(-99)).toBe(99);
     expect(negateCents(0)).toBe(-0);
+  });
+});
+
+describe("ratioChangeToPercentTenths", () => {
+  it("HCC 800.00 vs 640.00 → 25.0% (tenths 250)", () => {
+    expect(ratioChangeToPercentTenths(80_000, 64_000)).toBe(250);
+  });
+
+  it("returns null when prior is 0", () => {
+    expect(ratioChangeToPercentTenths(80_000, 0)).toBeNull();
+  });
+
+  it("rounds half-up at one decimal", () => {
+    // 1/3 → 33.333…% → 33.3%
+    expect(ratioChangeToPercentTenths(400, 300)).toBe(333);
+  });
+});
+
+describe("cagrPercentTenths", () => {
+  it("skips when base spend is 0", () => {
+    expect(cagrPercentTenths(0, 80_000, 3)).toBeNull();
+  });
+
+  it("matches YoY when years = 1", () => {
+    expect(cagrPercentTenths(64_000, 80_000, 1)).toBe(250);
+  });
+
+  it("computes a 10% 2-year CAGR from integer cents", () => {
+    // 100.00 → 121.00 over 2 years → 10.0%
+    expect(cagrPercentTenths(10_000, 12_100, 2)).toBe(100);
+  });
+});
+
+describe("formatPercentTenths", () => {
+  it("renders one decimal", () => {
+    expect(formatPercentTenths(250)).toBe("25.0");
+    expect(formatPercentTenths(-50)).toBe("-5.0");
+    expect(formatPercentTenths(3)).toBe("0.3");
   });
 });

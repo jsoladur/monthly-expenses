@@ -14,8 +14,8 @@
 
 ## Progress
 
-- Slices DONE: **15 / 16**
-- Next up: **UC-15 Global Stats** (requirements specified, not started — UC-14 is DONE so the mobile **More** sheet can absorb Annuals)
+- Slices DONE: **16 / 16**
+- Next up: **—** (all use-case slices shipped)
 
 ## Status table
 
@@ -37,4 +37,4 @@
 | — | Theme preference | DONE | 2026-08-23 | Dark/light/auto theme support (post-MVP enhancement). New `theme_preference` enum (`auto` / `light` / `dark`) added to DBML and Drizzle schema; `profile_settings.theme` column defaults to `auto`. Migration `0001_wakeful_sebastian_shaw.sql` adds the enum and column. New `updateTheme` repository function and service with `InvalidThemeError` validation. New `updateThemeAction` server action. New `src/components/theme-provider.tsx` client component wraps the app, reads user preference, detects system preference via `prefers-color-scheme` media query, applies `dark` class to `<html>`, and persists resolved theme to cookie. Inline script in root layout prevents flash of wrong theme on load. Settings page now includes theme selector alongside currency. i18n keys added under `settings.theme*` in both locales. Typecheck + lint clean; all unit tests green. Note: Schema extended beyond single-migration rule per user request. |
 | UC-13 | One-off month expenses (special occasions) | DONE | | UX flow only — reuses `addMonthOnlyLine` from UC-09; no new backend |
 | UC-14 | Annuals (yearly expense reminders) | DONE | 2026-09-01 | Catalog at `/[locale]/annuals` + month-workspace reminders (`getAnnualReminders` by `charge_month`, any year). Schema: `annual` table (migration 0002) + optional `amount` (migration 0003). Soft delete; inactive rows raise no reminders. Already in desktop/mobile nav. Feature shipped in 0.2.0; tracker catch-up. PRD: **UC-20** / C19 (implementation slice stays UC-14). |
-| UC-15 | Global Stats (multi-year household analysis) | PENDING | | Requirements specified (`docs/usecases/UC-15-global-stats.md`). Fulfills PRD C16 reports. No schema change. Recharts already installed. UC-14 is DONE — ready to start (nav reshuffle: mobile **More** sheet). |
+| UC-15 | Global Stats (multi-year household analysis) | DONE | 2026-09-01 | Read-only `/[locale]/stats` observatory (C16 reports). No schema change. Recharts only. Desktop: Stats after Home. Mobile: 5-item bar + More sheet (Annuals, Categories, Templates). Stats width `max-w-6xl`. |

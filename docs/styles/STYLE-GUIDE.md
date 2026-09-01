@@ -169,8 +169,8 @@ Tailwind v4 mapping (same file):
 ## 4. Layout — mobile-first, adaptive
 
 - **Base = 360px phone.** Design every screen mobile-first; enhance at `md` (768px) and `lg` (1024px). Never design desktop-first and shrink.
-- **App shell, mobile:** single column; sticky summary header; bottom navigation with 5 items (Month · Annuals · Categories · Templates · Settings) — five is the maximum allowed; with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode.
-- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted, same 5 items) + content column `max-w-4xl mx-auto`. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
+- **App shell, mobile:** single column; sticky summary header; bottom navigation with **exactly 5** items — **Home · Stats · History · More · Settings** — with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode. **More** opens a bottom sheet (`Drawer`) listing Annuals, Categories, Templates. Settings stays in the bar.
+- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted) with **Home · Stats · History · Annuals · Categories · Templates · Settings** + content column `max-w-4xl mx-auto`. **Exception:** Global Stats (`/stats`) may use `max-w-6xl` so multi-year charts stay readable. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
 - **Month workspace on `lg+`:** two-column grid — summary + incomes left, reserved lines + actuals right (`lg:grid-cols-2 lg:gap-8`). On mobile they stack: summary → reminders (if any) → actuals → reserved → incomes.
 - **Touch targets ≥ 44×44px** everywhere; the add-actual button is a floating action button (bottom-right, above the bottom nav) on mobile and a regular primary button in the header on desktop.
 - **Forms:** bottom sheet on mobile, centered dialog on `md+` (shadcn `Drawer`/`Dialog` responsive pattern). Amount field is the first field, `inputMode="decimal"`, right-aligned, `.amount` utility.

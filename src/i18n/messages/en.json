@@ -50,7 +50,9 @@
   },
   "nav": {
     "home": "Home",
+    "stats": "Stats",
     "history": "History",
+    "more": "More",
     "annuals": "Annuals",
     "categories": "Categories",
     "templates": "Fixed",
@@ -375,6 +377,170 @@
     "status": {
       "saved": "Currency saved.",
       "themeSaved": "Theme saved."
+    }
+  },
+  "stats": {
+    "title": "Stats",
+    "tabs": {
+      "overview": "Overview",
+      "incomes": "Incomes",
+      "expenses": "Expenses",
+      "inflation": "Inflation",
+      "trends": "Trends"
+    },
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "granularity": "Granularity",
+      "year": "Year",
+      "month": "Month",
+      "lfl": "Like-for-like",
+      "projectRemaining": "Project remaining as spent",
+      "showAll": "Show all categories",
+      "currency": "Currency"
+    },
+    "kpis": {
+      "income": "Income",
+      "spend": "Actual spend",
+      "savings": "Realized savings",
+      "savingsRate": "Savings rate",
+      "vsPrior": "vs previous period",
+      "rateHidden": "Hidden when income is 0"
+    },
+    "overview": {
+      "snapshot": "From {from} to {to}, spend went from {spendFrom} to {spendTo} ({spendPct}). Income went from {incFrom} to {incTo} ({incPct}). Savings rate went from {rateFrom} to {rateTo}."
+    },
+    "charts": {
+      "incomeVsSpend": {
+        "title": "Income vs actual spend",
+        "help": "Bars are spend; the line is income. Same currency axis."
+      },
+      "rolling": {
+        "title": "12-month rolling income and spend",
+        "help": "Each point is the sum of the last 12 created months."
+      },
+      "savingsRate": {
+        "title": "Savings rate by year",
+        "help": "Realized savings as a share of income. The line marks 0%."
+      },
+      "compositionFirst": {
+        "title": "Spend mix — first complete year",
+        "help": "How actual spend split across expense categories."
+      },
+      "compositionLatest": {
+        "title": "Spend mix — latest complete year",
+        "help": "Compare with the first complete year to see mix shift."
+      },
+      "yearly": {
+        "title": "Yearly totals",
+        "help": "Sum of created months only. Incomplete years are marked YTD."
+      },
+      "monthly": {
+        "title": "Monthly series",
+        "help": "Missing months break the line; they are not zero."
+      },
+      "stacked": {
+        "title": "By category over years",
+        "help": "Stacked totals. Inactive categories stay in history."
+      },
+      "mix": {
+        "title": "Category mix",
+        "help": "Share of the selected range."
+      },
+      "largestShare": {
+        "title": "Largest category share",
+        "help": "How concentrated the mix is year by year."
+      },
+      "matrix": {
+        "title": "Year × category",
+        "help": "Amounts and year-on-year change. Like-for-like when a year is incomplete."
+      },
+      "ranking": {
+        "title": "Category ranking",
+        "help": "Tap a row to drill into that category."
+      },
+      "seasonality": {
+        "title": "Seasonality",
+        "help": "Average of complete years, by calendar month."
+      },
+      "hcc": {
+        "title": "Household cost change",
+        "help": "Change in recorded spend vs the previous comparable period. Not CPI."
+      },
+      "incomeVsHcc": {
+        "title": "Income change vs household cost change",
+        "help": "The household is ahead when income growth exceeds cost change."
+      },
+      "contributions": {
+        "title": "What drove the latest spend change",
+        "help": "Euros each category added to or removed from the yearly change."
+      },
+      "basket": {
+        "title": "Category lines indexed at 100",
+        "help": "How each top line of spend moved versus the first complete year. Still not CPI."
+      },
+      "extraCost": {
+        "title": "Cumulative extra cost vs base year",
+        "help": "Euros above the base year. Mixes volume and price."
+      },
+      "sparklines": {
+        "title": "Top categories, 12-month rolling",
+        "help": "Short trend lines for the largest expense categories."
+      },
+      "overlay": {
+        "title": "Savings rate and household cost change",
+        "help": "Are savings absorbing the rise in recorded costs?"
+      },
+      "deficits": {
+        "title": "Deficit months",
+        "help": "Months where actual spend exceeded income."
+      },
+      "cagr": {
+        "title": "Multi-year category CAGR",
+        "help": "Compound annual growth of actuals between complete years. Skipped when the base is 0."
+      }
+    },
+    "inflation": {
+      "disclaimer": "This number is the change in what you recorded as spend, not the official consumer-price index. More consumption and higher prices both raise it.",
+      "impact": {
+        "hccAhead": "Your cost of recorded life rose faster than income. Savings rate is the pressure valve.",
+        "incomeAhead": "Income outpaced your recorded spend growth. Check whether the mix shifted into housing or dependents.",
+        "tied": "Income change matched household cost change in the latest comparable pair.",
+        "largestShare": "{name} was {latest} of income in the latest complete year (was {base} in the base year)."
+      },
+      "lflWindow": "Jan–{n} vs the same months last year"
+    },
+    "signals": {
+      "empty": "No tendency flags for this range.",
+      "savingsRateDrop": "Savings rate dropped {drop} pp in {year}.",
+      "spendOutpacingIncome": "Recorded spend rose {gap} pp faster than income in {year}.",
+      "categoryRunaway": "A category grew {yoy} year on year, faster than income.",
+      "categorySpike": "A category jumped {yoy} year on year.",
+      "newCategoryMaterial": "A new category is {share} of latest-year spend.",
+      "housingBurden": "The largest expense category is {share} of income.",
+      "incomeConcentration": "One income category is {share} of income.",
+      "incomeSourceGone": "An income source that was material two years ago is gone in {year}.",
+      "deficitMonth": "Spend exceeded income in: {months}.",
+      "deficitYear": "{year} ended with negative realized savings.",
+      "seasonalityPeak": "Peak spend in {year} is well above that year’s monthly average.",
+      "openMonthReserve": "{year}-{month} still has reserved remaining.",
+      "sparseYear": "{year} has only {months} months of data.",
+      "threeYearCagr": "Multi-year category growth (complete years {from}–{to})."
+    },
+    "empty": {
+      "title": "No months to analyse",
+      "body": "Stats never creates months. Open Home and create a month to start building history.",
+      "cta": "Go to Home"
+    },
+    "openMonthNote": "{monthYear} still has {amount} reserved. Charts use tickets already recorded; they do not treat leftover envelopes as spent.",
+    "incompleteYear": "{year} has {n} months",
+    "ytd": "YTD",
+    "lfl": "LFL",
+    "inactive": "Inactive",
+    "other": "Other",
+    "a11y": {
+      "tableToggle": "Show data table",
+      "tabs": "Stats sections"
     }
   },
   "pwa": {

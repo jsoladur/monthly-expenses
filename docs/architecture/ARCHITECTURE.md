@@ -235,6 +235,9 @@ expenses/
 │   │   │   ├── 403/page.tsx
 │   │   │   ├── page.tsx           # month list / empty state (never auto-creates, PRD C12)
 │   │   │   ├── months/[year]/[month]/page.tsx   # month workspace (mobile-first)
+│   │   │   ├── stats/page.tsx                   # Global Stats (UC-15)
+│   │   │   ├── history/page.tsx
+│   │   │   ├── annuals/page.tsx
 │   │   │   ├── categories/page.tsx              # expense + income tabs
 │   │   │   ├── templates/page.tsx
 │   │   │   └── settings/page.tsx                # currency
@@ -276,6 +279,8 @@ expenses/
 2. Domain code converts to **integer cents** on entry and back to `"1234.56"` strings on exit. All sums (potential savings, overspend baselines) are integer-cents algebra — including negatives (PRD §7.6).
 3. Potential savings (PRD §7.1): `sum(incomes) − (sum(actuals) + sum(remaining_amount of fixed/estimated lines))`. Hard-deleted rows are excluded by virtue of being gone.
 4. Overspend warning (PRD §7.4): `sum(actuals in category)` vs `sum(ACTIVE estimated TEMPLATE amounts in category)` — never the month remaining. Warn only, never block. Categories with only committed templates get no warning.
+5. **Percent change (UC-15):** `ratioChangeToPercentTenths(currentCents, priorCents)` returns `(current/prior − 1)` as integer tenths of a percent (25.0% → `250`), half-up. Omit when `prior === 0`. Never divide euro floats.
+6. **CAGR (UC-15):** `cagrPercentTenths(startCents, endCents, years)` is `(end/start)^(1/n) − 1` via an integer nth-root of a scaled cents ratio — **not** `Math.pow` on euro amounts. Skip when `startCents === 0` (treat as a new category instead). `formatPercentTenths` renders the 1-decimal string.
 
 ---
 

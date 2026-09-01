@@ -50,7 +50,9 @@
   },
   "nav": {
     "home": "Inicio",
+    "stats": "Estadísticas",
     "history": "Historial",
+    "more": "Más",
     "annuals": "Anuales",
     "categories": "Categorías",
     "templates": "Fijos",
@@ -375,6 +377,170 @@
     "status": {
       "saved": "Moneda guardada.",
       "themeSaved": "Tema guardado."
+    }
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "tabs": {
+      "overview": "Resumen",
+      "incomes": "Ingresos",
+      "expenses": "Gastos",
+      "inflation": "Inflación",
+      "trends": "Tendencias"
+    },
+    "filters": {
+      "from": "Desde",
+      "to": "Hasta",
+      "granularity": "Granularidad",
+      "year": "Año",
+      "month": "Mes",
+      "lfl": "Comparable",
+      "projectRemaining": "Proyectar el restante como gastado",
+      "showAll": "Mostrar todas las categorías",
+      "currency": "Moneda"
+    },
+    "kpis": {
+      "income": "Ingresos",
+      "spend": "Gasto real",
+      "savings": "Ahorro realizado",
+      "savingsRate": "Tasa de ahorro",
+      "vsPrior": "frente al periodo anterior",
+      "rateHidden": "Oculto cuando el ingreso es 0"
+    },
+    "overview": {
+      "snapshot": "De {from} a {to}, el gasto pasó de {spendFrom} a {spendTo} ({spendPct}). Los ingresos pasaron de {incFrom} a {incTo} ({incPct}). La tasa de ahorro pasó de {rateFrom} a {rateTo}."
+    },
+    "charts": {
+      "incomeVsSpend": {
+        "title": "Ingresos frente a gasto real",
+        "help": "Las barras son el gasto; la línea son los ingresos. El mismo eje de moneda."
+      },
+      "rolling": {
+        "title": "Ingresos y gasto acumulados a 12 meses",
+        "help": "Cada punto suma los últimos 12 meses creados."
+      },
+      "savingsRate": {
+        "title": "Tasa de ahorro por año",
+        "help": "Ahorro realizado como proporción de los ingresos. La línea marca el 0%."
+      },
+      "compositionFirst": {
+        "title": "Mix de gasto — primer año completo",
+        "help": "Cómo se reparte el gasto real entre categorías."
+      },
+      "compositionLatest": {
+        "title": "Mix de gasto — último año completo",
+        "help": "Compáralo con el primer año completo para ver el cambio de mix."
+      },
+      "yearly": {
+        "title": "Totales anuales",
+        "help": "Suma solo de los meses creados. Los años incompletos llevan la marca YTD."
+      },
+      "monthly": {
+        "title": "Serie mensual",
+        "help": "Los meses ausentes rompen la línea; no son cero."
+      },
+      "stacked": {
+        "title": "Por categoría a lo largo de los años",
+        "help": "Totales apilados. Las categorías inactivas siguen en el historial."
+      },
+      "mix": {
+        "title": "Mix de categorías",
+        "help": "Participación del rango seleccionado."
+      },
+      "largestShare": {
+        "title": "Peso de la categoría mayor",
+        "help": "Cuánto se concentra el mix año a año."
+      },
+      "matrix": {
+        "title": "Año × categoría",
+        "help": "Importes y variación interanual. Comparable si el año está incompleto."
+      },
+      "ranking": {
+        "title": "Ranking de categorías",
+        "help": "Pulsa una fila para filtrar esa categoría."
+      },
+      "seasonality": {
+        "title": "Estacionalidad",
+        "help": "Media de los años completos, por mes del calendario."
+      },
+      "hcc": {
+        "title": "Cambio del coste del hogar",
+        "help": "Cambio del gasto registrado frente al periodo comparable anterior. No es el IPC."
+      },
+      "incomeVsHcc": {
+        "title": "Cambio de ingresos frente al coste del hogar",
+        "help": "El hogar va por delante cuando los ingresos crecen más que el coste."
+      },
+      "contributions": {
+        "title": "Qué explicó el último cambio de gasto",
+        "help": "Euros que cada categoría sumó o restó al cambio anual."
+      },
+      "basket": {
+        "title": "Líneas de categoría indexadas a 100",
+        "help": "Cómo se movió cada línea principal frente al primer año completo. Sigue sin ser el IPC."
+      },
+      "extraCost": {
+        "title": "Coste extra acumulado frente al año base",
+        "help": "Euros por encima del año base. Mezcla volumen y precio."
+      },
+      "sparklines": {
+        "title": "Principales categorías, acumulado a 12 meses",
+        "help": "Tendencias cortas de las categorías de gasto más grandes."
+      },
+      "overlay": {
+        "title": "Tasa de ahorro y cambio del coste del hogar",
+        "help": "¿El ahorro absorbe la subida del coste registrado?"
+      },
+      "deficits": {
+        "title": "Meses en déficit",
+        "help": "Meses en los que el gasto real superó los ingresos."
+      },
+      "cagr": {
+        "title": "CAGR plurianual por categoría",
+        "help": "Crecimiento anual compuesto del gasto real entre años completos. Se omite si la base es 0."
+      }
+    },
+    "inflation": {
+      "disclaimer": "Esta cifra es el cambio de lo que registraste como gasto, no el índice oficial de precios al consumo. Más consumo y precios más altos la suben.",
+      "impact": {
+        "hccAhead": "El coste de la vida registrada subió más que los ingresos. La tasa de ahorro es la válvula de presión.",
+        "incomeAhead": "Los ingresos crecieron más que el gasto registrado. Comprueba si el mix se desplazó a vivienda o dependientes.",
+        "tied": "El cambio de ingresos coincidió con el cambio del coste del hogar en el último par comparable.",
+        "largestShare": "{name} fue el {latest} de los ingresos en el último año completo (era {base} en el año base)."
+      },
+      "lflWindow": "Ene–{n} frente a los mismos meses del año anterior"
+    },
+    "signals": {
+      "empty": "No hay señales de tendencia en este rango.",
+      "savingsRateDrop": "La tasa de ahorro bajó {drop} pp en {year}.",
+      "spendOutpacingIncome": "El gasto registrado subió {gap} pp más rápido que los ingresos en {year}.",
+      "categoryRunaway": "Una categoría creció {yoy} interanual, más rápido que los ingresos.",
+      "categorySpike": "Una categoría saltó {yoy} interanual.",
+      "newCategoryMaterial": "Una categoría nueva es el {share} del gasto del último año.",
+      "housingBurden": "La categoría de gasto mayor es el {share} de los ingresos.",
+      "incomeConcentration": "Una categoría de ingreso es el {share} de los ingresos.",
+      "incomeSourceGone": "Una fuente de ingreso que era material hace dos años desapareció en {year}.",
+      "deficitMonth": "El gasto superó los ingresos en: {months}.",
+      "deficitYear": "{year} cerró con ahorro realizado negativo.",
+      "seasonalityPeak": "El pico de gasto en {year} está claramente por encima de la media mensual de ese año.",
+      "openMonthReserve": "{year}-{month} todavía tiene restante reservado.",
+      "sparseYear": "{year} solo tiene {months} meses de datos.",
+      "threeYearCagr": "Crecimiento plurianual por categoría (años completos {from}–{to})."
+    },
+    "empty": {
+      "title": "No hay meses que analizar",
+      "body": "Estadísticas nunca crea meses. Abre Inicio y crea un mes para empezar a construir historial.",
+      "cta": "Ir a Inicio"
+    },
+    "openMonthNote": "{monthYear} todavía tiene {amount} reservado. Los gráficos usan los tickets ya registrados; no tratan los sobres restantes como gastados.",
+    "incompleteYear": "{year} tiene {n} meses",
+    "ytd": "YTD",
+    "lfl": "LFL",
+    "inactive": "Inactiva",
+    "other": "Otros",
+    "a11y": {
+      "tableToggle": "Mostrar tabla de datos",
+      "tabs": "Secciones de estadísticas"
     }
   },
   "pwa": {
