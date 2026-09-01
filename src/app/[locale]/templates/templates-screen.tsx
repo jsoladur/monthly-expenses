@@ -7,6 +7,11 @@ import { AddTemplateForm } from "./add-template-form";
 import { TemplateRow } from "./template-row";
 import { formatMoney } from "@/i18n/format";
 import { Collapsible } from "@/components/ui/collapsible";
+import {
+  ChartTooltip,
+  CHART_LEGEND_WRAPPER,
+  CHART_TOOLTIP_WRAPPER,
+} from "@/components/chart-tooltip";
 
 type Kind = "committed" | "estimated";
 
@@ -50,25 +55,30 @@ export function TemplatesScreen({
   const t = useTranslations("templates");
   const [kind, setKind] = useState<Kind>("committed");
   const rows = initialTemplates.filter((row) => row.kind === kind);
+  const activeTemplates = initialTemplates.filter((row) => row.active);
 
-  const totalMonthlyExpenses = initialTemplates.reduce(
+  const totalMonthlyExpenses = activeTemplates.reduce(
     (sum, row) => sum + row.amountCents,
     0,
   );
 
-  const categoryData = aggregateByCategory(initialTemplates);
+  const categoryData = aggregateByCategory(activeTemplates);
   const categoryPercentData = toPercentages(categoryData);
   const hasCategoryData = categoryData.length > 0;
-
-  const tooltipFormatter = (value: unknown) => {
-    const numValue = typeof value === "number" ? value : Number(value);
-    return formatMoney(numValue, currency);
-  };
-
-  const percentTooltipFormatter = (value: unknown) => {
-    const numValue = typeof value === "number" ? value : Number(value);
-    return `${numValue.toFixed(1)}%`;
-  };
+  const moneyTip = (
+    <Tooltip
+      content={<ChartTooltip formatValue={(v) => formatMoney(v, currency)} />}
+      wrapperStyle={CHART_TOOLTIP_WRAPPER}
+      allowEscapeViewBox={{ x: true, y: true }}
+    />
+  );
+  const percentTip = (
+    <Tooltip
+      content={<ChartTooltip formatValue={(v) => `${v.toFixed(1)}%`} />}
+      wrapperStyle={CHART_TOOLTIP_WRAPPER}
+      allowEscapeViewBox={{ x: true, y: true }}
+    />
+  );
 
   return (
     <section className="flex flex-col gap-4">
@@ -105,15 +115,8 @@ export function TemplatesScreen({
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={percentTooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                    {percentTip}
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -139,15 +142,8 @@ export function TemplatesScreen({
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={tooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                    {moneyTip}
                   </PieChart>
                 </ResponsiveContainer>
               </div>

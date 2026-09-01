@@ -89,7 +89,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
     await expect(page.getByTestId("summary-reserved")).toHaveText("400.00 €");
   });
 
-  test("#19 — overspend badge appears when actuals exceed estimated template plan", async ({
+  test("#19 — overspend badge appears when actuals exceed the active template plan", async ({
     context,
     page,
   }) => {
@@ -122,7 +122,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
     await expect(page.locator("#new-actual-name")).toBeVisible();
   });
 
-  test("no overspend badge when actuals stay inside the estimated template plan", async ({
+  test("no overspend badge when actuals stay inside the active template plan", async ({
     context,
     page,
   }) => {

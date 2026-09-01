@@ -8,12 +8,6 @@ export const CHART_COLORS = [
   "hsl(var(--chart-5))",
 ];
 
-export const TOOLTIP_STYLE = {
-  backgroundColor: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: "0.5rem",
-};
-
 export function StatsChartBlock({
   title,
   help,
@@ -31,14 +25,14 @@ export function StatsChartBlock({
 }) {
   return (
     <section
-      className="bg-card text-card-foreground flex flex-col gap-3 rounded-lg border p-4"
+      className="bg-card text-card-foreground flex flex-col gap-3 overflow-visible rounded-lg border p-4"
       data-testid={testId}
     >
       <div className="flex flex-col gap-1">
         <h3 className="text-sm font-medium">{title}</h3>
         <p className="text-muted-foreground text-xs leading-relaxed">{help}</p>
       </div>
-      <div className="h-64 w-full min-w-0">{children}</div>
+      <div className="relative z-10 h-72 w-full min-w-0 overflow-visible">{children}</div>
       <Collapsible title={tableLabel}>{table}</Collapsible>
     </section>
   );
@@ -56,8 +50,8 @@ export function StatsDataTable({
       <table className="w-full text-left text-sm">
         <thead>
           <tr>
-            {headers.map((h) => (
-              <th key={h} className="text-muted-foreground pb-2 pr-3 font-medium">
+            {headers.map((h, i) => (
+              <th key={`h-${i}`} className="text-muted-foreground pb-2 pr-3 font-medium">
                 {h}
               </th>
             ))}

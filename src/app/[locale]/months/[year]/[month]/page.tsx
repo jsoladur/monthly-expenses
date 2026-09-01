@@ -33,7 +33,7 @@ import {
 import { SummaryBlock } from "@/app/[locale]/months/[year]/[month]/summary-block";
 import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month-banner";
 import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
-import { StatsScreen } from "@/app/[locale]/months/[year]/[month]/stats-screen";
+import { StatsScreen, MonthStatsHelp } from "@/app/[locale]/months/[year]/[month]/stats-screen";
 import { AnnualReminderCards, type AnnualReminder } from "@/app/[locale]/months/[year]/[month]/annual-reminder-cards";
 import { OverspendWarnings } from "@/app/[locale]/months/[year]/[month]/overspend-warnings";
 import { AppShell } from "@/components/app-shell";
@@ -279,12 +279,14 @@ export default async function MonthWorkspacePage({
               currency={currency}
             />
           }
+          helpTab={<MonthStatsHelp />}
           labels={{
             data: t("data"),
             stats: t("stats"),
             actuals: t("actuals"),
             incomes: t("incomes"),
             reserved: t("reserved"),
+            help: t("help"),
           }}
           counts={{
             actuals: actualRows.length,

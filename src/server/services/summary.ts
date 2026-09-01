@@ -22,8 +22,8 @@ import { parseAmount, sumCents } from "@/server/money";
 //
 // Owns the read-only domain logic that backs the workspace summary header:
 //   - `getMonthSummary`      — savings algebra (PRD §7.1, #5–#8, #14)
-//   - `getOverspendWarnings` — per-category overrun vs ACTIVE estimated
-//                              template plan (PRD §7.4 / C18, #19)
+//   - `getOverspendWarnings` — per-category overrun vs ACTIVE template
+//                              plan (committed + estimated; PRD §7.4 / C18, #19)
 //   - `isPastMonth`          — open-month banner gate (PRD §7.7 / C8)
 //
 // SQL lives only in the repository (ARCH §5 rule 1). This service composes
@@ -115,12 +115,11 @@ export async function getMonthSummary(
 //
 // LEFT   = Σ month_actual_expense.amount per expense category for the open
 //          month.
-// RIGHT  = Σ active ESTIMATED template amounts in that category.
-//          COMMITTED templates are EXCLUDED (PRD §7.4 — overspend is about
-//          the plan vs the tickets; committed money has no plan slot).
+// RIGHT  = Σ active template amounts in that category (committed + estimated).
+//          Same total as Fixed Expenses → Distribution by category.
 //          The MONTH'S remaining is NEVER used for this baseline.
-// Warn only when LEFT > RIGHT. Categories with only committed templates
-// (or no estimated templates at all) get NO warning.
+// Warn only when LEFT > RIGHT. Categories with no active templates get
+// NO warning.
 // ---------------------------------------------------------------------------
 
 export interface OverspendWarning {
@@ -159,36 +158,23 @@ export async function getOverspendWarnings(
     return [];
   }
 
-  // RIGHT side: per-category ACTIVE ESTIMATED templates. Reuse the existing
-  // `listActiveTemplates` helper so the baseline is sourced from the exact
-  // same clone-source query UC-06 uses at month creation (PRD §7.4 vs §7.8).
-  // We aggregate in JS (templates per user are tiny — typically <100 rows).
-  //
-  // Track BOTH the sum AND the membership so a category with NO estimated
-  // template gets NO warning (PRD §7.4: "Categories with only committed
-  // templates get NO warning."). A baseline of 0 is only meaningful when
-  // the user actually has an estimated template for the category.
+  // RIGHT side: per-category ACTIVE templates (committed + estimated). Reuse
+  // `listActiveTemplates` so the baseline matches the Fixed Expenses pie
+  // (active rows only) and the clone-source query UC-06 uses at month creation.
   const activeTemplates = await listActiveTemplates(userId);
-  const estimatedByCategory = new Map<string, number>();
-  const categoriesWithEstimatedPlan = new Set<string>();
+  const planByCategory = new Map<string, number>();
   for (const tpl of activeTemplates) {
-    if (tpl.kind !== "estimated") continue;
-    categoriesWithEstimatedPlan.add(tpl.categoryId);
-    estimatedByCategory.set(
+    planByCategory.set(
       tpl.categoryId,
-      (estimatedByCategory.get(tpl.categoryId) ?? 0) +
-        parseAmount(tpl.amount),
+      (planByCategory.get(tpl.categoryId) ?? 0) + parseAmount(tpl.amount),
     );
   }
 
   const warnings: OverspendWarning[] = [];
   for (const row of actualSums) {
-    // The overspend baseline is the plan in active ESTIMATED templates
-    // only. A category with no estimated template has no plan slot, so
-    // there's nothing to overspend against (PRD §7.4 / C18).
-    if (!categoriesWithEstimatedPlan.has(row.categoryId)) continue;
+    if (!planByCategory.has(row.categoryId)) continue;
     const actualsTotal = parseAmount(row.total as string);
-    const estimatedTemplateTotal = estimatedByCategory.get(row.categoryId) ?? 0;
+    const estimatedTemplateTotal = planByCategory.get(row.categoryId) ?? 0;
     const overrunCents = actualsTotal - estimatedTemplateTotal;
     if (overrunCents > 0) {
       warnings.push({

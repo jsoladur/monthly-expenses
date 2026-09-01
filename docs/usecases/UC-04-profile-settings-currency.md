@@ -15,7 +15,7 @@ A settings screen where the user picks their currency label. Currency is display
 ## Service / repository
 
 - `getProfileSettings(userId)` — used app-wide to label amounts.
-- Formatting helper: `formatMoney(cents, currency)` → `"1234.56"` + label; always 2 decimals; amounts may be negative (PRD §7.6).
+- Formatting helper: `formatMoney(cents, currency)` → `"1,234.56 €"` (comma thousands, dot decimal, currency symbol); always 2 decimals; amounts may be negative (PRD §7.6). Amount **input** remains `1234.56` with no grouping (PRD C9).
 
 ## Routes / UI
 

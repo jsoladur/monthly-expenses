@@ -58,7 +58,7 @@ Do **not** build:
 ### 4.1 New menu item
 
 - Label: `nav.stats` — **en:** “Stats” · **es:** “Estadísticas” (short: it must fit mobile).
-- Route: `/[locale]/stats` (default tab `overview`).
+- Route: `/[locale]/stats` (default tab `overview`). Last tab is **Help** (`?tab=help`): a glossary. HCC is defined there, not repeated on Inflation.
 - Icon: `BarChart3` (lucide), consistent with existing nav icons.
 - Placement: **immediately after Home** — analysis is a first-class job once multi-year data exists.
 - Active state: any path starting with `/stats`.
@@ -80,10 +80,10 @@ STYLE-GUIDE §4 currently caps bottom nav at **5** items. The live app already h
 
 | Breakpoint | Items |
 | --- | --- |
-| **Desktop sidebar (`lg+`)** | Home · **Stats** · History · Annuals · Categories · Templates · Settings (all visible; sidebar can grow) |
-| **Mobile bottom nav** | **Home · Stats · History · More · Settings** (exactly 5) |
+| **Desktop sidebar (`lg+`)** | Home · **Stats** · Fixed · Annuals · Categories · History · Settings (all visible; sidebar can grow) |
+| **Mobile bottom nav** | **Home · Stats · Fixed · More · Settings** (exactly 5) |
 
-**More** is a bottom sheet (STYLE-GUIDE §4 forms pattern: `Drawer` on mobile) listing Annuals, Categories, Templates. Settings stays in the bar because it is how users reach language/theme/sign-out on phones that hide the profile chip.
+**More** is a bottom sheet (STYLE-GUIDE §4 forms pattern: `Drawer` on mobile) listing Annuals, Categories, History. Settings stays in the bar because it is how users reach language/theme/sign-out on phones that hide the profile chip.
 
 `max-w-4xl` on transactional screens stays. The Stats page is allowed **`max-w-6xl`** (or the full main column) so multi-year charts are readable. Document that exception in STYLE-GUIDE §4 when implementing.
 
@@ -141,18 +141,17 @@ Do **not** rename, merge, or “fix” category names in code — catalogs are u
 
 One page, **URL-driven tabs** so back/share work:
 
-`/[locale]/stats?tab=overview|incomes|expenses|inflation|trends`
+`/[locale]/stats?tab=overview|trends|inflation|expenses|incomes`
 
 Optional query (all additive): `from={year}&to={year}`, `lfl=1`, `category=<uuid>` (repeatable).
 
 **Filters bar** (sticky under the title, all tabs):
 
-- Year from / year to (defaults: min and max year that have at least one month).
+- Year from / year to (defaults: **From = max(first recorded year, current calendar year − 5)**, **To = current calendar year**, clamped to years that have at least one month).
 - Granularity: **Year** | **Month** (default Year on Overview; Month available everywhere).
 - Like-for-like toggle (default on when the `to` year is incomplete).
-- Currency label from profile (display only).
 
-Tab strip uses the same tablist pattern as the month workspace (`role="tablist"`). On mobile, tabs scroll horizontally.
+Tab strip uses the same tablist pattern as the month workspace (`role="tablist"`). Order: **Overview · Trends · Inflation · Expenses · Incomes · Help**. On mobile, tabs scroll horizontally.
 
 Each chart block:
 
@@ -173,10 +172,10 @@ For the selected range, show four cards:
 
 | KPI | Formula | Caption |
 | --- | --- | --- |
-| Income | Σ incomes | vs previous like-for-like period, % and € |
+| Income | Σ incomes | vs previous like-for-like period, % and € (omit when there is no prior year to compare) |
 | Actual spend | Σ actuals | same |
 | Realized savings | income − actuals | savings rate = savings / income (hide % if income = 0) |
-| Savings rate Δ | this rate − previous LFL rate | amber if dropped ≥ 5 percentage points (see §11) |
+| Savings rate Δ | this rate − previous LFL rate | amber if dropped ≥ 5 percentage points (see §11); omit the Δ caption when there is no prior year |
 
 Use the brand gradient **only** on the savings card when savings ≥ 0 (STYLE-GUIDE §5). Negative savings → solid `--destructive` card, same as the month hero.
 
@@ -189,7 +188,7 @@ Use the brand gradient **only** on the savings card when savings ≥ 0 (STYLE-GU
 
 ### 7.3 Snapshot copy (computed, keyed)
 
-One short paragraph under the KPIs, e.g. en: *“From {from} to {to}, spend went from {spendFrom} to {spendTo} ({spendPct}). Income went from {incFrom} to {incTo} ({incPct}). Savings rate went from {rateFrom} to {rateTo}.”* Spanish equivalent. This is the “so what” a family reads first.
+One short paragraph under the KPIs, e.g. en: *“From {from} to {to}, spend went from {spendFrom} to {spendTo} ({spendPct}). Income went from {incFrom} to {incTo} ({incPct}). Savings rate went from {rateFrom} to {rateTo}.”* Spanish equivalent. This is the “so what” a family reads first. **Omit the paragraph when From and To are the same year** (comparing a year to itself is noise).
 
 ---
 
@@ -252,7 +251,7 @@ Let `I(y)` = income in the same months.
 
 **Base year:** first **complete** year in the selected range. User cannot pick an official CPI base; they *can* change `from`/`to`.
 
-**Copy (mandatory disclaimer, both locales):** this number is *“change in what you recorded as spend, not the official consumer-price index. More consumption and higher prices both raise it.”*
+**Copy (mandatory, both locales, Help tab):** *“The Inflation tab shows the change in what you recorded as spend, not the official consumer-price index. More consumption and higher prices both raise it.”*
 
 ### 10.2 Required charts
 
@@ -289,7 +288,7 @@ Each detector returns `{ id, severity: "info" | "watch" | "risk", categoryId?: u
 | `categoryRunaway` | A category’s LFL YoY ≥ **15%** **and** faster than income change | Line-item risk |
 | `categorySpike` | A category’s LFL YoY ≥ **25%** | Same, higher severity |
 | `newCategoryMaterial` | Category with 0 spend in previous complete year and ≥ **5%** of latest year’s spend | New structural cost |
-| `housingBurden` | Largest expense category ≥ **30%** of income | One line crowding out savings. Do **not** hardcode a category name; use “largest expense category” unless we later add tags (schema — out of scope) |
+| `housingBurden` | Largest expense category ≥ **30%** of income | One line crowding out savings. Copy uses that category’s current name (do **not** hardcode “Housing”; tags are out of scope) |
 | `incomeConcentration` | Largest income category ≥ **85%** of income | Job/salary shock risk |
 | `incomeSourceGone` | An income category that was ≥ **10%** of income two years ago and is **0** in the latest complete year | Lost side income |
 | `deficitMonth` | Any month in range with actuals > income | Cash-flow stress; list year-month |
@@ -304,10 +303,12 @@ Each detector returns `{ id, severity: "info" | "watch" | "risk", categoryId?: u
 
 ### 11.2 Required charts on this tab
 
-1. **Alert list** (cards), newest/highest severity first.
-2. **Sparkline strip** — top 6 expense categories, 12-month rolling, color from chart tokens.
-3. **Savings rate + HCC overlay** (two lines, dual units: % savings rate and % HCC) — the “are we absorbing inflation?” picture.
-4. **Deficit months** — calendar heatmap or simple year/month table with negative `formatMoney`. Heatmap is optional; the table is required.
+1. **Notes**, then **Watch** — Grafana-style stat cards for every flag (reserved remaining, incomplete years, seasonal peaks, metric watches).
+2. **Sparkline strip** — top 6 expense categories, 12-month rolling.
+3. **Savings rate + HCC overlay**.
+4. **Cash-flow risks** — same stat-card treatment as Watch (deficit month count, deficit year savings).
+5. **Deficit months** table.
+6. **Category growth** — Multi-year category CAGR table.
 
 ---
 
@@ -316,7 +317,7 @@ Each detector returns `{ id, severity: "info" | "watch" | "risk", categoryId?: u
 - Range always ⊆ years that **exist** for this user. Creating 2027 months later **automatically** extends Stats; no extra work.
 - Zero months: empty state, no charts, CTA to Home (create month). Same for a filter that matches nothing.
 - One month only: still show Overview KPIs; hide YoY and HCC (need two periods); Trends may still fire `openMonthReserve`.
-- Locale: month names via existing `monthName` / `monthYear` helpers (PRD §11). Amounts always `formatMoney` (dot-decimal, 2 places, currency label).
+- Locale: month names via existing `monthName` / `monthYear` helpers (PRD §11). Amounts always `formatMoney` (comma thousands, dot-decimal, 2 places, currency label). Chart tooltips must show the formatted amount, never the internal `cents` dataKey.
 
 ---
 
@@ -354,8 +355,8 @@ All strings keyed in `en` + `es` (parity test). Suggested tree:
 
 - `nav.stats`
 - `nav.more` (mobile overflow)
-- `stats.title`, `stats.tabs.*`, `stats.filters.*`, `stats.kpis.*`, `stats.charts.*` (title + help per chart)
-- `stats.inflation.disclaimer`
+- `stats.title`, `stats.tabs.*` (including **Help** last), `stats.filters.*`, `stats.kpis.*`, `stats.charts.*` (title + help per chart)
+- `stats.help.*`, `stats.glossary.*` (HCC, not-CPI, LFL, YTD, income, spend, savings, rolling, CAGR)
 - `stats.inflation.impact.*` (the three sentence templates)
 - `stats.signals.*` (one key per detector id)
 - `stats.empty.*`, `stats.openMonthNote`, `stats.incompleteYear`, `stats.ytd`, `stats.lfl`
@@ -390,11 +391,11 @@ There is no PRD §15 scenario for reports. These are **this file’s** normative
 ### 15.3 E2E (Playwright, chromium + mobile-safari)
 
 13. Sign-in → bottom/sidebar **Stats** → Overview KPIs render for a user with seeded fixture months spanning at least two complete years.
-14. Tabs Incomes / Expenses / Inflation / Trends are reachable via `?tab=` and the tablist (keyboard).
+14. Tabs Trends / Inflation / Expenses / Incomes / Help are reachable via `?tab=` and the tablist (keyboard). Tab order: Overview → Trends → Inflation → Expenses → Incomes → Help.
 15. Incomplete latest year shows a YTD/LFL badge; YoY on Inflation uses LFL by default.
 16. Spanish locale: title “Estadísticas”, month names in Spanish, amounts still dot-decimal.
 17. Empty user (no months): empty state, no chart crash.
-18. Mobile: 5 bottom items including Stats and More; Annuals reachable from More.
+18. Mobile: 5 bottom items including Stats, Fixed, and More; Annuals, Categories, and History reachable from More.
 
 ### 15.4 Visual / a11y
 
@@ -412,7 +413,7 @@ This UC stays **one** requirements file. A technical plan may cut delivery as fo
 | UC-15.1 | Nav (incl. mobile More) + route shell + Overview KPIs + income-vs-spend chart + empty states |
 | UC-15.2 | Incomes tab (yearly, monthly, by category) |
 | UC-15.3 | Expenses tab (global, by category, seasonality, drill-down) |
-| UC-15.4 | Inflation tab (HCC, contributions, real-income proxy, disclaimer) |
+| UC-15.4 | Inflation tab (HCC, contributions, real-income proxy); not-CPI copy on Help |
 | UC-15.5 | Trends tab (detectors + sparklines) |
 
 Do not mark UC-15 `DONE` until 15.1–15.5 (or an equivalent full delivery) meet §15. Partial shipping is allowed only if `IMPLEMENTATION-STATUS.md` notes which tabs are live.

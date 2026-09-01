@@ -15,6 +15,9 @@ test.describe("UC-15 global stats", () => {
 
     await page.goto(`${BASE_URL}/en/stats`);
     await expect(page.getByRole("heading", { level: 1, name: "Stats" })).toBeVisible();
+    const calendarYear = new Date().getFullYear();
+    await expect(page.getByTestId("stats-from")).toHaveValue(String(calendarYear - 1));
+    await expect(page.getByTestId("stats-to")).toHaveValue(String(calendarYear));
     await expect(page.getByTestId("stats-kpi-income")).toBeVisible();
     await expect(page.getByTestId("stats-kpi-spend")).toBeVisible();
     await expect(page.getByTestId("stats-kpi-savings")).toBeVisible();
@@ -33,6 +36,13 @@ test.describe("UC-15 global stats", () => {
     await expect(page).toHaveURL(/tab=inflation/);
     await page.getByRole("tab", { name: "Trends" }).click();
     await expect(page).toHaveURL(/tab=trends/);
+    await page.getByRole("tab", { name: /Help/ }).click();
+    await expect(page).toHaveURL(/tab=help/);
+    await expect(page.getByTestId("stats-hcc-legend")).toBeVisible();
+    await expect(page.getByTestId("stats-inflation-disclaimer")).toBeVisible();
+    await expect(page.getByTestId("stats-glossary")).toBeVisible();
+    await expect(page.getByText("Like-for-like (LFL)")).toBeVisible();
+    await expect(page.getByText("Project remaining as spent")).toBeVisible();
     await page.getByRole("tab", { name: "Overview" }).focus();
     await page.keyboard.press("Enter");
   });
@@ -48,11 +58,10 @@ test.describe("UC-15 global stats", () => {
     await expect(page.getByTestId("stats-ytd")).toBeVisible();
     await expect(page.getByTestId("stats-lfl")).toBeVisible();
     await page.goto(`${BASE_URL}/en/stats?tab=inflation`);
-    await expect(page.getByTestId("stats-inflation-disclaimer")).toBeVisible();
     await expect(page.getByTestId("stats-lfl")).toBeVisible();
   });
 
-  test("16 — Spanish locale: Estadísticas, Spanish month names, dot-decimal amounts", async ({
+  test("16 — Spanish locale: Estadísticas, Spanish month names, grouped dot-decimal amounts", async ({
     context,
     page,
   }) => {
@@ -84,10 +93,13 @@ test.describe("UC-15 global stats", () => {
     await expect(nav.getByTestId("nav-stats")).toBeVisible();
     await expect(nav.getByTestId("nav-more")).toBeVisible();
     await expect(nav.getByTestId("nav-home")).toBeVisible();
-    await expect(nav.getByTestId("nav-history")).toBeVisible();
+    await expect(nav.getByTestId("nav-templates")).toBeVisible();
     await expect(nav.getByTestId("nav-settings")).toBeVisible();
     await expect(nav.locator("a, button")).toHaveCount(5);
     await nav.getByTestId("nav-more").click();
+    await expect(page.getByTestId("nav-annuals-more")).toBeVisible();
+    await expect(page.getByTestId("nav-categories-more")).toBeVisible();
+    await expect(page.getByTestId("nav-history-more")).toBeVisible();
     await page.getByTestId("nav-annuals-more").click();
     await expect(page).toHaveURL(/\/en\/annuals/);
   });

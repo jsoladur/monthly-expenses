@@ -203,7 +203,7 @@ flowchart TD
 Rules:
 
 1. **Repositories require `userId` as an explicit first parameter** and apply it in every `WHERE`. There is no way to call a repository without a tenant id. This is the enforcement mechanism for PRD §5.1.
-2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot, pass-to-actual (committed only), overspend vs **active estimated template** sums.
+2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot, pass-to-actual (committed only), overspend vs **active template** sums.
 3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files.
 4. Amounts cross the wire as **strings** (`"1234.56"`). Zod schema: `^-?\d{1,12}\.\d{2}$` (PRD C9: dot decimal, 2 places, may be negative).
 
@@ -276,9 +276,9 @@ expenses/
 ## 8. Money handling (normative)
 
 1. DB columns: `numeric(14,2)`. Never `float`, `real`, or JS `number` arithmetic on amounts.
-2. Domain code converts to **integer cents** on entry and back to `"1234.56"` strings on exit. All sums (potential savings, overspend baselines) are integer-cents algebra — including negatives (PRD §7.6).
+2. Domain code converts to **integer cents** on entry and back to `"1234.56"` strings on exit (wire + amount input). All sums (potential savings, overspend baselines) are integer-cents algebra — including negatives (PRD §7.6). **Display** via `formatMoney` adds a comma thousands separator (`1,234.56 €`); the decimal remains a dot in both locales.
 3. Potential savings (PRD §7.1): `sum(incomes) − (sum(actuals) + sum(remaining_amount of fixed/estimated lines))`. Hard-deleted rows are excluded by virtue of being gone.
-4. Overspend warning (PRD §7.4): `sum(actuals in category)` vs `sum(ACTIVE estimated TEMPLATE amounts in category)` — never the month remaining. Warn only, never block. Categories with only committed templates get no warning.
+4. Overspend warning (PRD §7.4): `sum(actuals in category)` vs `sum(ACTIVE TEMPLATE amounts in category)` (committed + estimated) — never the month remaining. Warn only, never block. Categories with no active templates get no warning.
 5. **Percent change (UC-15):** `ratioChangeToPercentTenths(currentCents, priorCents)` returns `(current/prior − 1)` as integer tenths of a percent (25.0% → `250`), half-up. Omit when `prior === 0`. Never divide euro floats.
 6. **CAGR (UC-15):** `cagrPercentTenths(startCents, endCents, years)` is `(end/start)^(1/n) − 1` via an integer nth-root of a scaled cents ratio — **not** `Math.pow` on euro amounts. Skip when `startCents === 0` (treat as a new category instead). `formatPercentTenths` renders the 1-decimal string.
 

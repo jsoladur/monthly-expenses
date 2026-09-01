@@ -432,14 +432,14 @@ suite("UC-11 summary, savings & warnings", () => {
     expect(warnings).toHaveLength(1);
     const warning: OverspendWarning = warnings[0]!;
     expect(warning.categoryId).toBe(food.id);
-    // Right side = 400 + 50 = 450 (active estimated templates only).
+    // Right side = 400 + 50 = 450 (active templates).
     expect(warning.estimatedTemplateTotal).toBe(45000);
     // Left side = 500.
     expect(warning.actualsTotal).toBe(50000);
     expect(warning.overrunCents).toBe(5000);
   });
 
-  it("no warning when actuals ≤ estimated template sum (PRD §7.4)", async () => {
+  it("no warning when actuals ≤ active template sum (PRD §7.4)", async () => {
     const userId = await seedUser("google-sub-uc11-no-warning");
     const food = await createCategory(userId, { kind: "expense", name: "Food" });
     await createTemplate(userId, {
@@ -460,7 +460,7 @@ suite("UC-11 summary, savings & warnings", () => {
     expect(warnings).toEqual([]);
   });
 
-  it("a category with ONLY COMMITTED templates produces NO warning (PRD §7.4)", async () => {
+  it("a category with ONLY COMMITTED templates warns when actuals exceed that plan (PRD §7.4)", async () => {
     const userId = await seedUser("google-sub-uc11-committed-only");
     const mortgage = await createCategory(userId, { kind: "expense", name: "Mortgage" });
     await createTemplate(userId, {
@@ -470,7 +470,6 @@ suite("UC-11 summary, savings & warnings", () => {
       kind: "committed",
     });
     const month = await createMonth(userId, { year: 2026, month: 8 });
-    // Way over the committed plan. Committed isn't in the overspend baseline.
     await addActual(userId, {
       monthId: month.id,
       categoryId: mortgage.id,
@@ -479,10 +478,12 @@ suite("UC-11 summary, savings & warnings", () => {
     });
 
     const warnings = await getOverspendWarnings(userId, month.id);
-    expect(warnings).toEqual([]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.estimatedTemplateTotal).toBe(80_000);
+    expect(warnings[0]!.overrunCents).toBe(70_000);
   });
 
-  it("inactive estimated templates are excluded from the baseline (PRD §6.3 / §7.4)", async () => {
+  it("inactive templates are excluded from the baseline (PRD §6.3 / §7.4)", async () => {
     const userId = await seedUser("google-sub-uc11-inactive-excluded");
     const food = await createCategory(userId, { kind: "expense", name: "Food" });
     const groceries = await createTemplate(userId, {
@@ -523,7 +524,7 @@ suite("UC-11 summary, savings & warnings", () => {
     expect(groceries.amount).toBe("400.00");
   });
 
-  it("overspend baseline comes from ACTIVE estimated templates only — committed excluded (PRD §7.4)", async () => {
+  it("overspend baseline is the sum of ACTIVE templates (committed + estimated)", async () => {
     const userId = await seedUser("google-sub-uc11-mixed-kinds");
     const mixed = await createCategory(userId, { kind: "expense", name: "Mixed" });
     await createTemplate(userId, {
@@ -532,17 +533,24 @@ suite("UC-11 summary, savings & warnings", () => {
       amount: "100.00",
       kind: "committed",
     });
+    await createTemplate(userId, {
+      categoryId: mixed.id,
+      name: "Envelope",
+      amount: "50.00",
+      kind: "estimated",
+    });
     const month = await createMonth(userId, { year: 2026, month: 8 });
     await addActual(userId, {
       monthId: month.id,
       categoryId: mixed.id,
       name: "Big ticket",
-      amount: "500.00",
+      amount: "200.00",
     });
 
     const warnings = await getOverspendWarnings(userId, month.id);
-    // No active estimated templates → baseline is 0 → no warning.
-    expect(warnings).toEqual([]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.estimatedTemplateTotal).toBe(15_000);
+    expect(warnings[0]!.overrunCents).toBe(5_000);
   });
 
   it("overspend: negative actuals reduce the LEFT side (PRD §7.6)", async () => {

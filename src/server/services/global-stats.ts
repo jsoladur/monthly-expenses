@@ -27,6 +27,7 @@ import {
   yearCategoryMatrix,
   yearlyTotals,
   yearsInRange,
+  resolveStatsYearRange,
   type MonthCategoryCents,
   type MonthCents,
   type MonthKey,
@@ -34,14 +35,15 @@ import {
   type TrendSignal,
 } from "@/server/services/global-stats-formulas";
 
-export type StatsTabId = "overview" | "incomes" | "expenses" | "inflation" | "trends";
+export type StatsTabId = "overview" | "trends" | "inflation" | "expenses" | "incomes" | "help";
 
 export const STATS_TABS: StatsTabId[] = [
   "overview",
-  "incomes",
-  "expenses",
-  "inflation",
   "trends",
+  "inflation",
+  "expenses",
+  "incomes",
+  "help",
 ];
 
 export type StatsGranularity = "year" | "month";
@@ -142,7 +144,6 @@ export type SeriesTabDto = {
 };
 
 export type InflationDto = {
-  disclaimer: true;
   hccByYear: Array<{
     year: number;
     tenths: number | null;
@@ -175,11 +176,16 @@ export type TrendsDto = {
   sparklines: Array<{
     categoryId: string;
     categoryName: string;
-    points: Array<{ year: number; month: number; cents: number }>;
+    points: Array<{ year: number; month: number; cents: number; monthCents: number }>;
   }>;
   savingsRateOverlay: Array<{ year: number; savingsTenths: number | null; hccTenths: number | null }>;
   deficitMonths: ReturnType<typeof deficitMonthRows>;
-  cagrRows: Array<{ categoryId: string; tenths: number }>;
+  cagrRows: Array<{
+    categoryId: string;
+    categoryName: string;
+    categoryActive: boolean;
+    tenths: number;
+  }>;
 };
 
 export type GlobalStatsPage = {
@@ -240,10 +246,13 @@ export async function getGlobalStatsPage(
   const yearsAll = [...new Set(presence.map((p) => p.year))].sort((a, b) => a - b);
   const minYear = yearsAll[0] ?? null;
   const maxYear = yearsAll[yearsAll.length - 1] ?? null;
-  const fromYear = clampYear(parsed.fromYear, minYear, maxYear) ?? minYear ?? now.getFullYear();
-  const toYear = clampYear(parsed.toYear, minYear, maxYear) ?? maxYear ?? now.getFullYear();
-  const from = Math.min(fromYear, toYear);
-  const to = Math.max(fromYear, toYear);
+  const { fromYear: from, toYear: to } = resolveStatsYearRange(
+    parsed.fromYear,
+    parsed.toYear,
+    minYear,
+    maxYear,
+    now,
+  );
   const toIncomplete = !isCompleteYear(presence, to);
   const lfl = parsed.lfl ?? toIncomplete;
   const range: StatsRange = { fromYear: from, toYear: to, lfl };
@@ -299,6 +308,10 @@ export async function getGlobalStatsPage(
   };
 
   if (empty) {
+    return { meta, overview: null, incomes: null, expenses: null, inflation: null, trends: null };
+  }
+
+  if (parsed.tab === "help") {
     return { meta, overview: null, incomes: null, expenses: null, inflation: null, trends: null };
   }
 
@@ -428,7 +441,7 @@ function buildOverview(input: {
   const firstYear = years[0];
   const lastYear = years[years.length - 1];
   let snapshot: OverviewDto["snapshot"] = null;
-  if (firstYear !== undefined && lastYear !== undefined) {
+  if (firstYear !== undefined && lastYear !== undefined && firstYear !== lastYear) {
     const spendFrom = centsByYear(spend, firstYear);
     const spendTo = centsByYear(spend, lastYear);
     const incFrom = centsByYear(income, firstYear);
@@ -601,7 +614,6 @@ function buildInflation(input: {
     }
   }
   return {
-    disclaimer: true,
     hccByYear,
     incomeVsHcc,
     contributions,
@@ -668,7 +680,13 @@ function buildTrends(input: {
       const [categoryId, tenthsRaw] = part.split(":");
       const tenths = Number(tenthsRaw);
       if (categoryId && Number.isInteger(tenths)) {
-        cagrRows.push({ categoryId, tenths });
+        const sample = spendByCat.find((c) => c.categoryId === categoryId);
+        cagrRows.push({
+          categoryId,
+          categoryName: sample?.categoryName ?? categoryId,
+          categoryActive: sample?.categoryActive ?? true,
+          tenths,
+        });
       }
     }
   }
@@ -718,18 +736,6 @@ function parseYear(raw: string | undefined): number | undefined {
   if (!raw) return undefined;
   const n = Number.parseInt(raw, 10);
   if (!Number.isInteger(n) || n < 1970 || n > 9999) return undefined;
-  return n;
-}
-
-function clampYear(
-  value: number | undefined,
-  min: number | null,
-  max: number | null,
-): number | undefined {
-  if (value === undefined) return undefined;
-  let n = value;
-  if (min !== null) n = Math.max(n, min);
-  if (max !== null) n = Math.min(n, max);
   return n;
 }
 

@@ -45,23 +45,23 @@ interface NavItem {
 const DESKTOP_ITEMS: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home", testId: "nav-home" },
   { href: "/stats", icon: BarChart3, labelKey: "stats", testId: "nav-stats" },
-  { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
+  { href: "/templates", icon: DollarSign, labelKey: "templates", testId: "nav-templates" },
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
-  { href: "/templates", icon: DollarSign, labelKey: "templates", testId: "nav-templates" },
+  { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
   { href: "/settings", icon: Settings, labelKey: "settings", testId: "nav-settings" },
 ];
 
 const MOBILE_PRIMARY: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home", testId: "nav-home" },
   { href: "/stats", icon: BarChart3, labelKey: "stats", testId: "nav-stats" },
-  { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
+  { href: "/templates", icon: DollarSign, labelKey: "templates", testId: "nav-templates" },
 ];
 
 const MORE_ITEMS: NavItem[] = [
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
-  { href: "/templates", icon: DollarSign, labelKey: "templates", testId: "nav-templates" },
+  { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
 ];
 
 const MOBILE_SETTINGS: NavItem = {

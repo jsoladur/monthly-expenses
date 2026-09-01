@@ -3,6 +3,12 @@
 import { useTranslations } from "next-intl";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { formatMoney } from "@/i18n/format";
+import {
+  ChartTooltip,
+  CHART_LEGEND_WRAPPER,
+  CHART_TOOLTIP_WRAPPER,
+} from "@/components/chart-tooltip";
+import { StatsGlossary } from "@/components/stats-glossary";
 
 interface CategoryExpense {
   categoryName: string;
@@ -63,19 +69,24 @@ export function StatsScreen({
   const hasCategoryData = categoryData.length > 0;
   const hasDistributionData = distributionData.some((d) => d.value > 0);
 
-  const tooltipFormatter = (value: unknown) => {
-    const numValue = typeof value === "number" ? value : Number(value);
-    return formatMoney(numValue, currency);
-  };
-
-  const percentTooltipFormatter = (value: unknown) => {
-    const numValue = typeof value === "number" ? value : Number(value);
-    return `${numValue.toFixed(1)}%`;
-  };
+  const moneyTip = (
+    <Tooltip
+      content={<ChartTooltip formatValue={(v) => formatMoney(v, currency)} />}
+      wrapperStyle={CHART_TOOLTIP_WRAPPER}
+      allowEscapeViewBox={{ x: true, y: true }}
+    />
+  );
+  const percentTip = (
+    <Tooltip
+      content={<ChartTooltip formatValue={(v) => `${v.toFixed(1)}%`} />}
+      wrapperStyle={CHART_TOOLTIP_WRAPPER}
+      allowEscapeViewBox={{ x: true, y: true }}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="bg-card text-card-foreground rounded-lg border p-4">
+      <section className="bg-card text-card-foreground overflow-visible rounded-lg border p-4">
         <h3 className="mb-4 text-sm font-medium">
           {t("expensesByCategory")}
         </h3>
@@ -102,15 +113,8 @@ export function StatsScreen({
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={percentTooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                    {percentTip}
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -136,15 +140,8 @@ export function StatsScreen({
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={tooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                    {moneyTip}
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -157,7 +154,7 @@ export function StatsScreen({
         )}
       </section>
 
-      <section className="bg-card text-card-foreground rounded-lg border p-4">
+      <section className="bg-card text-card-foreground overflow-visible rounded-lg border p-4">
         <h3 className="mb-4 text-sm font-medium">
           {t("distribution")}
         </h3>
@@ -184,15 +181,8 @@ export function StatsScreen({
                         <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={percentTooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                    {percentTip}
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -218,15 +208,8 @@ export function StatsScreen({
                         <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={tooltipFormatter}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "0.5rem",
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                    {moneyTip}
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -239,6 +222,24 @@ export function StatsScreen({
         )}
       </section>
     </div>
+  );
+}
+
+export function MonthStatsHelp() {
+  const t = useTranslations("months.stats");
+  return (
+    <StatsGlossary
+      title={t("glossary.title")}
+      groups={[
+        {
+          items: [
+            { term: t("glossary.actuals.term"), definition: t("glossary.actuals.def") },
+            { term: t("glossary.reserved.term"), definition: t("glossary.reserved.def") },
+            { term: t("glossary.committed.term"), definition: t("glossary.committed.def") },
+          ],
+        },
+      ]}
+    />
   );
 }
 

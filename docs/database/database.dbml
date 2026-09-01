@@ -90,7 +90,7 @@ Table template {
   deleted_at timestamptz
 
   indexes {
-    (user_id, active, kind) [name: 'template_clone_idx', note: 'Clone source at month creation = ACTIVE templates of the user (PRD C17). Overspend baseline = SUM(amount) of active ESTIMATED templates per category (PRD §7.4).']
+    (user_id, active, kind) [name: 'template_clone_idx', note: 'Clone source at month creation = ACTIVE templates of the user (PRD C17). Overspend baseline = SUM(amount) of active templates per category, committed + estimated (PRD §7.4).']
     category_id [name: 'template_category_idx']
   }
 

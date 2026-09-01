@@ -134,7 +134,8 @@
       "stats": "Stats",
       "actuals": "Actuals",
       "incomes": "Incomes",
-      "reserved": "Reserved"
+      "reserved": "Reserved",
+      "help": "Help"
     },
     "stats": {
       "expensesByCategory": "Expenses by category",
@@ -144,7 +145,22 @@
       "committed": "Committed",
       "noData": "No data to display",
       "percent": "Percentage",
-      "absolute": "Absolute"
+      "absolute": "Absolute",
+      "glossary": {
+        "title": "What these slices mean",
+        "actuals": {
+          "term": "Actuals",
+          "def": "Expense tickets already recorded this month."
+        },
+        "reserved": {
+          "term": "Reserved",
+          "def": "Money still sitting in estimated envelopes. It is not spent until you pass it to actuals or the month closes."
+        },
+        "committed": {
+          "term": "Committed",
+          "def": "Fixed lines (rent, loan). Remaining is what is still unpaid on that line this month."
+        }
+      }
     },
     "home": {
       "noMonths": "You have not created a month yet."
@@ -383,10 +399,11 @@
     "title": "Stats",
     "tabs": {
       "overview": "Overview",
-      "incomes": "Incomes",
-      "expenses": "Expenses",
+      "trends": "Trends",
       "inflation": "Inflation",
-      "trends": "Trends"
+      "expenses": "Expenses",
+      "incomes": "Incomes",
+      "help": "Help"
     },
     "filters": {
       "from": "From",
@@ -396,8 +413,7 @@
       "month": "Month",
       "lfl": "Like-for-like",
       "projectRemaining": "Project remaining as spent",
-      "showAll": "Show all categories",
-      "currency": "Currency"
+      "showAll": "Show all categories"
     },
     "kpis": {
       "income": "Income",
@@ -408,7 +424,13 @@
       "rateHidden": "Hidden when income is 0"
     },
     "overview": {
-      "snapshot": "From {from} to {to}, spend went from {spendFrom} to {spendTo} ({spendPct}). Income went from {incFrom} to {incTo} ({incPct}). Savings rate went from {rateFrom} to {rateTo}."
+      "snapshotRange": "From {from} to {to}",
+      "snapshotSpend": "Spend went from {spendFrom} to {spendTo} ({spendPct}).",
+      "snapshotIncome": "Income went from {incFrom} to {incTo} ({incPct}).",
+      "snapshotRate": "Savings rate went from {rateFrom} to {rateTo}."
+    },
+    "incomes": {
+      "netNote": "Amounts are net income as recorded — take-home pay (salario neto), not gross."
     },
     "charts": {
       "incomeVsSpend": {
@@ -485,7 +507,9 @@
       },
       "sparklines": {
         "title": "Top categories, 12-month rolling",
-        "help": "Short trend lines for the largest expense categories."
+        "help": "Each point is the last 12 created months of that category, not that month alone.",
+        "rolling": "12-month rolling",
+        "thisMonth": "This month"
       },
       "overlay": {
         "title": "Savings rate and household cost change",
@@ -501,7 +525,6 @@
       }
     },
     "inflation": {
-      "disclaimer": "This number is the change in what you recorded as spend, not the official consumer-price index. More consumption and higher prices both raise it.",
       "impact": {
         "hccAhead": "Your cost of recorded life rose faster than income. Savings rate is the pressure valve.",
         "incomeAhead": "Income outpaced your recorded spend growth. Check whether the mix shifted into housing or dependents.",
@@ -512,20 +535,106 @@
     },
     "signals": {
       "empty": "No tendency flags for this range.",
+      "group": {
+        "risk": "Cash-flow risks",
+        "watch": "Watch",
+        "info": "Notes",
+        "growth": "Category growth"
+      },
       "savingsRateDrop": "Savings rate dropped {drop} pp in {year}.",
       "spendOutpacingIncome": "Recorded spend rose {gap} pp faster than income in {year}.",
-      "categoryRunaway": "A category grew {yoy} year on year, faster than income.",
-      "categorySpike": "A category jumped {yoy} year on year.",
-      "newCategoryMaterial": "A new category is {share} of latest-year spend.",
-      "housingBurden": "The largest expense category is {share} of income.",
-      "incomeConcentration": "One income category is {share} of income.",
-      "incomeSourceGone": "An income source that was material two years ago is gone in {year}.",
+      "categoryRunaway": "{name} grew {yoy} year on year, faster than income.",
+      "categorySpike": "{name} jumped {yoy} year on year.",
+      "newCategoryMaterial": "{name} is new and is {share} of latest-year spend.",
+      "housingBurden": "{name} is {share} of income.",
+      "incomeConcentration": "{name} is {share} of income.",
+      "incomeSourceGone": "{name} was a material income source two years ago and is gone in {year}.",
       "deficitMonth": "Spend exceeded income in: {months}.",
       "deficitYear": "{year} ended with negative realized savings.",
       "seasonalityPeak": "Peak spend in {year} is well above that year’s monthly average.",
-      "openMonthReserve": "{year}-{month} still has reserved remaining.",
+      "seasonalityPeakMany": "Peak spend sits well above the monthly average in {years}.",
+      "openMonthReserve": "{monthYear} still has reserved remaining.",
       "sparseYear": "{year} has only {months} months of data.",
-      "threeYearCagr": "Multi-year category growth (complete years {from}–{to})."
+      "threeYearCagr": "Multi-year category growth (complete years {from}–{to}).",
+      "stat": {
+        "categorySpike": "Year on year",
+        "categoryRunaway": "Faster than income",
+        "newCategoryMaterial": "Of latest-year spend",
+        "housingBurden": "Of income",
+        "incomeConcentration": "Of income",
+        "incomeSourceGone": "Gone in {year}",
+        "savingsRateDrop": "pp drop in {year}",
+        "spendOutpacingIncome": "pp vs income in {year}",
+        "deficitMonth": "Spend exceeded income",
+        "deficitYear": "Negative realized savings",
+        "openMonthReserve": "Still reserved in {monthYear}",
+        "sparseYear": "Only {months} months of data",
+        "seasonalityPeak": "Well above that year’s monthly average",
+        "seasonalityPeakMany": "Peak spend well above the monthly average in {years}"
+      },
+      "statTitle": {
+        "savingsRateDrop": "Savings rate",
+        "spendOutpacingIncome": "Spend vs income",
+        "deficitMonth": "Deficit months",
+        "openMonthReserve": "Reserved remaining",
+        "sparseYear": "Incomplete year",
+        "seasonalityPeak": "Seasonal peak"
+      }
+    },
+    "help": {
+      "title": "Glossary",
+      "intro": "What the labels and checkboxes on Stats mean. Open a chart’s data table when you want the numbers."
+    },
+    "glossary": {
+      "groups": {
+        "filters": "Filters",
+        "money": "Money",
+        "compare": "Comparing years"
+      },
+      "hcc": {
+        "term": "HCC (household cost change)",
+        "def": "How much this home’s recorded spend rose or fell versus the previous comparable period. Buying more and paying more both raise it. It is not the official consumer-price index."
+      },
+      "notCpi": {
+        "term": "Not the official CPI",
+        "def": "The Inflation tab shows the change in what you recorded as spend, not the official consumer-price index. More consumption and higher prices both raise it."
+      },
+      "income": {
+        "term": "Income",
+        "def": "Net income as you recorded it — take-home pay (salario neto), not gross salary."
+      },
+      "spend": {
+        "term": "Actual spend",
+        "def": "Expense tickets already entered. Leftover envelopes are not treated as spent."
+      },
+      "savings": {
+        "term": "Realized savings",
+        "def": "Income minus actual spend for the period."
+      },
+      "savingsRate": {
+        "term": "Savings rate",
+        "def": "Realized savings as a share of income. Hidden when income is 0."
+      },
+      "lfl": {
+        "term": "Like-for-like (LFL)",
+        "def": "On: if a year is incomplete, year-on-year figures (including HCC) compare only the months that exist in both years — for example January–September vs January–September — so missing months do not look like a drop. Off: those % comparisons skip the incomplete year; absolute totals still sum only the months you created. The box turns on by itself when the latest year in range is incomplete."
+      },
+      "project": {
+        "term": "Project remaining as spent",
+        "def": "Only on Overview, and only when the latest month still has reserved remaining. Off (default): charts use tickets already recorded; leftover envelopes are not spent. On: that month’s remaining is added as if you spent it, so you can see an “if I finish the envelopes” picture. It does not change other months or your books."
+      },
+      "ytd": {
+        "term": "YTD (year to date)",
+        "def": "This year does not yet have 12 created months. Absolute charts still include it, with this badge."
+      },
+      "rolling": {
+        "term": "12-month rolling",
+        "def": "Each point sums the last 12 created months, so a missing month does not look like a crash."
+      },
+      "cagr": {
+        "term": "CAGR (compound annual growth)",
+        "def": "Compound annual growth of a category between complete years. Skipped when the starting year is 0."
+      }
     },
     "empty": {
       "title": "No months to analyse",
@@ -535,12 +644,16 @@
     "openMonthNote": "{monthYear} still has {amount} reserved. Charts use tickets already recorded; they do not treat leftover envelopes as spent.",
     "incompleteYear": "{year} has {n} months",
     "ytd": "YTD",
-    "lfl": "LFL",
+    "lfl": "Like-for-like",
     "inactive": "Inactive",
     "other": "Other",
     "a11y": {
       "tableToggle": "Show data table",
-      "tabs": "Stats sections"
+      "tabs": "Stats sections",
+      "period": "Period",
+      "amount": "Amount",
+      "category": "Category",
+      "yoy": "YoY"
     }
   },
   "pwa": {

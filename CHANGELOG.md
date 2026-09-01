@@ -11,11 +11,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Global Stats workspace at `/[locale]/stats` (UC-15): Overview, Incomes, Expenses, household cost change (not CPI), and Trends, over existing month money rows.
+- Help tab (last) on Global Stats with a glossary. Month workspace Stats gained a Help tab for Actuals / Reserved / Committed.
 
 ### Changed
-- Desktop sidebar: Home · Stats · History · Annuals · Categories · Templates · Settings. Mobile bottom nav is exactly five items (Home · Stats · History · More · Settings); Annuals, Categories, and Templates open from the More sheet.
+- Display amounts use a thousands separator (`150,923.67 €`); amount input stays dot-decimal (`1234.56`).
+- Desktop sidebar: Home · Stats · Fixed · Annuals · Categories · History · Settings.
+- Mobile bottom nav: Home · Stats · Fixed · More · Settings. More lists Annuals, Categories, History.
+- Stats tabs: Overview → Trends → Inflation → Expenses → Incomes → Help.
+- Stats From defaults to max(first recorded year, current year − 5); To is the current year (still clamped to years that have months).
+- Trends tab order is Notes → Watch → rolling categories → savings/HCC → Cash-flow risks → deficit months → Category growth → CAGR.
+- Trends Notes and Watch (and cash-flow flags) use Grafana-style stat cards; Notes name the open month like the home list.
+- Trends groups flags by severity and collapses repeated seasonality notes into one card.
+- Global Stats Help uses the same card layout for every glossary term, and spells out Like-for-like (LFL) and Project remaining as spent (on vs off).
+- The Inflation “not official CPI” note lives on Help, next to HCC.
+- Stats and month-workspace tabs show a leading icon, matching Help.
 - PRD now includes Annuals at a high level (UC-20, C19): yearly reminder catalog, month-workspace reminders by charge month, never auto-create lines. Implementation slice remains `docs/usecases/UC-14-annuals.md`.
 - Docs use only generic fixtures in committed files. Local tenant dumps stay gitignored under `docs/database/prod/`.
+
+### Fixed
+- Overspend warnings compare actuals to the Fixed Expenses category total (all active templates), matching the distribution pie.
+- Chart tooltips no longer label series as “cents”, sit above the legend, and format money the same way as the rest of the app.
+- Stats data tables no longer emit duplicate React keys for blank column headers.
+- Overview snapshot copy is hidden when From and To are the same year.
+- Overview KPI “vs previous period” captions are hidden when there is no prior year to compare.
+- Overview Income / Actual spend keep the vs-previous amount and percent on the same line.
+- Hovering a point on Top categories, 12-month rolling shows the 12-month total and that month’s spend.
+
+### Removed
+- Currency code from the Stats filters bar (amounts already show € / the profile label).
+- HCC glossary card from the Inflation tab (it lives on Help).
 
 ## [0.3.12] - 2026-09-01
 

@@ -1,24 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney } from "@/i18n/format";
+import { formatAxisCents, formatMoney } from "@/i18n/format";
 
 // ============================================================================
 // UC-04 money formatting (PRD C9, §7.6, §11; ARCH §8).
 //
-// The wire format is dot-decimal in BOTH locales (PRD C9). `formatMoney`
-// produces a stable, locale-independent display: `<sign><amount> <LABEL>`
-// with exactly two fractional digits, no grouping separators. Grouping
-// separators would have to be locale-aware and that introduces a second
-// source of truth; the PRD pins amount format to dot-decimal everywhere,
-// so we keep display consistent with input.
-//
-// Future slices that need grouping separators can add a locale-aware helper
-// without changing this one.
+// Wire/input stay dot-decimal in BOTH locales (PRD C9). Display uses a
+// comma thousands separator and a dot before cents: `1,234.56 €`.
 // ============================================================================
 
 describe("formatMoney", () => {
   it("renders positive cents as `<amount> <SYMBOL>` with two decimals", () => {
-    expect(formatMoney(123456, "EUR")).toBe("1234.56 €");
+    expect(formatMoney(123456, "EUR")).toBe("1,234.56 €");
     expect(formatMoney(100, "EUR")).toBe("1.00 €");
+  });
+
+  it("groups thousands with a comma (display only; decimal stays a dot)", () => {
+    expect(formatMoney(15_092_367, "EUR")).toBe("150,923.67 €");
+    expect(formatMoney(100_000, "EUR")).toBe("1,000.00 €");
   });
 
   it("renders zero as `0.00 <SYMBOL>` (no negative sign)", () => {
@@ -29,6 +27,7 @@ describe("formatMoney", () => {
   it("renders negative cents with a leading minus — PRD §7.6", () => {
     expect(formatMoney(-2000, "EUR")).toBe("-20.00 €");
     expect(formatMoney(-1, "EUR")).toBe("-0.01 €");
+    expect(formatMoney(-15_092_367, "EUR")).toBe("-150,923.67 €");
   });
 
   it("pads single-digit fractional amounts so the wire format has exactly two decimals", () => {
@@ -39,8 +38,8 @@ describe("formatMoney", () => {
 
   it("supports the full numeric(14,2) range", () => {
     // 9_999_999_999_999.99 → 999_999_999_999_999 cents (within Number.MAX_SAFE_INTEGER)
-    expect(formatMoney(999_999_999_999_999, "EUR")).toBe("9999999999999.99 €");
-    expect(formatMoney(-999_999_999_999_999, "EUR")).toBe("-9999999999999.99 €");
+    expect(formatMoney(999_999_999_999_999, "EUR")).toBe("9,999,999,999,999.99 €");
+    expect(formatMoney(-999_999_999_999_999, "EUR")).toBe("-9,999,999,999,999.99 €");
   });
 
   it("uses currency symbols for known currencies (USD / GBP / JPY / etc.)", () => {
@@ -64,5 +63,21 @@ describe("formatMoney", () => {
     expect(() => formatMoney(0, "EU")).toThrow(TypeError);
     expect(() => formatMoney(0, "EURO")).toThrow(TypeError);
     expect(() => formatMoney(0, "eu1")).toThrow(TypeError);
+  });
+});
+
+describe("formatAxisCents", () => {
+  it("shows whole units with grouping under 100k", () => {
+    expect(formatAxisCents(8_050_000)).toBe("80,500");
+    expect(formatAxisCents(9_999_900)).toBe("99,999");
+  });
+
+  it("compacts large ticks without float money math", () => {
+    expect(formatAxisCents(12_000_000)).toBe("120k");
+    expect(formatAxisCents(200_000_000)).toBe("2M");
+  });
+
+  it("keeps a leading minus", () => {
+    expect(formatAxisCents(-8_050_000)).toBe("-80,500");
   });
 });

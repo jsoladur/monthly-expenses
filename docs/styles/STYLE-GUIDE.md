@@ -76,7 +76,7 @@ font-family: "Pilat Wide Bold", "Pilat Wide Bold Fallback", -apple-system,
 Rules:
 
 - Self-host the woff2 at `public/fonts/PilatWide-Bold.woff2`. It is a commercial typeface — confirm the webfont license before shipping; never hotlink a foundry CDN without one.
-- **Money always uses tabular figures:** every amount, total, and the savings hero gets `font-variant-numeric: tabular-nums` (add a `.amount` utility). Amounts are right-aligned in lists.
+- **Money always uses tabular figures:** every amount, total, and the savings hero gets `font-variant-numeric: tabular-nums` (add a `.amount` utility). Amounts are right-aligned in lists. **Display** is `150,923.67 €` (comma thousands, **dot** decimal, currency symbol) in both locales. **Input** stays `1234.56` with no grouping (PRD C9).
 - Scale (mobile → desktop): display/savings hero `text-4xl md:text-5xl`, screen titles `text-2xl`, section headers `text-lg`, body `text-base`, captions/badges `text-xs`.
 - Pilat Wide Bold is a display face: keep paragraphs short (this app is numeric, so it fits); if a long help text ever appears, cap it at `max-w-prose` and `text-sm`.
 
@@ -169,8 +169,8 @@ Tailwind v4 mapping (same file):
 ## 4. Layout — mobile-first, adaptive
 
 - **Base = 360px phone.** Design every screen mobile-first; enhance at `md` (768px) and `lg` (1024px). Never design desktop-first and shrink.
-- **App shell, mobile:** single column; sticky summary header; bottom navigation with **exactly 5** items — **Home · Stats · History · More · Settings** — with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode. **More** opens a bottom sheet (`Drawer`) listing Annuals, Categories, Templates. Settings stays in the bar.
-- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted) with **Home · Stats · History · Annuals · Categories · Templates · Settings** + content column `max-w-4xl mx-auto`. **Exception:** Global Stats (`/stats`) may use `max-w-6xl` so multi-year charts stay readable. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
+- **App shell, mobile:** single column; sticky summary header; bottom navigation with **exactly 5** items — **Home · Stats · Fixed · More · Settings** — with `padding-bottom: env(safe-area-inset-bottom)` for PWA standalone mode. **More** opens a bottom sheet (`Drawer`) listing Annuals, Categories, History. Settings stays in the bar.
+- **App shell, desktop (`lg+`):** left sidebar nav (240px, navy-tinted) with **Home · Stats · Fixed · Annuals · Categories · History · Settings** + content column `max-w-4xl mx-auto`. **Exception:** Global Stats (`/stats`) may use `max-w-6xl` so multi-year charts stay readable. The app must not look like a stretched phone: cap content width, increase whitespace, show blocks side by side.
 - **Month workspace on `lg+`:** two-column grid — summary + incomes left, reserved lines + actuals right (`lg:grid-cols-2 lg:gap-8`). On mobile they stack: summary → reminders (if any) → actuals → reserved → incomes.
 - **Touch targets ≥ 44×44px** everywhere; the add-actual button is a floating action button (bottom-right, above the bottom nav) on mobile and a regular primary button in the header on desktop.
 - **Forms:** bottom sheet on mobile, centered dialog on `md+` (shadcn `Drawer`/`Dialog` responsive pattern). Amount field is the first field, `inputMode="decimal"`, right-aligned, `.amount` utility.

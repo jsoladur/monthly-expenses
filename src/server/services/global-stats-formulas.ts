@@ -109,12 +109,12 @@ export function monthlySeriesWithNulls(
 export function rolling12Series(
   presence: MonthKey[],
   series: MonthCents[],
-): Array<{ year: number; month: number; cents: number }> {
+): Array<{ year: number; month: number; cents: number; monthCents: number }> {
   const ordered = [...presence].sort(
     (a, b) => periodKey(a.year, a.month) - periodKey(b.year, b.month),
   );
   const map = monthCentsMap(series);
-  const out: Array<{ year: number; month: number; cents: number }> = [];
+  const out: Array<{ year: number; month: number; cents: number; monthCents: number }> = [];
   const queue: number[] = [];
   let running = 0;
   for (const p of ordered) {
@@ -125,7 +125,7 @@ export function rolling12Series(
       running -= queue.shift()!;
     }
     if (queue.length === 12) {
-      out.push({ year: p.year, month: p.month, cents: running });
+      out.push({ year: p.year, month: p.month, cents: running, monthCents: c });
     }
   }
   return out;
@@ -172,6 +172,39 @@ export function yearsInRange(presence: MonthKey[], range: StatsRange): number[] 
     presence.filter((p) => p.year >= range.fromYear && p.year <= range.toYear).map((p) => p.year),
   );
   return [...set].sort((a, b) => a - b);
+}
+
+const STATS_DEFAULT_LOOKBACK_YEARS = 5;
+
+/** Default From = max(first recorded year, calendar year − 5), To = calendar year, clamped to years that have months. */
+export function resolveStatsYearRange(
+  requestedFrom: number | undefined,
+  requestedTo: number | undefined,
+  minYear: number | null,
+  maxYear: number | null,
+  now: Date,
+): { fromYear: number; toYear: number } {
+  const calendarYear = now.getFullYear();
+  const lookbackFrom = calendarYear - STATS_DEFAULT_LOOKBACK_YEARS;
+  const defaultFrom =
+    minYear === null ? lookbackFrom : Math.max(minYear, lookbackFrom);
+  const fromYear = clampYear(requestedFrom ?? defaultFrom, minYear, maxYear);
+  const toYear = clampYear(requestedTo ?? calendarYear, minYear, maxYear);
+  return {
+    fromYear: Math.min(fromYear, toYear),
+    toYear: Math.max(fromYear, toYear),
+  };
+}
+
+function clampYear(
+  value: number,
+  min: number | null,
+  max: number | null,
+): number {
+  let n = value;
+  if (min !== null) n = Math.max(n, min);
+  if (max !== null) n = Math.min(n, max);
+  return n;
 }
 
 export function inRange(row: MonthKey, range: StatsRange): boolean {
@@ -589,14 +622,14 @@ export function detectSignals(input: {
             id: "categorySpike",
             severity: "watch",
             categoryId: cat.categoryId,
-            metrics: { yoyTenths: yoy, year: latestYear },
+            metrics: { yoyTenths: yoy, year: latestYear, name: cat.categoryName },
           });
         } else if (yoy >= 150 && (incCh === null || yoy > incCh)) {
           signals.push({
             id: "categoryRunaway",
             severity: "watch",
             categoryId: cat.categoryId,
-            metrics: { yoyTenths: yoy, year: latestYear },
+            metrics: { yoyTenths: yoy, year: latestYear, name: cat.categoryName },
           });
         }
       }
@@ -608,6 +641,7 @@ export function detectSignals(input: {
           metrics: {
             shareTenths: sharePercentTenths(cat.current, spendNow) ?? 0,
             year: latestYear,
+            name: cat.categoryName,
           },
         });
       }
@@ -615,7 +649,7 @@ export function detectSignals(input: {
     if (incNow > 0) {
       const largest = cats.reduce(
         (best, c) => (c.current > best.current ? c : best),
-        { categoryId: "", current: 0, prior: 0 },
+        { categoryId: "", categoryName: "", current: 0, prior: 0 },
       );
       if (largest.current * 100 >= incNow * 30) {
         signals.push({
@@ -625,6 +659,7 @@ export function detectSignals(input: {
           metrics: {
             shareTenths: sharePercentTenths(largest.current, incNow) ?? 0,
             year: latestYear,
+            name: largest.categoryName,
           },
         });
       }
@@ -645,6 +680,7 @@ export function detectSignals(input: {
           metrics: {
             shareTenths: sharePercentTenths(largest.current, incYear) ?? 0,
             year: latestYear,
+            name: largest.categoryName,
           },
         });
       }
@@ -660,7 +696,7 @@ export function detectSignals(input: {
             id: "incomeSourceGone",
             severity: "watch",
             categoryId: cat.categoryId,
-            metrics: { year: latestComplete },
+            metrics: { year: latestComplete, name: cat.categoryName },
           });
         }
       }
@@ -680,12 +716,17 @@ export function detectSignals(input: {
     signals.push({
       id: "deficitMonth",
       severity: "risk",
-      metrics: { months: deficitMonths.join(",") },
+      metrics: { months: deficitMonths.join(","), count: deficitMonths.length },
     });
   }
   for (const y of completeYears) {
-    if (realizedSavings(centsByYear(income, y), centsByYear(spend, y)) < 0) {
-      signals.push({ id: "deficitYear", severity: "risk", metrics: { year: y } });
+    const savings = realizedSavings(centsByYear(income, y), centsByYear(spend, y));
+    if (savings < 0) {
+      signals.push({
+        id: "deficitYear",
+        severity: "risk",
+        metrics: { year: y, savingsCents: savings },
+      });
     }
   }
 

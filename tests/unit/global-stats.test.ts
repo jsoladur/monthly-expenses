@@ -10,6 +10,8 @@ import {
   monthlySeriesWithNulls,
   potentialSavings,
   realizedSavings,
+  rolling12Series,
+  resolveStatsYearRange,
   yearCategoryMatrix,
   type MonthCategoryCents,
   type MonthCents,
@@ -161,6 +163,52 @@ describe("UC-15 global-stats formulas", () => {
     expect(projected[0]?.cents).toBe(14_000);
     expect(applyRemainingProjection(spend, remaining, null)[0]?.cents).toBe(10_000);
   });
+
+  it("rolling 12 is the sum of the last 12 created months, not that month alone", () => {
+    const presence: MonthKey[] = [];
+    const series: MonthCents[] = [];
+    for (let month = 1; month <= 12; month++) {
+      presence.push({ year: 2020, month });
+      series.push({ year: 2020, month, cents: 10_000 });
+    }
+    presence.push({ year: 2021, month: 1 });
+    series.push({ year: 2021, month: 1, cents: 50_000 });
+    const roll = rolling12Series(presence, series);
+    expect(roll[0]).toEqual({ year: 2020, month: 12, cents: 120_000, monthCents: 10_000 });
+    expect(roll[1]).toEqual({ year: 2021, month: 1, cents: 160_000, monthCents: 50_000 });
+  });
+});
+
+describe("UC-15 default From/To year range", () => {
+  const now = new Date("2026-09-01T12:00:00Z");
+
+  it("defaults From to max(first recorded year, calendar year − 5) and To to calendar year", () => {
+    expect(resolveStatsYearRange(undefined, undefined, 2020, 2026, now)).toEqual({
+      fromYear: 2021,
+      toYear: 2026,
+    });
+  });
+
+  it("uses the first recorded year when history is shorter than five years", () => {
+    expect(resolveStatsYearRange(undefined, undefined, 2024, 2026, now)).toEqual({
+      fromYear: 2024,
+      toYear: 2026,
+    });
+  });
+
+  it("clamps to years that have months when history is a single year", () => {
+    expect(resolveStatsYearRange(undefined, undefined, 2024, 2024, now)).toEqual({
+      fromYear: 2024,
+      toYear: 2024,
+    });
+  });
+
+  it("honours explicit from/to query params", () => {
+    expect(resolveStatsYearRange(2020, 2023, 2020, 2026, now)).toEqual({
+      fromYear: 2020,
+      toYear: 2023,
+    });
+  });
 });
 
 describe("UC-15 detectors (§11.1 fire / not-fire)", () => {
@@ -242,6 +290,18 @@ describe("UC-15 detectors (§11.1 fire / not-fire)", () => {
     expect(ids(detectSignals({ ...base, incomeByCat: [], spendByCat: mild, range, now: new Date("2025-06-01") }))).not.toContain(
       "categoryRunaway",
     );
+    const namedSpike: MonthCategoryCents[] = [
+      catRow(2024, 1, "food", 10_000, { categoryName: "Groceries" }),
+      catRow(2025, 1, "food", 12_600, { categoryName: "Groceries" }),
+    ];
+    const spikeSignal = detectSignals({
+      ...base,
+      incomeByCat: [],
+      spendByCat: namedSpike,
+      range,
+      now: new Date("2025-06-01"),
+    }).find((s) => s.id === "categorySpike");
+    expect(spikeSignal?.metrics.name).toBe("Groceries");
   });
 
   it("newCategoryMaterial fires at ≥ 5% of latest spend with 0 prior", () => {

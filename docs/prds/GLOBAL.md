@@ -38,7 +38,7 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 | C15 | **Hard delete** for month-scoped money rows (incomes, actual expenses, month fixed/estimated lines). |
 | C16 | Reports (year view, category totals) = **not V1**, planned later. |
 | C17 | At **create month**, active fixed + estimated **templates are cloned** into that month instance. After that, the month lives on its own. |
-| C18 | Overspend warning: actuals in a category vs **sum of estimated template amounts** in that category. Warn only, never block. |
+| C18 | Overspend warning: actuals in a category vs **sum of active template amounts** (committed + estimated) in that category. Warn only, never block. |
 | C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
 
 ---
@@ -67,7 +67,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Estimated expense (envelope)** | Recurring *plan* (e.g. groceries, car gas). Cloned into the month. **Cannot** be passed to actuals. Remaining is **edited manually**. Actual tickets do **not** auto-reduce the envelope. |
 | **Template line** | User’s reusable fixed/estimated definition (management form). Used **only at the moment a month is created** (clone source). |
 | **Remaining fixed** | Current amount still reserved on a month’s fixed/estimated line (after manual edits). |
-| **Plan amount (overspend baseline)** | Sum of **estimated** amounts on the **template form** for that category. Not the remaining box in the month. |
+| **Plan amount (overspend baseline)** | Sum of **active** template amounts (committed + estimated) on the **template form** for that category. Not the remaining box in the month. |
 | **Potential savings** | See §7. |
 | **Pass to actual** | One-tap **cut and paste**: remove committed fixed line from the month’s fixed block; create an equivalent actual row. Undo = reverse **only while the actual was not edited**. |
 | **Annual** | Yearly recurring expense reminder (insurance, vehicle tax). Catalog only — not cloned, not a spend series. |
@@ -228,10 +228,10 @@ Hard-deleted rows are excluded from sums.
 **Do not** compare actuals to the month **remaining** box.
 
 - **Left:** `SUM(actual tickets)` in that expense category for the open month.
-- **Right:** `SUM(active estimated template amounts)` in that same category.  
-  Example: templates “Groceries 400” + “Extra 50” in Food → plan = **450**. Actuals 500 → **warning**.
+- **Right:** `SUM(active template amounts)` in that same category (committed **and** estimated). Same total as Fixed Expenses → Distribution by category.  
+  Example: templates “Groceries 400” + “Extra 50” in Food → plan = **450**. Actuals 500 → **warning**. Housing “Rent 700 committed” + “Repairs 160 estimated” → plan = **860**.
 
-If a category has **only committed** templates and no estimated templates, **no** estimate-overspend warning for that category.
+If a category has **no active templates**, **no** overspend warning for that category.
 
 **Warn only. Never block.** Remaining on a month line may be zero or negative if the user types it.
 
@@ -516,7 +516,7 @@ Mobile-first: add an actual from the month workspace.
 - Prefer explicit `kind`.
 - Pass-to-actual and undo in **one transaction**.
 - Never auto-balance envelopes.
-- Overspend uses **active estimated template amounts**, not month remaining.
+- Overspend uses **active template amounts** (committed + estimated), not month remaining.
 - Clone is a **snapshot write** at create; no live link to templates.
 - Docker Compose: **app + PostgreSQL**.
 - Keep domain words aligned with this glossary.
@@ -552,7 +552,7 @@ No blocking product questions remain for V1 money behavior.
 5. Incomes + unlimited actuals (hard delete) + manual remaining  
 6. Month-only extra reserved lines  
 7. Pass-to-actual + undo-if-unedited  
-8. Warnings (past month, overspend vs estimated templates)  
+8. Warnings (past month, overspend vs active templates)  
 9. Last-month cookie + PWA install  
 10. Annuals catalog + month-workspace reminders (never auto-create)  
 11. Tests: isolation, clone snapshot, August must not leak into September  

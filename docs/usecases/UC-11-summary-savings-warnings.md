@@ -14,8 +14,8 @@ Complete the month workspace header: the potential-savings number visible from d
   `potential_savings = Σ incomes − ( Σ actuals + Σ remaining_amount of fixed/estimated lines )` (PRD §7.1). Hard-deleted rows are excluded by being gone.
 - `getOverspendWarnings(userId, monthId)` → per expense category:
   - LEFT = `Σ actual tickets` in that category for the OPEN month.
-  - RIGHT = `Σ amounts of ACTIVE ESTIMATED templates` in that category — NEVER the month's remaining box (PRD §7.4, C18).
-  - Warn when LEFT > RIGHT. Categories with only committed templates get NO warning.
+  - RIGHT = `Σ amounts of ACTIVE templates` (committed + estimated) in that category — NEVER the month's remaining box (PRD §7.4, C18). Same total as Fixed Expenses distribution by category.
+  - Warn when LEFT > RIGHT. Categories with no active templates get NO warning.
 - `isPastMonth(year, month)` → open month ≠ current calendar month → persistent warning banner; all edits stay allowed (PRD §7.7, C8, UC-13).
 
 ## Routes / UI

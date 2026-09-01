@@ -134,7 +134,8 @@
       "stats": "Estadísticas",
       "actuals": "Gastos",
       "incomes": "Ingresos",
-      "reserved": "Reservado"
+      "reserved": "Reservado",
+      "help": "Ayuda"
     },
     "stats": {
       "expensesByCategory": "Gastos por categoría",
@@ -144,7 +145,22 @@
       "committed": "Comprometido",
       "noData": "No hay datos para mostrar",
       "percent": "Porcentaje",
-      "absolute": "Absoluto"
+      "absolute": "Absoluto",
+      "glossary": {
+        "title": "Qué significan estos trozos",
+        "actuals": {
+          "term": "Gastos reales",
+          "def": "Tickets de gasto ya registrados este mes."
+        },
+        "reserved": {
+          "term": "Reservado",
+          "def": "Dinero que sigue en sobres estimados. No está gastado hasta que lo pasas a gastos reales o cierra el mes."
+        },
+        "committed": {
+          "term": "Comprometido",
+          "def": "Líneas fijas (alquiler, préstamo). El restante es lo que aún no se ha pagado de esa línea este mes."
+        }
+      }
     },
     "home": {
       "noMonths": "Todavía no has creado ningún mes."
@@ -383,10 +399,11 @@
     "title": "Estadísticas",
     "tabs": {
       "overview": "Resumen",
-      "incomes": "Ingresos",
-      "expenses": "Gastos",
+      "trends": "Tendencias",
       "inflation": "Inflación",
-      "trends": "Tendencias"
+      "expenses": "Gastos",
+      "incomes": "Ingresos",
+      "help": "Ayuda"
     },
     "filters": {
       "from": "Desde",
@@ -396,8 +413,7 @@
       "month": "Mes",
       "lfl": "Comparable",
       "projectRemaining": "Proyectar el restante como gastado",
-      "showAll": "Mostrar todas las categorías",
-      "currency": "Moneda"
+      "showAll": "Mostrar todas las categorías"
     },
     "kpis": {
       "income": "Ingresos",
@@ -408,7 +424,13 @@
       "rateHidden": "Oculto cuando el ingreso es 0"
     },
     "overview": {
-      "snapshot": "De {from} a {to}, el gasto pasó de {spendFrom} a {spendTo} ({spendPct}). Los ingresos pasaron de {incFrom} a {incTo} ({incPct}). La tasa de ahorro pasó de {rateFrom} a {rateTo}."
+      "snapshotRange": "De {from} a {to}",
+      "snapshotSpend": "El gasto pasó de {spendFrom} a {spendTo} ({spendPct}).",
+      "snapshotIncome": "Los ingresos pasaron de {incFrom} a {incTo} ({incPct}).",
+      "snapshotRate": "La tasa de ahorro pasó de {rateFrom} a {rateTo}."
+    },
+    "incomes": {
+      "netNote": "Las cifras son ingresos netos tal como los registraste — salario neto / neto cobrado, no bruto."
     },
     "charts": {
       "incomeVsSpend": {
@@ -485,7 +507,9 @@
       },
       "sparklines": {
         "title": "Principales categorías, acumulado a 12 meses",
-        "help": "Tendencias cortas de las categorías de gasto más grandes."
+        "help": "Cada punto suma los últimos 12 meses creados de esa categoría, no solo ese mes.",
+        "rolling": "Acumulado a 12 meses",
+        "thisMonth": "Este mes"
       },
       "overlay": {
         "title": "Tasa de ahorro y cambio del coste del hogar",
@@ -501,7 +525,6 @@
       }
     },
     "inflation": {
-      "disclaimer": "Esta cifra es el cambio de lo que registraste como gasto, no el índice oficial de precios al consumo. Más consumo y precios más altos la suben.",
       "impact": {
         "hccAhead": "El coste de la vida registrada subió más que los ingresos. La tasa de ahorro es la válvula de presión.",
         "incomeAhead": "Los ingresos crecieron más que el gasto registrado. Comprueba si el mix se desplazó a vivienda o dependientes.",
@@ -512,20 +535,106 @@
     },
     "signals": {
       "empty": "No hay señales de tendencia en este rango.",
+      "group": {
+        "risk": "Riesgos de caja",
+        "watch": "Atención",
+        "info": "Notas",
+        "growth": "Crecimiento por categoría"
+      },
       "savingsRateDrop": "La tasa de ahorro bajó {drop} pp en {year}.",
       "spendOutpacingIncome": "El gasto registrado subió {gap} pp más rápido que los ingresos en {year}.",
-      "categoryRunaway": "Una categoría creció {yoy} interanual, más rápido que los ingresos.",
-      "categorySpike": "Una categoría saltó {yoy} interanual.",
-      "newCategoryMaterial": "Una categoría nueva es el {share} del gasto del último año.",
-      "housingBurden": "La categoría de gasto mayor es el {share} de los ingresos.",
-      "incomeConcentration": "Una categoría de ingreso es el {share} de los ingresos.",
-      "incomeSourceGone": "Una fuente de ingreso que era material hace dos años desapareció en {year}.",
+      "categoryRunaway": "{name} creció {yoy} interanual, más rápido que los ingresos.",
+      "categorySpike": "{name} saltó {yoy} interanual.",
+      "newCategoryMaterial": "{name} aparece por primera vez y es el {share} del gasto del último año.",
+      "housingBurden": "{name} es el {share} de los ingresos.",
+      "incomeConcentration": "{name} es el {share} de los ingresos.",
+      "incomeSourceGone": "{name} era una fuente de ingreso material hace dos años y desapareció en {year}.",
       "deficitMonth": "El gasto superó los ingresos en: {months}.",
       "deficitYear": "{year} cerró con ahorro realizado negativo.",
       "seasonalityPeak": "El pico de gasto en {year} está claramente por encima de la media mensual de ese año.",
-      "openMonthReserve": "{year}-{month} todavía tiene restante reservado.",
+      "seasonalityPeakMany": "El pico de gasto está claramente por encima de la media mensual en {years}.",
+      "openMonthReserve": "{monthYear} todavía tiene restante reservado.",
       "sparseYear": "{year} solo tiene {months} meses de datos.",
-      "threeYearCagr": "Crecimiento plurianual por categoría (años completos {from}–{to})."
+      "threeYearCagr": "Crecimiento plurianual por categoría (años completos {from}–{to}).",
+      "stat": {
+        "categorySpike": "Interanual",
+        "categoryRunaway": "Más rápido que los ingresos",
+        "newCategoryMaterial": "Del gasto del último año",
+        "housingBurden": "De los ingresos",
+        "incomeConcentration": "De los ingresos",
+        "incomeSourceGone": "Desapareció en {year}",
+        "savingsRateDrop": "pp de caída en {year}",
+        "spendOutpacingIncome": "pp frente a ingresos en {year}",
+        "deficitMonth": "El gasto superó los ingresos",
+        "deficitYear": "Ahorro realizado negativo",
+        "openMonthReserve": "Todavía reservado en {monthYear}",
+        "sparseYear": "Solo {months} meses de datos",
+        "seasonalityPeak": "Claramente por encima de la media mensual de ese año",
+        "seasonalityPeakMany": "Pico de gasto claramente por encima de la media mensual en {years}"
+      },
+      "statTitle": {
+        "savingsRateDrop": "Tasa de ahorro",
+        "spendOutpacingIncome": "Gasto vs ingresos",
+        "deficitMonth": "Meses en déficit",
+        "openMonthReserve": "Restante reservado",
+        "sparseYear": "Año incompleto",
+        "seasonalityPeak": "Pico estacional"
+      }
+    },
+    "help": {
+      "title": "Glosario",
+      "intro": "Qué significan las etiquetas y las casillas de Estadísticas. Abre la tabla de un gráfico si quieres los números."
+    },
+    "glossary": {
+      "groups": {
+        "filters": "Filtros",
+        "money": "Dinero",
+        "compare": "Comparar años"
+      },
+      "hcc": {
+        "term": "HCC (cambio del coste del hogar)",
+        "def": "Cuánto subió o bajó el gasto registrado de esta casa frente al periodo comparable anterior. Comprar más y pagar más lo suben. No es el índice oficial de precios al consumo."
+      },
+      "notCpi": {
+        "term": "No es el IPC oficial",
+        "def": "La pestaña Inflación muestra el cambio de lo que registraste como gasto, no el índice oficial de precios al consumo. Más consumo y precios más altos la suben."
+      },
+      "income": {
+        "term": "Ingresos",
+        "def": "Ingresos netos tal como los registraste — salario neto / neto cobrado, no bruto."
+      },
+      "spend": {
+        "term": "Gasto real",
+        "def": "Tickets de gasto ya apuntados. Los sobres restantes no se tratan como gastados."
+      },
+      "savings": {
+        "term": "Ahorro realizado",
+        "def": "Ingresos menos gasto real del periodo."
+      },
+      "savingsRate": {
+        "term": "Tasa de ahorro",
+        "def": "Ahorro realizado como proporción de los ingresos. Oculta cuando el ingreso es 0."
+      },
+      "lfl": {
+        "term": "Comparable (LFL)",
+        "def": "Activado: si un año está incompleto, las cifras interanuales (incluido el HCC) comparan solo los meses que existen en ambos años — por ejemplo enero–septiembre frente a enero–septiembre — para que los meses ausentes no parezcan una caída. Desactivado: esas comparaciones en % omiten el año incompleto; los totales absolutos siguen sumando solo los meses que creaste. La casilla se activa sola cuando el último año del rango está incompleto."
+      },
+      "project": {
+        "term": "Proyectar el restante como gastado",
+        "def": "Solo en Resumen, y solo cuando el último mes todavía tiene restante reservado. Desactivado (por defecto): los gráficos usan los tickets ya apuntados; los sobres restantes no están gastados. Activado: el restante de ese mes se suma como si lo hubieras gastado, para ver un “si termino los sobres”. No cambia otros meses ni tus libros."
+      },
+      "ytd": {
+        "term": "YTD (año en curso)",
+        "def": "Este año todavía no tiene 12 meses creados. Los gráficos de totales lo incluyen igual, con esta marca."
+      },
+      "rolling": {
+        "term": "Acumulado a 12 meses",
+        "def": "Cada punto suma los últimos 12 meses creados, para que un mes ausente no parezca una caída."
+      },
+      "cagr": {
+        "term": "CAGR (crecimiento anual compuesto)",
+        "def": "Crecimiento anual compuesto de una categoría entre años completos. Se omite si el año inicial es 0."
+      }
     },
     "empty": {
       "title": "No hay meses que analizar",
@@ -535,12 +644,16 @@
     "openMonthNote": "{monthYear} todavía tiene {amount} reservado. Los gráficos usan los tickets ya registrados; no tratan los sobres restantes como gastados.",
     "incompleteYear": "{year} tiene {n} meses",
     "ytd": "YTD",
-    "lfl": "LFL",
+    "lfl": "Comparable",
     "inactive": "Inactiva",
     "other": "Otros",
     "a11y": {
       "tableToggle": "Mostrar tabla de datos",
-      "tabs": "Secciones de estadísticas"
+      "tabs": "Secciones de estadísticas",
+      "period": "Periodo",
+      "amount": "Importe",
+      "category": "Categoría",
+      "yoy": "Interanual"
     }
   },
   "pwa": {

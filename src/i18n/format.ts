@@ -81,13 +81,11 @@ export function amountToParts(amount: string): AmountParts {
 // ============================================================================
 // `formatMoney` — display-only currency formatter (UC-04, PRD C9 / §7.6 / §11).
 //
-// Wire format is locked by PRD C9: dot-decimal in BOTH locales, exactly two
-// fractional digits. `formatMoney` mirrors that on the display side and
-// appends the currency symbol (or ISO code if no symbol mapping exists) so
-// the same string is reproducible in either locale — this is the "no FX
-// conversion, label only" requirement of PRD UC-15. No grouping separator
-// (it would force a locale decision here and there is no requirement to
-// introduce one yet).
+// Wire and *input* stay locked by PRD C9: `1234.56` in BOTH locales. Display
+// keeps that same decimal (always `.`, never `,`) and adds a comma thousands
+// separator so large integers are readable (`150,923.67 €`). The grouping
+// character is fixed, not locale-aware — `es` still uses `.` for cents so it
+// never collides with Spanish-style `150.923,67`.
 //
 // Negative amounts keep the leading minus (PRD §7.6). Zero renders as
 // `0.00 <LABEL>` — no sign.
@@ -181,7 +179,39 @@ export function formatMoney(cents: number, currency: string): string {
   const frac = abs % 100;
   const sign = negative ? "-" : "";
   const symbol = getCurrencySymbol(currency);
-  return `${sign}${whole}.${frac.toString().padStart(2, "0")} ${symbol}`;
+  return `${sign}${groupThousands(whole)}.${frac.toString().padStart(2, "0")} ${symbol}`;
+}
+
+/**
+ * Compact Y-axis labels from integer cents. Display-only: truncates to whole
+ * currency units, never used in domain sums. Same comma grouping as formatMoney.
+ */
+export function formatAxisCents(cents: number): string {
+  if (!Number.isFinite(cents)) return "";
+  const n = Math.trunc(cents);
+  const negative = n < 0;
+  const euros = Math.trunc(Math.abs(n) / 100);
+  const sign = negative ? "-" : "";
+  if (euros >= 1_000_000) {
+    return `${sign}${groupThousands(Math.trunc(euros / 1_000_000))}M`;
+  }
+  if (euros >= 100_000) {
+    return `${sign}${groupThousands(Math.trunc(euros / 1_000))}k`;
+  }
+  return `${sign}${groupThousands(euros)}`;
+}
+
+function groupThousands(n: number): string {
+  const digits = String(n);
+  if (digits.length <= 3) return digits;
+  const parts: string[] = [];
+  let rest = digits;
+  while (rest.length > 3) {
+    parts.unshift(rest.slice(-3));
+    rest = rest.slice(0, -3);
+  }
+  parts.unshift(rest);
+  return parts.join(",");
 }
 
 // Inverse of `formatMoney` for the integer-cents part: turn the stored cents
