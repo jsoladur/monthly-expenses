@@ -188,7 +188,7 @@
       "submit": "Search"
     },
     "idle": "Find a ticket from any year. Search matches the name or the note.",
-    "tooShort": "Type at least three letters.",
+    "tooShort": "Type at least two letters.",
     "empty": "No tickets match “{q}”. Try another word.",
     "count": "{count, plural, one {# ticket} other {# tickets}}",
     "truncated": "Showing the first 100. Narrow the search.",

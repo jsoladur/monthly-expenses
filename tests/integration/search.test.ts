@@ -134,10 +134,10 @@ suite("UC-16 search actuals", () => {
     expect(literal.hits[0]!.name).toBe("%all% extra");
   });
 
-  it("does not hit the database for a two-letter query", async () => {
+  it("does not hit the database for a one-letter query", async () => {
     const userId = await seedUser("google-sub-uc16-short");
     const spy = vi.spyOn(searchRepo, "searchActualsByText");
-    const result = await searchActuals(userId, "ab");
+    const result = await searchActuals(userId, "a");
     expect(result.status).toBe("tooShort");
     expect(spy).not.toHaveBeenCalled();
   });

@@ -47,10 +47,10 @@ const DESKTOP_ITEMS: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home", testId: "nav-home" },
   { href: "/stats", icon: BarChart3, labelKey: "stats", testId: "nav-stats" },
   { href: "/templates", icon: DollarSign, labelKey: "templates", testId: "nav-templates" },
+  { href: "/search", icon: Search, labelKey: "search", testId: "nav-search" },
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
   { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
-  { href: "/search", icon: Search, labelKey: "search", testId: "nav-search" },
   { href: "/settings", icon: Settings, labelKey: "settings", testId: "nav-settings" },
 ];
 

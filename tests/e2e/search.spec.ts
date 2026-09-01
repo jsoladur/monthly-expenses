@@ -10,7 +10,7 @@ const DB_URL =
   "postgres://expenses:devpassword@localhost:5432/expenses";
 
 test.describe("UC-16 search", () => {
-  test("18 — More → Search on mobile; desktop sidebar after History", async ({
+  test("18 — More → Search on mobile; desktop sidebar Search after Fixed", async ({
     context,
     page,
   }, testInfo) => {
@@ -32,7 +32,7 @@ test.describe("UC-16 search", () => {
     const ids = await page.locator("aside nav a").evaluateAll((els) =>
       els.map((el) => el.getAttribute("data-testid")),
     );
-    expect(ids.indexOf("nav-search")).toBe(ids.indexOf("nav-history") + 1);
+    expect(ids.indexOf("nav-search")).toBe(ids.indexOf("nav-templates") + 1);
     await page.getByTestId("nav-search").click();
     await expect(page).toHaveURL(/\/en\/search/);
   });
@@ -86,22 +86,22 @@ test.describe("UC-16 search", () => {
     await expect(page.getByRole("heading", { level: 4, name: /marzo/i })).toBeVisible();
   });
 
-  test("23 — submit stays disabled until the query is at least 3 characters", async ({
+  test("23 — submit stays disabled until the query is at least 2 characters", async ({
     context,
     page,
   }) => {
     await seedSignedIn(context);
     await page.goto(`${BASE_URL}/en/search`);
     const submit = page.getByTestId("search-submit");
-    await page.locator("#search-q").fill("ab");
+    await page.locator("#search-q").fill("a");
     await expect(submit).toBeDisabled();
     await page.locator("#search-q").press("Enter");
     await expect(page).toHaveURL(/\/en\/search\/?$/);
-    await page.locator("#search-q").fill("abc");
+    await page.locator("#search-q").fill("ab");
     await expect(submit).toBeEnabled();
 
-    await page.goto(`${BASE_URL}/en/search?q=ab`);
-    await expect(page.getByRole("alert")).toHaveText("Type at least three letters.");
+    await page.goto(`${BASE_URL}/en/search?q=a`);
+    await expect(page.getByRole("alert")).toHaveText("Type at least two letters.");
     await expect(page.getByTestId("search-hit")).toHaveCount(0);
   });
 

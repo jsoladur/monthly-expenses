@@ -188,7 +188,7 @@
       "submit": "Buscar"
     },
     "idle": "Encuentra un gasto de cualquier año. La búsqueda mira el nombre o la nota.",
-    "tooShort": "Escribe al menos tres letras.",
+    "tooShort": "Escribe al menos dos letras.",
     "empty": "Ningún gasto coincide con “{q}”. Prueba otra palabra.",
     "count": "{count, plural, one {# gasto} other {# gastos}}",
     "truncated": "Mostrando los primeros 100. Afina la búsqueda.",

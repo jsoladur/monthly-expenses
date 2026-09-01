@@ -10,13 +10,12 @@ describe("sanitizeSearchTerm", () => {
     expect(sanitizeSearchTerm("niño")).toBe("nino");
   });
 
-  it("returns null for fewer than 3 characters", () => {
+  it("returns null for a single character", () => {
     expect(sanitizeSearchTerm("a")).toBeNull();
-    expect(sanitizeSearchTerm("ab")).toBeNull();
   });
 
-  it("accepts a 3-character term", () => {
-    expect(sanitizeSearchTerm("abc")).toBe("abc");
+  it("accepts a 2-character term", () => {
+    expect(sanitizeSearchTerm("ab")).toBe("ab");
   });
 
   it("escapes LIKE wildcards so % and _ are literals", () => {
