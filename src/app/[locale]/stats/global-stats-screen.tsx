@@ -319,7 +319,7 @@ export function GlobalStatsScreen({ page }: { page: GlobalStatsPage }) {
               {t("incompleteYear", { year: g.year, n: g.monthCount })}
             </span>
           ))}
-          {meta.gaps.some((g) => g.year === meta.range.toYear) && (
+          {meta.ytd && (
             <span data-testid="stats-ytd" className="bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 text-xs">
               {t("ytd")}
             </span>
@@ -708,7 +708,6 @@ function SeriesTab({
     label: `${r.year}-${String(r.month).padStart(2, "0")}`,
     cents: r.cents,
   }));
-  const chartData = granularity === "month" ? monthlyData : yearlyData;
   const stackedYears = [...new Set(dto.matrix.map((c) => c.year))].sort((a, b) => a - b);
   const stackedCats = dto.stacked.filter((c) => !c.other).slice(0, 8);
   const stackedData = stackedYears.map((year) => {
@@ -768,7 +767,7 @@ function SeriesTab({
         }
       >
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
+          <LineChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} width={52} tickFormatter={moneyTick} />

@@ -49,6 +49,13 @@ export function isCompleteYear(presence: MonthKey[], year: number): boolean {
   return monthsInYear(presence, year).length === 12;
 }
 
+/** Drop the current calendar month — it is not a finished comparable period. */
+export function excludeInProgressMonth(presence: MonthKey[], now: Date): MonthKey[] {
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  return presence.filter((p) => p.year !== year || p.month !== month);
+}
+
 export function likeForLikeMonths(
   presence: MonthKey[],
   yearA: number,
@@ -158,11 +165,13 @@ export function comparableMonths(
   year: number,
   priorYear: number,
   lfl: boolean,
+  now?: Date,
 ): number[] | undefined {
-  const yearIncomplete = !isCompleteYear(presence, year);
-  const priorIncomplete = !isCompleteYear(presence, priorYear);
+  const keys = now ? excludeInProgressMonth(presence, now) : presence;
+  const yearIncomplete = !isCompleteYear(keys, year);
+  const priorIncomplete = !isCompleteYear(keys, priorYear);
   if (lfl && (yearIncomplete || priorIncomplete)) {
-    return likeForLikeMonths(presence, year, priorYear);
+    return likeForLikeMonths(keys, year, priorYear);
   }
   return undefined;
 }
@@ -264,6 +273,7 @@ export function yearCategoryMatrix(
   presence: MonthKey[],
   years: number[],
   lfl: boolean,
+  now?: Date,
 ): MatrixCell[] {
   const cells: MatrixCell[] = [];
   for (const year of years) {
@@ -286,9 +296,10 @@ export function yearCategoryMatrix(
     }
     const priorYear = year - 1;
     const months = years.includes(priorYear)
-      ? comparableMonths(presence, year, priorYear, lfl)
+      ? comparableMonths(presence, year, priorYear, lfl, now)
       : undefined;
-    const omitYoy = !isCompleteYear(presence, year) && !lfl;
+    const comparable = now ? excludeInProgressMonth(presence, now) : presence;
+    const omitYoy = !isCompleteYear(comparable, year) && !lfl;
     for (const [categoryId, v] of cats) {
       const prior = omitYoy
         ? null
@@ -350,6 +361,7 @@ export function constantBasketIndexes(
   baseYear: number,
   years: number[],
   topN: number,
+  presence?: MonthKey[],
 ): Array<{
   categoryId: string;
   categoryName: string;
@@ -382,9 +394,13 @@ export function constantBasketIndexes(
             .map((r) => ({ year: r.year, month: r.month, cents: r.cents })),
           year,
         );
+        const omitIncomplete = presence !== undefined && !isCompleteYear(presence, year);
         return {
           year,
-          index: base === 0 ? null : Number(roundHalfUpDiv(BigInt(current) * 100n, BigInt(base))),
+          index:
+            omitIncomplete || base === 0
+              ? null
+              : Number(roundHalfUpDiv(BigInt(current) * 100n, BigInt(base))),
         };
       }),
     };
@@ -395,12 +411,14 @@ export function cumulativeExtraCost(
   spend: MonthCents[],
   years: number[],
   baseYear: number,
+  presence?: MonthKey[],
 ): Array<{ year: number; extraCents: number; cumulativeCents: number }> {
   const base = centsByYear(spend, baseYear);
   let running = 0;
   const out: Array<{ year: number; extraCents: number; cumulativeCents: number }> = [];
   for (const year of years) {
     if (year <= baseYear) continue;
+    if (presence !== undefined && !isCompleteYear(presence, year)) continue;
     const extra = centsByYear(spend, year) - base;
     running += extra;
     out.push({ year, extraCents: extra, cumulativeCents: running });
@@ -485,10 +503,12 @@ export function hccPercentTenths(
   year: number,
   priorYear: number,
   lfl: boolean,
+  now?: Date,
 ): number | null {
-  const yearIncomplete = !isCompleteYear(presence, year);
+  const comparable = now ? excludeInProgressMonth(presence, now) : presence;
+  const yearIncomplete = !isCompleteYear(comparable, year);
   if (yearIncomplete && !lfl) return null;
-  const months = comparableMonths(presence, year, priorYear, lfl);
+  const months = comparableMonths(presence, year, priorYear, lfl, now);
   const current = centsByYear(spend, year, months);
   const prior = centsByYear(spend, priorYear, months);
   return ratioChangeToPercentTenths(current, prior);
@@ -582,13 +602,14 @@ export function detectSignals(input: {
   const { presence, income, spend, remaining, incomeByCat, spendByCat, range, now } = input;
   const signals: TrendSignal[] = [];
   const years = yearsInRange(presence, range);
-  const completeYears = years.filter((y) => isCompleteYear(presence, y));
+  const comparable = excludeInProgressMonth(presence, now);
+  const completeYears = years.filter((y) => isCompleteYear(comparable, y));
   const latestYear = years[years.length - 1];
   const priorYear = latestYear !== undefined ? latestYear - 1 : undefined;
 
   if (latestYear !== undefined && priorYear !== undefined && years.includes(priorYear)) {
-    const lfl = range.lfl || !isCompleteYear(presence, latestYear);
-    const months = comparableMonths(presence, latestYear, priorYear, lfl);
+    const lfl = range.lfl || !isCompleteYear(comparable, latestYear);
+    const months = comparableMonths(presence, latestYear, priorYear, lfl, now);
     const incNow = centsByYear(income, latestYear, months);
     const incPrev = centsByYear(income, priorYear, months);
     const spendNow = centsByYear(spend, latestYear, months);

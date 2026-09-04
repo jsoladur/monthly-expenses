@@ -12,9 +12,11 @@ import {
   cumulativeExtraCost,
   deficitMonthRows,
   detectSignals,
+  excludeInProgressMonth,
   filterByCategories,
   hccPercentTenths,
   isCompleteYear,
+  monthsInYear,
   largestCategoryShareSeries,
   monthlySeriesWithNulls,
   potentialSavings,
@@ -68,6 +70,7 @@ export type GlobalStatsMeta = {
   completeYears: number[];
   range: StatsRange;
   defaultLfl: boolean;
+  ytd: boolean;
   granularity: StatsGranularity;
   tab: StatsTabId;
   gaps: Array<{ year: number; monthCount: number }>;
@@ -253,11 +256,12 @@ export async function getGlobalStatsPage(
     maxYear,
     now,
   );
-  const toIncomplete = !isCompleteYear(presence, to);
+  const comparisonPresence = excludeInProgressMonth(presence, now);
+  const toIncomplete = !isCompleteYear(comparisonPresence, to);
   const lfl = parsed.lfl ?? toIncomplete;
   const range: StatsRange = { fromYear: from, toYear: to, lfl };
   const years = yearsInRange(presence, range);
-  const completeYears = years.filter((y) => isCompleteYear(presence, y));
+  const completeYears = years.filter((y) => isCompleteYear(comparisonPresence, y));
   const gaps = years
     .map((year) => ({
       year,
@@ -298,6 +302,7 @@ export async function getGlobalStatsPage(
     completeYears,
     range,
     defaultLfl: toIncomplete,
+    ytd: toIncomplete,
     granularity: parsed.granularity,
     tab: parsed.tab,
     gaps,
@@ -353,6 +358,7 @@ export async function getGlobalStatsPage(
       spendByCat,
       range,
       years,
+      now,
     });
   } else if (parsed.tab === "incomes") {
     page.incomes = buildSeriesTab({
@@ -364,6 +370,7 @@ export async function getGlobalStatsPage(
       lfl,
       showAll: true,
       includeSeasonality: false,
+      now,
     });
   } else if (parsed.tab === "expenses") {
     page.expenses = buildSeriesTab({
@@ -375,6 +382,7 @@ export async function getGlobalStatsPage(
       lfl,
       showAll: parsed.showAllCategories,
       includeSeasonality: true,
+      now,
     });
   } else if (parsed.tab === "inflation") {
     page.inflation = buildInflation({
@@ -386,6 +394,7 @@ export async function getGlobalStatsPage(
       years,
       completeYears,
       lfl,
+      now,
     });
   } else {
     page.trends = buildTrends({
@@ -411,14 +420,15 @@ function buildOverview(input: {
   spendByCat: MonthCategoryCents[];
   range: StatsRange;
   years: number[];
+  now: Date;
 }): OverviewDto {
-  const { presence, income, spend, spendByCat, range, years } = input;
+  const { presence, income, spend, spendByCat, range, years, now } = input;
   const incomeCents = sumCents(income.map((r) => r.cents));
   const spendCents = sumCents(spend.map((r) => r.cents));
   const savingsCents = realizedSavings(incomeCents, spendCents);
   const latest = years[years.length - 1];
   const prior = latest !== undefined && years.includes(latest - 1) ? latest - 1 : undefined;
-  const months = prior !== undefined ? comparableMonths(presence, latest!, prior, range.lfl) : undefined;
+  const months = prior !== undefined ? comparableMonths(presence, latest!, prior, range.lfl, now) : undefined;
   const incomeDelta: KpiDelta = { centsDelta: null, percentTenths: null };
   const spendDelta: KpiDelta = { centsDelta: null, percentTenths: null };
   let savingsRateDeltaTenths: number | null = null;
@@ -442,25 +452,29 @@ function buildOverview(input: {
   const lastYear = years[years.length - 1];
   let snapshot: OverviewDto["snapshot"] = null;
   if (firstYear !== undefined && lastYear !== undefined && firstYear !== lastYear) {
-    const spendFrom = centsByYear(spend, firstYear);
-    const spendTo = centsByYear(spend, lastYear);
-    const incFrom = centsByYear(income, firstYear);
-    const incTo = centsByYear(income, lastYear);
+    const endpointMonths = comparableMonths(presence, lastYear, firstYear, range.lfl, now);
+    const comparable = excludeInProgressMonth(presence, now);
+    const omitPct = !isCompleteYear(comparable, lastYear) && !range.lfl;
+    const spendFrom = centsByYear(spend, firstYear, endpointMonths);
+    const spendTo = centsByYear(spend, lastYear, endpointMonths);
+    const incFrom = centsByYear(income, firstYear, endpointMonths);
+    const incTo = centsByYear(income, lastYear, endpointMonths);
     snapshot = {
       fromYear: firstYear,
       toYear: lastYear,
       spendFromCents: spendFrom,
       spendToCents: spendTo,
-      spendPctTenths: ratioChangeToPercentTenths(spendTo, spendFrom),
+      spendPctTenths: omitPct ? null : ratioChangeToPercentTenths(spendTo, spendFrom),
       incomeFromCents: incFrom,
       incomeToCents: incTo,
-      incomePctTenths: ratioChangeToPercentTenths(incTo, incFrom),
+      incomePctTenths: omitPct ? null : ratioChangeToPercentTenths(incTo, incFrom),
       rateFromTenths: savingsRateTenths(realizedSavings(incFrom, spendFrom), incFrom),
       rateToTenths: savingsRateTenths(realizedSavings(incTo, spendTo), incTo),
     };
   }
 
-  const completeYears = years.filter((y) => isCompleteYear(presence, y));
+  const comparable = excludeInProgressMonth(presence, now);
+  const completeYears = years.filter((y) => isCompleteYear(comparable, y));
   const firstCompleteYear = completeYears[0] ?? null;
   const latestCompleteYear = completeYears[completeYears.length - 1] ?? null;
 
@@ -486,9 +500,12 @@ function buildOverview(input: {
     rollingIncome: rolling12Series(presence, income),
     rollingSpend: rolling12Series(presence, spend),
     savingsRateByYear: years.map((year) => {
-      const inc = centsByYear(income, year);
-      const sav = realizedSavings(inc, centsByYear(spend, year));
-      return { year, tenths: savingsRateTenths(sav, inc), complete: isCompleteYear(presence, year) };
+      const closedMonths = !isCompleteYear(comparable, year)
+        ? monthsInYear(comparable, year)
+        : undefined;
+      const inc = centsByYear(income, year, closedMonths);
+      const sav = realizedSavings(inc, centsByYear(spend, year, closedMonths));
+      return { year, tenths: savingsRateTenths(sav, inc), complete: isCompleteYear(comparable, year) };
     }),
     firstCompleteComposition: firstCompleteYear
       ? compositionByCategory(spendByCat, firstCompleteYear)
@@ -510,9 +527,11 @@ function buildSeriesTab(input: {
   lfl: boolean;
   showAll: boolean;
   includeSeasonality: boolean;
+  now: Date;
 }): SeriesTabDto {
-  const { presence, series, byCat, range, years, lfl, showAll, includeSeasonality } = input;
+  const { presence, series, byCat, range, years, lfl, showAll, includeSeasonality, now } = input;
   const mix = compositionTotals(byCat);
+  const comparable = excludeInProgressMonth(presence, now);
   return {
     yearly: yearlyTotals(series, years).map((r) => ({
       ...r,
@@ -526,9 +545,9 @@ function buildSeriesTab(input: {
     }),
     mix,
     largestShare: largestCategoryShareSeries(byCat, years),
-    matrix: yearCategoryMatrix(byCat, presence, years, lfl),
+    matrix: yearCategoryMatrix(byCat, presence, years, lfl, now),
     ranking: mix,
-    seasonality: includeSeasonality ? seasonalityAverage(series, presence, years) : [],
+    seasonality: includeSeasonality ? seasonalityAverage(series, comparable, years) : [],
     showAll,
   };
 }
@@ -542,36 +561,38 @@ function buildInflation(input: {
   years: number[];
   completeYears: number[];
   lfl: boolean;
+  now: Date;
 }): InflationDto {
-  const { presence, income, spend, spendByCat, years, completeYears, lfl } = input;
+  const { presence, income, spend, spendByCat, years, completeYears, lfl, now } = input;
+  const comparable = excludeInProgressMonth(presence, now);
   const hccByYear = years.map((year) => {
     const prior = year - 1;
     const tenths = years.includes(prior)
-      ? hccPercentTenths(spend, presence, year, prior, lfl)
+      ? hccPercentTenths(spend, presence, year, prior, lfl, now)
       : null;
     const months =
-      years.includes(prior) && (!isCompleteYear(presence, year) || !isCompleteYear(presence, prior)) && lfl
-        ? comparableMonths(presence, year, prior, lfl) ?? null
+      years.includes(prior) && (!isCompleteYear(comparable, year) || !isCompleteYear(comparable, prior)) && lfl
+        ? comparableMonths(presence, year, prior, lfl, now) ?? null
         : null;
-    return { year, tenths, lflMonths: months, complete: isCompleteYear(presence, year) };
+    return { year, tenths, lflMonths: months, complete: isCompleteYear(comparable, year) };
   });
   const incomeVsHcc = years.map((year) => {
     const prior = year - 1;
     if (!years.includes(prior)) {
       return { year, incomeTenths: null, hccTenths: null };
     }
-    const incomplete = !isCompleteYear(presence, year);
+    const incomplete = !isCompleteYear(comparable, year);
     if (incomplete && !lfl) {
       return { year, incomeTenths: null, hccTenths: null };
     }
-    const months = comparableMonths(presence, year, prior, lfl);
+    const months = comparableMonths(presence, year, prior, lfl, now);
     return {
       year,
       incomeTenths: ratioChangeToPercentTenths(
         centsByYear(income, year, months),
         centsByYear(income, prior, months),
       ),
-      hccTenths: hccPercentTenths(spend, presence, year, prior, lfl),
+      hccTenths: hccPercentTenths(spend, presence, year, prior, lfl, now),
     };
   });
   const comparablePairs = incomeVsHcc.filter((r) => r.hccTenths !== null);
@@ -586,7 +607,7 @@ function buildInflation(input: {
   const priorYear = lastYear !== undefined ? lastYear - 1 : undefined;
   const contribMonths =
     lastYear !== undefined && priorYear !== undefined && years.includes(priorYear)
-      ? comparableMonths(presence, lastYear, priorYear, lfl)
+      ? comparableMonths(presence, lastYear, priorYear, lfl, now)
       : undefined;
   const contributions =
     lastYear !== undefined && priorYear !== undefined && years.includes(priorYear)
@@ -617,8 +638,8 @@ function buildInflation(input: {
     hccByYear,
     incomeVsHcc,
     contributions,
-    baskets: baseYear ? constantBasketIndexes(spendByCat, baseYear, years, 6) : [],
-    extraCost: baseYear ? cumulativeExtraCost(spend, years, baseYear) : [],
+    baskets: baseYear ? constantBasketIndexes(spendByCat, baseYear, years, 6, comparable) : [],
+    extraCost: baseYear ? cumulativeExtraCost(spend, years, baseYear, comparable) : [],
     impact,
     largestShareBaseTenths,
     largestShareLatestTenths,
@@ -663,13 +684,17 @@ function buildTrends(input: {
   });
   const savingsRateOverlay = years.map((year) => {
     const prior = year - 1;
-    const inc = centsByYear(income, year);
-    const sav = realizedSavings(inc, centsByYear(spend, year));
+    const comparable = excludeInProgressMonth(presence, now);
+    const closedMonths = !isCompleteYear(comparable, year)
+      ? monthsInYear(comparable, year)
+      : undefined;
+    const inc = centsByYear(income, year, closedMonths);
+    const sav = realizedSavings(inc, centsByYear(spend, year, closedMonths));
     return {
       year,
       savingsTenths: savingsRateTenths(sav, inc),
       hccTenths: years.includes(prior)
-        ? hccPercentTenths(spend, presence, year, prior, range.lfl)
+        ? hccPercentTenths(spend, presence, year, prior, range.lfl, now)
         : null,
     };
   });

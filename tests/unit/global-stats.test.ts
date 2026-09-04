@@ -4,9 +4,13 @@ import {
   applyRemainingProjection,
   centsByYear,
   comparableMonths,
+  constantBasketIndexes,
   contributionsToDelta,
+  cumulativeExtraCost,
   detectSignals,
+  excludeInProgressMonth,
   hccPercentTenths,
+  isCompleteYear,
   monthlySeriesWithNulls,
   potentialSavings,
   realizedSavings,
@@ -95,6 +99,30 @@ describe("UC-15 global-stats formulas", () => {
     expect(centsByYear(spend, 2025, [1, 2, 3, 4, 5, 6, 7, 8, 9])).toBe(108_000);
   });
 
+  it("3b — LFL drops the current in-progress calendar month", () => {
+    const presence = [...fullYear(2024), ...months(2025, 9)];
+    const now = new Date("2025-09-04T12:00:00");
+    expect(excludeInProgressMonth(presence, now).filter((p) => p.year === 2025).map((p) => p.month)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(comparableMonths(presence, 2025, 2024, true, now)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    const spend: MonthCents[] = [
+      ...Array.from({ length: 12 }, (_, i) => ({ year: 2024, month: i + 1, cents: 10_000 })),
+      ...Array.from({ length: 8 }, (_, i) => ({ year: 2025, month: i + 1, cents: 12_000 })),
+      { year: 2025, month: 9, cents: 1 },
+    ];
+    // Closed months only: 8×12000 vs 8×10000 → 20.0%. A 1-cent September must not move HCC.
+    expect(hccPercentTenths(spend, presence, 2025, 2024, true, now)).toBe(200);
+  });
+
+  it("3c — a year with 12 created months is still incomplete while the current month is in progress", () => {
+    const presence = [...fullYear(2025), ...fullYear(2026)];
+    const now = new Date("2026-12-04T12:00:00");
+    expect(isCompleteYear(presence, 2026)).toBe(true);
+    expect(isCompleteYear(excludeInProgressMonth(presence, now), 2026)).toBe(false);
+    expect(comparableMonths(presence, 2026, 2025, true, now)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
   it("4 — incomplete year is omitted from HCC unless LFL is on", () => {
     const presence = [...fullYear(2024), ...months(2025, 3)];
     const spend: MonthCents[] = [
@@ -143,6 +171,44 @@ describe("UC-15 global-stats formulas", () => {
 
   it("8 — CAGR skipped when base spend is 0", () => {
     expect(cagrPercentTenths(0, 50_000, 3)).toBeNull();
+  });
+
+  it("snapshot / extra-cost / basket skip comparing a partial year to a 12-month year", () => {
+    const presence = [...fullYear(2021), ...months(2026, 9)];
+    const now = new Date("2026-09-04T12:00:00");
+    const spend: MonthCents[] = [
+      ...Array.from({ length: 12 }, (_, i) => ({ year: 2021, month: i + 1, cents: 10_000 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ year: 2026, month: i + 1, cents: 10_000 })),
+    ];
+    const lflMonths = comparableMonths(presence, 2026, 2021, true, now);
+    expect(lflMonths).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(centsByYear(spend, 2021, lflMonths)).toBe(80_000);
+    expect(centsByYear(spend, 2026, lflMonths)).toBe(80_000);
+    expect(hccPercentTenths(spend, presence, 2026, 2021, true, now)).toBe(0);
+
+    const extra = cumulativeExtraCost(spend, [2021, 2026], 2021, excludeInProgressMonth(presence, now));
+    expect(extra).toEqual([]);
+
+    const byCat: MonthCategoryCents[] = spend.map((r) =>
+      catRow(r.year, r.month, "food", r.cents, { categoryName: "Food" }),
+    );
+    const baskets = constantBasketIndexes(byCat, 2021, [2021, 2026], 6, excludeInProgressMonth(presence, now));
+    expect(baskets[0]?.points.find((p) => p.year === 2026)?.index).toBeNull();
+    expect(baskets[0]?.points.find((p) => p.year === 2021)?.index).toBe(100);
+  });
+
+  it("matrix YoY for an incomplete year uses closed LFL months, not the in-progress month", () => {
+    const presence = [...fullYear(2025), ...months(2026, 9)];
+    const now = new Date("2026-09-04T12:00:00");
+    const byCat: MonthCategoryCents[] = [
+      ...Array.from({ length: 12 }, (_, i) => catRow(2025, i + 1, "ocio", 10_000, { categoryName: "Ocio" })),
+      ...Array.from({ length: 8 }, (_, i) => catRow(2026, i + 1, "ocio", 20_000, { categoryName: "Ocio" })),
+      catRow(2026, 9, "ocio", 1, { categoryName: "Ocio" }),
+    ];
+    const cell = yearCategoryMatrix(byCat, presence, [2025, 2026], true, now).find(
+      (c) => c.year === 2026 && c.categoryId === "ocio",
+    );
+    expect(cell?.yoyTenths).toBe(1000); // +100.0% on Jan–Aug, not pulled down by a 1-cent September
   });
 
   it("9 — inactive (soft-deleted) categories still appear in the matrix", () => {
@@ -374,7 +440,7 @@ describe("UC-15 detectors (§11.1 fire / not-fire)", () => {
           incomeByCat,
           spendByCat: [],
           range,
-          now: new Date("2025-06-01"),
+          now: new Date("2026-01-01"),
         }),
       ),
     ).toContain("incomeSourceGone");
@@ -388,7 +454,7 @@ describe("UC-15 detectors (§11.1 fire / not-fire)", () => {
           incomeByCat: stillThere,
           spendByCat: [],
           range,
-          now: new Date("2025-06-01"),
+          now: new Date("2026-01-01"),
         }),
       ),
     ).not.toContain("incomeSourceGone");

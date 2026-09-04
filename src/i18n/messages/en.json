@@ -633,7 +633,7 @@
       },
       "lfl": {
         "term": "Like-for-like (LFL)",
-        "def": "On: if a year is incomplete, year-on-year figures (including HCC) compare only the months that exist in both years — for example January–September vs January–September — so missing months do not look like a drop. Off: those % comparisons skip the incomplete year; absolute totals still sum only the months you created. The box turns on by itself when the latest year in range is incomplete."
+        "def": "On: if a year is incomplete, year-on-year figures (including HCC) compare only the months that exist in both years, and skip the current in-progress calendar month, so missing or unfinished months do not look like a drop. Off: those % comparisons skip the incomplete year; absolute totals still sum only the months you created. The box turns on by itself when the latest year in range is incomplete."
       },
       "project": {
         "term": "Project remaining as spent",
@@ -641,7 +641,7 @@
       },
       "ytd": {
         "term": "YTD (year to date)",
-        "def": "This year does not yet have 12 created months. Absolute charts still include it, with this badge."
+        "def": "This year is not a finished comparable year yet — either it has fewer than 12 created months, or the current calendar month is still in progress. Absolute charts still include recorded tickets, with this badge."
       },
       "rolling": {
         "term": "12-month rolling",

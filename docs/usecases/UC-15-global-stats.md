@@ -115,13 +115,13 @@ Leftover envelopes **die at month end** (C7). Closed months are therefore expect
 
 ### 5.3 Incomplete years (mandatory)
 
-A year is **complete** when the user has created **12** month instances for it. The current calendar year (and any year the user has not finished creating) will often be incomplete.
+A year is **complete** when the user has created **12** month instances for it **and** none of those months is the current in-progress calendar month. The current calendar year (and any year the user has not finished creating) will often be incomplete. Creating December on 4 December does **not** make the year complete for YoY.
 
-**Never** compare a partial year to a 12-month year as if it were a drop in spend (that would show a fake “deflation”).
+**Never** compare a partial year to a 12-month year as if it were a drop in spend (that would show a fake “deflation”). Never treat the **current in-progress calendar month** as a finished comparable month (salary may already be in while most tickets are not).
 
 Default comparison mode when the latest year is incomplete:
 
-- **Like-for-like (LFL):** only months 1…N that exist in **both** years (e.g. year Y months 1–9 vs year Y−1 months 1–9).
+- **Like-for-like (LFL):** only months that exist in **both** years, **excluding the current in-progress calendar month** (e.g. on 4 September with months 1–9 created: year Y months 1–8 vs year Y−1 months 1–8).
 - Charts mark incomplete years with a distinct style (dashed stroke or “YTD” badge).
 - A toggle **“Show full years only”** hides the incomplete year from YoY % (it still appears on absolute charts with the badge).
 
@@ -190,7 +190,7 @@ Use the brand gradient **only** on the savings card when savings ≥ 0 (STYLE-GU
 
 ### 7.3 Snapshot copy (computed, keyed)
 
-One short paragraph under the KPIs, e.g. en: *“From {from} to {to}, spend went from {spendFrom} to {spendTo} ({spendPct}). Income went from {incFrom} to {incTo} ({incPct}). Savings rate went from {rateFrom} to {rateTo}.”* Spanish equivalent. This is the “so what” a family reads first. **Omit the paragraph when From and To are the same year** (comparing a year to itself is noise).
+One short paragraph under the KPIs, e.g. en: *“From {from} to {to}, spend went from {spendFrom} to {spendTo} ({spendPct}). Income went from {incFrom} to {incTo} ({incPct}). Savings rate went from {rateFrom} to {rateTo}.”* Spanish equivalent. This is the “so what” a family reads first. **Omit the paragraph when From and To are the same year** (comparing a year to itself is noise). When the `to` year is incomplete and LFL is on, the amounts and % use the same closed like-for-like months as Overview YoY (never 12 months vs a partial year). When LFL is off, omit the %.
 
 ---
 
@@ -261,7 +261,7 @@ Let `I(y)` = income in the same months.
 2. **Income change vs HCC** — grouped bars or two lines. The household is “ahead” when income % > HCC.
 3. **Category contributions to last ΔS** — waterfall if straightforward in Recharts; otherwise a signed horizontal bar (positives = grew, negatives = shrank). Top 10 + Other.
 4. **Constant-basket illustration (optional but recommended):** for each category, `S(y, c)` vs `S(base, c)` as an index 100 at base. Small-multiples for the top 6 categories. This is still not CPI; it is “how this line of spend moved”.
-5. **Cumulative extra cost:** `Σ_{y > base} (S(y) − S(base))` as a running total — “euros above the base year”, a visceral household number. Caption must say it mixes volume and price.
+5. **Cumulative extra cost:** `Σ_{y > base} (S(y) − S(base))` as a running total over **complete** years only — “euros above the base year”, a visceral household number. Caption must say it mixes volume and price. Omit the comparison-incomplete year (do not add a partial year onto a 12-month base).
 
 ### 10.3 What “impact” means on this tab
 
@@ -376,7 +376,7 @@ There is no PRD §15 scenario for reports. These are **this file’s** normative
 
 1. Realized savings = income − actuals; potential savings still matches UC-11 when remaining ≠ 0.
 2. HCC for two complete years: fixture spend `800.00` vs prior `640.00` → 25.00% (cents in, percent out with a defined rounding — 1 decimal, half-up).
-3. LFL: year A months 1–12 vs year B months 1–9 → compare only 1–9.
+3. LFL: year A months 1–12 vs year B months 1–9 → compare only 1–9. If “now” falls in month 9 of year B, compare only 1–8.
 4. Incomplete year **must not** produce a negative HCC solely because of missing months when LFL is off — the % series **omits** that year unless LFL is on.
 5. Missing March is `null`, not `0`.
 6. Contribution: categories summing to `S(y)−S(y−1)` (integer cents, other-bucket holds remainder).

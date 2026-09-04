@@ -633,7 +633,7 @@
       },
       "lfl": {
         "term": "Comparable (LFL)",
-        "def": "Activado: si un año está incompleto, las cifras interanuales (incluido el HCC) comparan solo los meses que existen en ambos años — por ejemplo enero–septiembre frente a enero–septiembre — para que los meses ausentes no parezcan una caída. Desactivado: esas comparaciones en % omiten el año incompleto; los totales absolutos siguen sumando solo los meses que creaste. La casilla se activa sola cuando el último año del rango está incompleto."
+        "def": "Activado: si un año está incompleto, las cifras interanuales (incluido el HCC) comparan solo los meses que existen en ambos años y omiten el mes calendario en curso, para que los meses ausentes o a medio hacer no parezcan una caída. Desactivado: esas comparaciones en % omiten el año incompleto; los totales absolutos siguen sumando solo los meses que creaste. La casilla se activa sola cuando el último año del rango está incompleto."
       },
       "project": {
         "term": "Proyectar el restante como gastado",
@@ -641,7 +641,7 @@
       },
       "ytd": {
         "term": "YTD (año en curso)",
-        "def": "Este año todavía no tiene 12 meses creados. Los gráficos de totales lo incluyen igual, con esta marca."
+        "def": "Este año aún no es un año comparable cerrado: o no tiene 12 meses creados, o el mes calendario actual sigue en curso. Los gráficos de totales incluyen igual los tickets ya apuntados, con esta marca."
       },
       "rolling": {
         "term": "Acumulado a 12 meses",

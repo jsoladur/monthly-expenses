@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-04
+
+### Fixed
+- Stats like-for-like YoY skips the current in-progress calendar month, so an open September is not compared to last September (UC-15).
+- Overview snapshot, inflation extra-cost, and constant-basket indexes no longer compare a partial year to a 12-month year (UC-15).
+- Expenses and Incomes monthly charts always plot months, not yearly totals (UC-15).
+
 ## [0.5.1] - 2026-09-01
 
 ### Fixed
