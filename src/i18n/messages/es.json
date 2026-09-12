@@ -79,7 +79,11 @@
     "actualNotFound": "Ese gasto ya no existe. Recarga la página.",
     "reservedLineNotFound": "Esa línea reservada ya no existe. Recarga la página.",
     "cannotUndoPass": "No se puede deshacer después de editar el gasto.",
-    "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer."
+    "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer.",
+    "committedLineCannotPassToUpcoming": "Solo las líneas estimadas pueden pasar a un mes próximo.",
+    "targetMonthNotFound": "Ese mes ya no existe. Recarga la página.",
+    "targetNotUpcoming": "Elige un mes posterior de este año que ya exista.",
+    "notCurrentYear": "Este movimiento solo está disponible en el año actual."
   },
   "warnings": {
     "title": "Avisos",
@@ -287,7 +291,13 @@
       "selectKind": "Elige un tipo",
       "passToActual": "Pasar a gastos reales",
       "passToActualHelp": "Mueve esta línea reservada a gasto real.",
-      "confirmPassToActual": "¿Pasar esta línea reservada a gasto real?"
+      "confirmPassToActual": "¿Pasar esta línea reservada a gasto real?",
+      "passToUpcoming": "Pasar a un mes próximo",
+      "passToUpcomingHelp": "Mueve esta estimación a un mes posterior que ya hayas creado.",
+      "passToUpcomingTitle": "Pasar a un mes próximo",
+      "passToUpcomingBody": "Esta estimación sale de este mes y queda reservada en el mes que elijas.",
+      "passToUpcomingConfirm": "Pasar",
+      "passToUpcomingMonthList": "Meses próximos"
     },
     "noActiveCategories": "Crea primero una categoría de gasto activa.",
     "historicalInactiveNote": "La categoría de esta línea está inactiva. Sigue mostrándose porque la línea se añadió antes."

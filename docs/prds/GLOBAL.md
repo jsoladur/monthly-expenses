@@ -43,6 +43,7 @@ A **Search** screen finds already-recorded actual tickets across years by name o
 | C18 | Overspend warning: actuals in a category vs **sum of active template amounts** (committed + estimated) in that category. Warn only, never block. |
 | C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
 | C20 | **Search** finds the user’s own `month_actual_expense` rows by **name or observations** across every created month. Read-only. Explicit submit (not the add-actual autocomplete — that is C13 / UC-22). |
+| C21 | **Pass to upcoming month** moves an **estimated** reserved line to a **later month of the same calendar year that already exists**. Current year only. Not History. Never auto-creates the target (C6). Not automatic leftover rollover (C7). |
 
 ---
 
@@ -73,6 +74,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Plan amount (overspend baseline)** | Sum of **active** template amounts (committed + estimated) on the **template form** for that category. Not the remaining box in the month. |
 | **Potential savings** | See §7. |
 | **Pass to actual** | One-tap **cut and paste**: remove committed fixed line from the month’s fixed block; create an equivalent actual row. Undo = reverse **only while the actual was not edited**. |
+| **Pass to upcoming month** | One-tap **cut and paste** of an **estimated** line onto a later created month of the **current year**. The line leaves this month’s Estimated tab and appears there as a month-only estimate. No undo. |
 | **Annual** | Yearly recurring expense reminder (insurance, vehicle tax). Catalog only — not cloned, not a spend series. |
 | **Search** | Read-only finder of actual tickets by name or observations, any year. Not History (browse months) and not Stats (aggregates). Distinct from add-actual name autocomplete (UC-22). |
 | **Logical erase** | Soft-delete / deactivate catalogs (categories, templates, annuals). Hidden from new pickers and from annual reminders. Month rows that already reference a category/template keep the id. |
@@ -217,6 +219,7 @@ Hard-deleted rows are excluded from sums.
 
 - A line lives in **either** `MonthFixedLine` **or** `MonthActualExpense`, never both.
 - **Pass to actual** moves the row (cut-paste). After move, it is **only** in actuals.
+- **Pass to upcoming month** moves an estimated line from this month instance to a later created month of the same year. After the move it is **only** on the target month.
 - Manual estimate decrease does **not** create an actual.
 - Adding an actual does **not** change any remaining automatically.
 
@@ -278,7 +281,17 @@ Rules:
 - User may add **any number of actual expenses** on a month.
 - User may add or hard-delete reserved lines **only on that month** (one-offs). They are not written to the template and will not appear in the next month unless added to the template before that month is created.
 - Changing or soft-deleting a template does **not** rewrite months that already exist.
-- Unused remaining in August does **not** roll into September.
+- Unused remaining in August does **not** roll into September automatically (C7). The user may **manually** pass an estimated line to a later created month of the current year (UC-23 / C21).
+
+### 7.10 Pass estimated line to an upcoming month (confirmed)
+
+- Allowed only for `kind = estimated`.
+- Allowed only when the source month’s year is the **current calendar year**.
+- Target must be an **already created** month of the **same year** with a **later** month number.
+- One transaction: insert the line on the target (`origin = month_only`, remaining = original = source remaining, same category / name / observations); HARD-delete the source line.
+- Never auto-creates the target month.
+- No undo. History / previous years do not offer this action.
+- Templates are not rewritten. Months still do not sync after create (§7.8).
 
 **Incomes are not cloned** (not MVP).
 
@@ -317,6 +330,7 @@ potential_savings already subtracts all remainings
         ├─► manually edit remaining on estimated (and committed) lines
         ├─► add/hard-delete month-only reserved lines
         ├─► Pass to actual (committed only)
+        ├─► Pass estimated line to an upcoming created month (current year)
         └─► undo pass only if actual not edited
 ```
 
@@ -434,6 +448,17 @@ Implementation slice: `docs/usecases/UC-17-actual-name-autocomplete.md` (PRD **U
 - User B never sees User A’s names.
 - Does not search observations, incomes, or reserved lines. Does not change Search (UC-21). Missing prior months are skipped (C6).
 
+### UC-23 — Pass estimated line to an upcoming month
+
+Implementation slice: `docs/usecases/UC-18-pass-to-upcoming-month.md` (PRD **UC-18** remains month-only reserved lines).
+
+- On the month workspace Estimated tab, **Pass to upcoming month** appears only when later months of the **current calendar year** already exist.
+- Hidden on History (`?from=history`) and on any month whose year is not the current calendar year.
+- Picker lists only created months with the same year and a later month number. Never auto-creates a month (C6).
+- Confirm cut-pastes the estimated line: hard-delete on the source month; insert on the target as `kind = estimated`, `origin = month_only`, remaining = original = source remaining.
+- Committed lines, other years, and missing targets are rejected. No undo.
+- User B never moves User A’s lines.
+
 ---
 
 ## 10. Screens (logical)
@@ -460,7 +485,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker.
 
 ---
 
@@ -507,6 +532,10 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - Income templates / cloning incomes
 - Auto-create reserved lines or actuals from annuals
 - Dismiss / hide an annual reminder after adding a line (future)
+- Auto-create a month in order to pass an estimate forward
+- Pass an estimated line to a different calendar year
+- Pass a committed line to an upcoming month
+- Undo pass-to-upcoming-month
 
 ---
 
@@ -540,6 +569,9 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 26. On August Actuals, type `ca` in the new-ticket name: suggestions include prefix matches from August, July, and June; a May ticket with the same prefix does not appear.
 27. User B’s add-actual suggestions never include User A’s ticket names.
 28. One character typed → no suggestion list. Picking a suggestion fills the name with the stored spelling; category and amount stay empty until the user sets them.
+29. September Groceries estimated remaining 280; October already exists. Pass to upcoming → October: line gone from September Estimated; October Estimated has Groceries 280 as a month-only estimate.
+30. September of the current year with no later month created: no Pass to upcoming month button. A previous-year month opened from History also has no button, even if later months of that year exist.
+31. User B cannot pass User A’s estimated line, including by targeting User A’s October.
 
 ---
 
@@ -572,6 +604,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Annuals | Remind by month-number, any year. Never auto-create lines. |
 | Search | Name or observations, sanitized `LIKE`, read-only. Explicit submit. Not the add-actual autocomplete. |
 | Add-actual name autocomplete | This month + 2 prior months, name prefix, max 5, name only. |
+| Pass estimated line to upcoming month | Current calendar year only. Later created months of that year. Estimated kind only. Never auto-create. No undo. Not History. |
 
 No blocking product questions remain for V1 money behavior.
 
@@ -591,7 +624,8 @@ No blocking product questions remain for V1 money behavior.
 10. Annuals catalog + month-workspace reminders (never auto-create)  
 11. Tests: isolation, clone snapshot, August must not leak into September  
 12. Search actuals by name or notes (read-only)
-13. Add-actual name autocomplete (this month + 2 prior, prefix) 
+13. Add-actual name autocomplete (this month + 2 prior, prefix)
+14. Pass estimated line to a later created month of the current year 
 
 ---
 
@@ -609,3 +643,4 @@ No blocking product questions remain for V1 money behavior.
 - Search idle: “Find a ticket from any year. Search matches the name or the note.”
 - Search empty: “No tickets match that text. Try another word.”
 - Actual name autocomplete list: “Recent names.”
+- Pass to upcoming month: “Move this estimate to a later month you already created.”

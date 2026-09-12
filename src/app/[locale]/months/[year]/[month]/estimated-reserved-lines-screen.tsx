@@ -14,11 +14,20 @@ import {
   passToActualAction,
   type PassToActualActionResult,
 } from "@/actions/pass-to-actual";
-import type { ReservedLineRowData, CategoryOption } from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
+import {
+  passToUpcomingMonthAction,
+  type PassToUpcomingActionResult,
+} from "@/actions/pass-to-upcoming";
+import type {
+  ReservedLineRowData,
+  CategoryOption,
+  UpcomingMonthOption,
+} from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { SwipeAction } from "@/components/ui/swipe-action";
-import { Pencil, Trash2, ArrowRightCircle } from "lucide-react";
+import { PassToUpcomingMonthDrawer } from "@/components/pass-to-upcoming-month-drawer";
+import { Pencil, Trash2, ArrowRightCircle, Calendar } from "lucide-react";
 
 // ============================================================================
 // Estimated reserved lines screen — separate section for estimated lines only.
@@ -35,6 +44,7 @@ export function EstimatedReservedLinesScreen({
   currency,
   rows,
   expenseCategories,
+  upcomingMonths,
 }: {
   monthId: string;
   year: number;
@@ -42,6 +52,7 @@ export function EstimatedReservedLinesScreen({
   currency: string;
   rows: ReservedLineRowData[];
   expenseCategories: CategoryOption[];
+  upcomingMonths: UpcomingMonthOption[];
 }) {
   const t = useTranslations("reservedLines");
 
@@ -60,6 +71,7 @@ export function EstimatedReservedLinesScreen({
                 year={year}
                 month={month}
                 currency={currency}
+                upcomingMonths={upcomingMonths}
               />
             ))}
           </ul>
@@ -87,12 +99,14 @@ function EstimatedReservedLineRow({
   year,
   month,
   currency,
+  upcomingMonths,
 }: {
   row: ReservedLineRowData;
   monthId: string;
   year: number;
   month: number;
   currency: string;
+  upcomingMonths: UpcomingMonthOption[];
 }) {
   const t = useTranslations("reservedLines");
   const tv = useTranslations("validation");
@@ -100,6 +114,9 @@ function EstimatedReservedLineRow({
   const [passPending, setPassPending] = useState(false);
   const [passError, setPassError] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
+  const [upcomingOpen, setUpcomingOpen] = useState(false);
+  const [upcomingPending, setUpcomingPending] = useState(false);
+  const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
   const handlePass = async () => {
     if (passPending) return;
@@ -111,6 +128,24 @@ function EstimatedReservedLineRow({
     if (!result.ok) {
       setPassError(errorToMessagePass(result, tv));
     }
+  };
+
+  const handlePassToUpcoming = async (targetMonthId: string): Promise<boolean> => {
+    if (upcomingPending) return false;
+    setUpcomingPending(true);
+    setUpcomingError(null);
+    const result = await passToUpcomingMonthAction({
+      lineId: row.id,
+      targetMonthId,
+      year,
+      month,
+    });
+    setUpcomingPending(false);
+    if (!result.ok) {
+      setUpcomingError(errorToMessageUpcoming(result, tv));
+      return false;
+    }
+    return true;
   };
 
   const handleDelete = async () => {
@@ -181,6 +216,9 @@ function EstimatedReservedLineRow({
             onEdit={() => setEditing(true)}
             onPass={handlePass}
             onDelete={handleDelete}
+            onPassToUpcoming={
+              upcomingMonths.length > 0 ? () => setUpcomingOpen(true) : undefined
+            }
             passPending={passPending}
             deletePending={deletePending}
             passError={passError}
@@ -192,6 +230,16 @@ function EstimatedReservedLineRow({
           </p>
         )}
       </div>
+      {upcomingMonths.length > 0 && (
+        <PassToUpcomingMonthDrawer
+          open={upcomingOpen}
+          onOpenChange={setUpcomingOpen}
+          months={upcomingMonths}
+          pending={upcomingPending}
+          error={upcomingError}
+          onConfirm={handlePassToUpcoming}
+        />
+      )}
     </SwipeAction>
   );
 }
@@ -200,6 +248,7 @@ function RowActions({
   onEdit,
   onPass,
   onDelete,
+  onPassToUpcoming,
   passPending,
   deletePending,
   passError,
@@ -207,6 +256,7 @@ function RowActions({
   onEdit: () => void;
   onPass: () => void;
   onDelete: () => void;
+  onPassToUpcoming?: () => void;
   passPending: boolean;
   deletePending: boolean;
   passError: string | null;
@@ -227,6 +277,13 @@ function RowActions({
           disabled={passPending}
           onClick={onPass}
         />
+        {onPassToUpcoming && (
+          <IconButton
+            icon={<Calendar className="size-4" />}
+            label={t("actions.passToUpcoming")}
+            onClick={onPassToUpcoming}
+          />
+        )}
         <IconButton
           icon={<Trash2 className="size-4" />}
           label={t("actions.delete")}
@@ -564,6 +621,26 @@ function errorToMessagePass(
       return tv("notUndoable");
     case "undoForbiddenAfterEdit":
       return tv("cannotUndoPass");
+    case "validation":
+      return tv("required");
+  }
+}
+
+function errorToMessageUpcoming(
+  state: Extract<PassToUpcomingActionResult, { ok: false }>,
+  tv: ReturnType<typeof useTranslations<"validation">>,
+): string {
+  switch (state.error) {
+    case "monthLineNotFound":
+      return tv("reservedLineNotFound");
+    case "committedLineCannotPassToUpcoming":
+      return tv("committedLineCannotPassToUpcoming");
+    case "notCurrentYear":
+      return tv("notCurrentYear");
+    case "targetMonthNotFound":
+      return tv("targetMonthNotFound");
+    case "targetNotUpcoming":
+      return tv("targetNotUpcoming");
     case "validation":
       return tv("required");
   }

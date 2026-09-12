@@ -16,7 +16,8 @@ import { getProfileSettings } from "@/server/services/settings";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
 import { listRecentActualNameSuggestions } from "@/server/services/actuals";
-import { isAppLocale, monthYear } from "@/i18n/format";
+import { listUpcomingMonthsForPass } from "@/server/services/pass-to-upcoming";
+import { isAppLocale, monthName, monthYear } from "@/i18n/format";
 import { parseAmount } from "@/server/money";
 import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-touch-client";
 import {
@@ -148,12 +149,16 @@ export default async function MonthWorkspacePage({
     rows: orderRows(reservedLineRows.filter((r) => r.kind === kind)),
   }));
 
-  const [summary, overspendWarnings, annualReminders, nameSuggestions] = await Promise.all([
-    getMonthSummary(userId, workspace.month.id),
-    getOverspendWarnings(userId, workspace.month.id),
-    getAnnualReminders(userId, workspace.month.month),
-    listRecentActualNameSuggestions(userId, workspace.month.year, workspace.month.month),
-  ]);
+  const [summary, overspendWarnings, annualReminders, nameSuggestions, upcomingMonthsRaw] =
+    await Promise.all([
+      getMonthSummary(userId, workspace.month.id),
+      getOverspendWarnings(userId, workspace.month.id),
+      getAnnualReminders(userId, workspace.month.month),
+      listRecentActualNameSuggestions(userId, workspace.month.year, workspace.month.month),
+      cameFromHistory
+        ? Promise.resolve([])
+        : listUpcomingMonthsForPass(userId, workspace.month.year, workspace.month.month),
+    ]);
   const now = new Date();
   const showPastMonthBanner = isPastMonth(
     workspace.month.year,
@@ -263,6 +268,12 @@ export default async function MonthWorkspacePage({
               expenseCategories={activeExpenseCategories.map((c) => ({
                 id: c.id,
                 name: c.name,
+              }))}
+              upcomingMonths={upcomingMonthsRaw.map((m) => ({
+                id: m.id,
+                year: m.year,
+                month: m.month,
+                label: monthName(locale as AppLocale, m.month),
               }))}
             />
           }

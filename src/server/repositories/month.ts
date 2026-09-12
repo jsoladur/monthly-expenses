@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import {
   month,
@@ -107,6 +107,25 @@ export async function listMonthsByYear(
     .from(month)
     .where(and(eq(month.userId, userId), eq(month.year, year)))
     .orderBy(desc(month.month));
+}
+
+export async function listUpcomingMonthsInYear(
+  userId: string,
+  year: number,
+  afterMonth: number,
+  tx: Tx | typeof db = db,
+): Promise<Month[]> {
+  return tx
+    .select()
+    .from(month)
+    .where(
+      and(
+        eq(month.userId, userId),
+        eq(month.year, year),
+        gt(month.month, afterMonth),
+      ),
+    )
+    .orderBy(month.month);
 }
 
 export async function insertClonedLines(

@@ -23,3 +23,10 @@ export interface ReservedLineGroup {
   kind: ReservedLineKind;
   rows: ReservedLineRowData[];
 }
+
+export interface UpcomingMonthOption {
+  id: string;
+  year: number;
+  month: number;
+  label: string;
+}

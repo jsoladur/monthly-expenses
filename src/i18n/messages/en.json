@@ -79,7 +79,11 @@
     "actualNotFound": "That expense no longer exists. Reload the page.",
     "reservedLineNotFound": "That reserved line no longer exists. Reload the page.",
     "cannotUndoPass": "Cannot undo after the actual has been edited.",
-    "notUndoable": "This expense was not created by pass-to-actual."
+    "notUndoable": "This expense was not created by pass-to-actual.",
+    "committedLineCannotPassToUpcoming": "Only estimated lines can move to an upcoming month.",
+    "targetMonthNotFound": "That month no longer exists. Reload the page.",
+    "targetNotUpcoming": "Pick a later month of this year that already exists.",
+    "notCurrentYear": "This move is only available in the current year."
   },
   "warnings": {
     "title": "Warnings",
@@ -287,7 +291,13 @@
       "selectKind": "Pick a kind",
       "passToActual": "Pass to actual",
       "passToActualHelp": "Move this reserved line to actual spend.",
-      "confirmPassToActual": "Pass this reserved line to actual spend?"
+      "confirmPassToActual": "Pass this reserved line to actual spend?",
+      "passToUpcoming": "Pass to upcoming month",
+      "passToUpcomingHelp": "Move this estimate to a later month you already created.",
+      "passToUpcomingTitle": "Pass to upcoming month",
+      "passToUpcomingBody": "This estimate leaves this month and is reserved in the month you pick.",
+      "passToUpcomingConfirm": "Pass",
+      "passToUpcomingMonthList": "Upcoming months"
     },
     "noActiveCategories": "Create an active expense category first.",
     "historicalInactiveNote": "The category for this line is inactive. It still shows because the line was added earlier."
