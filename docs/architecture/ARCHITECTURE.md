@@ -204,7 +204,7 @@ Rules:
 
 1. **Repositories require `userId` as an explicit first parameter** and apply it in every `WHERE`. There is no way to call a repository without a tenant id. This is the enforcement mechanism for PRD §5.1.
 2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot, pass-to-actual (committed only), overspend vs **active template** sums.
-3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16) stay in RSC: GET `?q=` → service → repository SQL. Do not add a mutation-shaped server action for a search.
+3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16, and the add-actual name corpus, UC-17) stay in RSC: GET `?q=` or page load → service → repository SQL. Do not add a mutation-shaped server action for a search or for name suggestions.
 4. Amounts cross the wire as **strings** (`"1234.56"`). Zod schema: `^-?\d{1,12}\.\d{2}$` (PRD C9: dot decimal, 2 places, may be negative).
 
 ---

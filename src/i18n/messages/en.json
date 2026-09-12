@@ -247,7 +247,13 @@
       "confirmPassToActual": "Pass this line to actuals? The reserved line becomes an expense ticket."
     },
     "noActiveCategories": "Create an active expense category first.",
-    "historicalInactiveNote": "The category for this ticket is inactive. It still shows because the ticket was added earlier."
+    "historicalInactiveNote": "The category for this ticket is inactive. It still shows because the ticket was added earlier.",
+    "autocomplete": {
+      "listLabel": "Recent names",
+      "a11y": {
+        "suggestions": "{count, plural, one {# recent name} other {# recent names}}"
+      }
+    }
   },
   "reservedLines": {
     "committedTitle": "Committed reserved lines",

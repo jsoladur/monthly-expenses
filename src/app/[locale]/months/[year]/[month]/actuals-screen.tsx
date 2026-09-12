@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AmountInput } from "@/components/amount-input";
+import { ActualNameAutocomplete } from "@/components/actual-name-autocomplete";
 import { centsToInputString, formatMoney } from "@/i18n/format";
 import {
   addActualAction,
@@ -22,6 +23,7 @@ import { Pencil, Trash2, Undo2, ArrowRightCircle } from "lucide-react";
 import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
 import { Collapsible } from "@/components/ui/collapsible";
 import { SwipeAction } from "@/components/ui/swipe-action";
+import type { ActualNameSuggestion } from "@/lib/actual-name-suggestions";
 
 // ============================================================================
 // Actuals screen (UC-08) — interactive part of the workspace's actuals block.
@@ -70,6 +72,7 @@ export function ActualsScreen({
   initialActuals,
   expenseCategories,
   committedReservedLines = [],
+  nameSuggestions = [],
 }: {
   monthId: string;
   year: number;
@@ -78,6 +81,7 @@ export function ActualsScreen({
   initialActuals: ActualRowData[];
   expenseCategories: CategoryOption[];
   committedReservedLines?: ReservedLineRowData[];
+  nameSuggestions?: ActualNameSuggestion[];
 }) {
   const t = useTranslations("actuals");
 
@@ -89,6 +93,7 @@ export function ActualsScreen({
         month={month}
         currency={currency}
         expenseCategories={expenseCategories}
+        nameSuggestions={nameSuggestions}
       />
 
       {initialActuals.length > 0 && (
@@ -141,12 +146,14 @@ function AddActualForm({
   month,
   currency,
   expenseCategories,
+  nameSuggestions,
 }: {
   monthId: string;
   year: number;
   month: number;
   currency: string;
   expenseCategories: CategoryOption[];
+  nameSuggestions: ActualNameSuggestion[];
 }) {
   const t = useTranslations("actuals");
   const tv = useTranslations("validation");
@@ -169,6 +176,7 @@ function AddActualForm({
       month={month}
       currency={currency}
       expenseCategories={expenseCategories}
+      nameSuggestions={nameSuggestions}
       t={t}
       tv={tv}
     />
@@ -181,6 +189,7 @@ function AddActualFormBody({
   month,
   currency,
   expenseCategories,
+  nameSuggestions,
   t,
   tv,
 }: {
@@ -189,6 +198,7 @@ function AddActualFormBody({
   month: number;
   currency: string;
   expenseCategories: CategoryOption[];
+  nameSuggestions: ActualNameSuggestion[];
   t: ReturnType<typeof useTranslations<"actuals">>;
   tv: ReturnType<typeof useTranslations<"validation">>;
 }) {
@@ -242,15 +252,13 @@ function AddActualFormBody({
         <label htmlFor="new-actual-name" className="sr-only">
           {t("name")}
         </label>
-        <input
+        <ActualNameAutocomplete
           id="new-actual-name"
           name="name"
-          type="text"
-          autoComplete="off"
+          suggestions={nameSuggestions}
           placeholder={t("actions.placeholder")}
           required
           maxLength={80}
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
       <label htmlFor="new-actual-observations" className="sr-only">

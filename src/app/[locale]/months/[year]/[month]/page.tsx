@@ -15,6 +15,7 @@ import { getAnnualReminders } from "@/server/services/annuals";
 import { getProfileSettings } from "@/server/services/settings";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
+import { listRecentActualNameSuggestions } from "@/server/services/actuals";
 import { isAppLocale, monthYear } from "@/i18n/format";
 import { parseAmount } from "@/server/money";
 import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-touch-client";
@@ -147,10 +148,11 @@ export default async function MonthWorkspacePage({
     rows: orderRows(reservedLineRows.filter((r) => r.kind === kind)),
   }));
 
-  const [summary, overspendWarnings, annualReminders] = await Promise.all([
+  const [summary, overspendWarnings, annualReminders, nameSuggestions] = await Promise.all([
     getMonthSummary(userId, workspace.month.id),
     getOverspendWarnings(userId, workspace.month.id),
     getAnnualReminders(userId, workspace.month.month),
+    listRecentActualNameSuggestions(userId, workspace.month.year, workspace.month.month),
   ]);
   const now = new Date();
   const showPastMonthBanner = isPastMonth(
@@ -235,6 +237,7 @@ export default async function MonthWorkspacePage({
                 name: c.name,
               }))}
               committedReservedLines={committedLines}
+              nameSuggestions={nameSuggestions}
             />
           }
           incomesTab={

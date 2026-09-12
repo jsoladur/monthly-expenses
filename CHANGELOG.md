@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-12
+
+### Added
+- Add-actual name autocomplete from this month and the two previous months (UC-17).
+
 ## [0.5.3] - 2026-09-12
 
 ### Changed

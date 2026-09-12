@@ -14,7 +14,7 @@
 
 ## Progress
 
-- Slices DONE: **17 / 17**
+- Slices DONE: **18 / 18**
 - Next up: —
 
 ## Status table
@@ -39,3 +39,4 @@
 | UC-14 | Annuals (yearly expense reminders) | DONE | 2026-09-01 | Catalog at `/[locale]/annuals` + month-workspace reminders (`getAnnualReminders` by `charge_month`, any year). Schema: `annual` table (migration 0002) + optional `amount` (migration 0003). Soft delete; inactive rows raise no reminders. Already in desktop/mobile nav. Feature shipped in 0.2.0; tracker catch-up. PRD: **UC-20** / C19 (implementation slice stays UC-14). |
 | UC-15 | Global Stats (multi-year household analysis) | DONE | 2026-09-01 | Read-only `/[locale]/stats` observatory (C16 reports). No schema change. Recharts only. Desktop: Stats after Home. Mobile: Home · Stats · Fixed · More · Settings; More lists Annuals, Categories, History. Stats width `max-w-6xl`. |
 | UC-16 | Search (find actual expenses across years) | DONE | 2026-09-01 | Read-only `/[locale]/search`. SQL `LIKE` on folded `name` OR `observations` (no `pg_trgm`/`unaccent`). Desktop: Home · Stats · Fixed · Search · Annuals · Categories · History · Settings. Mobile: 5 tabs unchanged; Search is first in More. GET `?q=`, min 2 characters, cap 100, integer cents. Year spine is sticky on `lg+` (left eyebrow); month groups stay in-flow on mobile so the year label cannot cover a ticket row. |
+| UC-17 | Actual name autocomplete (add-ticket form) | DONE | 2026-09-12 | Prefix autocomplete on `#new-actual-name` from this month + 2 prior months. RSC loads a tenant-scoped unique-name corpus; the client filters after 2 folded characters and shows at most 5 inline suggestions (44px rows, sky-tint active). Selecting a name fills the name only. No schema change. |

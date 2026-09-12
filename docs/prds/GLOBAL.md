@@ -35,14 +35,14 @@ A **Search** screen finds already-recorded actual tickets across years by name o
 | C10 | Categories are **per-user global catalogs**, not cloned as category definitions per month. **Logical (soft) delete** for categories and other catalog CRUDs. |
 | C11 | MVP is **online web**. Offline sync is out of scope. PWA install is still required. |
 | C12 | Home never invents a month. User opens an existing month or creates one. **Last opened month** is stored in a cookie. |
-| C13 | Expense **name** is free text. Autocomplete is **not** MVP. |
+| C13 | Expense **name** is free text. On the add-actual form, names from **this month + the two previous calendar months** may autocomplete after two characters (prefix, case-insensitive, accent-folded). Selecting a suggestion fills the **name only**. |
 | C14 | Attachments, merchant, payment method = **future**, not MVP. |
 | C15 | **Hard delete** for month-scoped money rows (incomes, actual expenses, month fixed/estimated lines). |
 | C16 | Reports (year view, category totals) = **not V1**, planned later. |
 | C17 | At **create month**, active fixed + estimated **templates are cloned** into that month instance. After that, the month lives on its own. |
 | C18 | Overspend warning: actuals in a category vs **sum of active template amounts** (committed + estimated) in that category. Warn only, never block. |
 | C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
-| C20 | **Search** finds the user’s own `month_actual_expense` rows by **name or observations** across every created month. Read-only. Explicit submit (not autocomplete — C13). |
+| C20 | **Search** finds the user’s own `month_actual_expense` rows by **name or observations** across every created month. Read-only. Explicit submit (not the add-actual autocomplete — that is C13 / UC-22). |
 
 ---
 
@@ -74,7 +74,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Potential savings** | See §7. |
 | **Pass to actual** | One-tap **cut and paste**: remove committed fixed line from the month’s fixed block; create an equivalent actual row. Undo = reverse **only while the actual was not edited**. |
 | **Annual** | Yearly recurring expense reminder (insurance, vehicle tax). Catalog only — not cloned, not a spend series. |
-| **Search** | Read-only finder of actual tickets by name or observations, any year. Not History (browse months) and not Stats (aggregates). |
+| **Search** | Read-only finder of actual tickets by name or observations, any year. Not History (browse months) and not Stats (aggregates). Distinct from add-actual name autocomplete (UC-22). |
 | **Logical erase** | Soft-delete / deactivate catalogs (categories, templates, annuals). Hidden from new pickers and from annual reminders. Month rows that already reference a category/template keep the id. |
 | **Hard delete** | Row removed. Used for month incomes, month actuals, month fixed lines. |
 
@@ -177,7 +177,7 @@ No observations. **Hard delete.** Not cloned from templates.
 | --- | --- |
 | month | Mandatory |
 | expense_category | Mandatory; must be active at **creation** |
-| name | Mandatory |
+| name | Mandatory. Free text. Add-form autocomplete: see UC-22. |
 | observations | Optional, may be empty |
 | amount | Mandatory, 2 decimals, may be negative |
 
@@ -363,6 +363,7 @@ potential_savings already subtracts all remainings
 
 - Category, name, amount required. Observations optional.
 - Unlimited tickets. Does not change remainings. Hard delete.
+- Add-form name field may autocomplete recent names (UC-22).
 
 ### UC-11 — Manually decrease estimate
 
@@ -421,7 +422,17 @@ Implementation slice: `docs/usecases/UC-16-search.md` (PRD **UC-16** remains neg
 - Form: one text field + **Search** button. Submit runs a tenant-scoped SQL `LIKE` on `month_actual_expense.name` **OR** `observations` after sanitizing the query (trim, collapse spaces, fold accents, lowercase, escape `LIKE` wildcards).
 - Results are **read-only** ticket rows (same visual as the month-workspace actuals list, without edit/delete/undo). Grouped by year then month. Tapping a row opens that month workspace.
 - User B never sees user A’s tickets.
-- Does not search incomes, reserved lines, templates, or categories. Does not autocomplete (C13).
+- Does not search incomes, reserved lines, templates, or categories. Does not live-autocomplete as the user types (explicit Search button). Add-actual name autocomplete is UC-22 / C13, not this screen.
+
+### UC-22 — Actual name autocomplete (add-ticket form)
+
+Implementation slice: `docs/usecases/UC-17-actual-name-autocomplete.md` (PRD **UC-17** remains parallel users).
+
+- On the month workspace Actuals tab, the add-ticket **name** field (`#new-actual-name`) offers up to **five** recent names once the user has typed **two** characters.
+- Source: this user’s `month_actual_expense.name` in the **open month + the two previous calendar months**. Prefix match after accent-fold and lowercase. Duplicate folded names collapse to the newest spelling.
+- Selecting a suggestion fills the name only. Category, observations, and amount stay as the user left them.
+- User B never sees User A’s names.
+- Does not search observations, incomes, or reserved lines. Does not change Search (UC-21). Missing prior months are skipped (C6).
 
 ---
 
@@ -430,7 +441,7 @@ Implementation slice: `docs/usecases/UC-16-search.md` (PRD **UC-16** remains neg
 1. Sign-in  
 2. 403  
 3. Month list / empty + create month  
-4. Month workspace — summary + **annual reminders (when the month-number matches)** + incomes + reserved lines + actuals  
+4. Month workspace — summary + **annual reminders (when the month-number matches)** + incomes + reserved lines + actuals (add-actual name may autocomplete recent names)  
 5. Expense categories  
 6. Income categories  
 7. Fixed/estimated templates  
@@ -440,7 +451,7 @@ Implementation slice: `docs/usecases/UC-16-search.md` (PRD **UC-16** remains neg
 11. Annuals catalog — yearly reminders, grouped by charge month  
 12. Search — find actual tickets by name or note, any year  
 
-Mobile-first: add an actual from the month workspace. Search is first-mobile: field + button, then a year-banded ticket list.
+Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list.
 
 ---
 
@@ -449,7 +460,7 @@ Mobile-first: add an actual from the month workspace. Search is first-mobile: fi
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label.
 
 ---
 
@@ -481,7 +492,7 @@ Mobile-first: add an actual from the month workspace. Search is first-mobile: fi
 - Household / shared months
 - Admin UI for allowlist
 - Offline-first sync
-- Name autocomplete
+- Autocomplete on the **edit**-ticket name field, or filling category/amount from a suggestion
 - Attachments, merchant, payment method
 - Auto-create month
 - Auto-rollover of unused estimates
@@ -526,6 +537,9 @@ Mobile-first: add an actual from the month workspace. Search is first-mobile: fi
 23. User B searching the same fragment as user A sees none of A’s tickets.
 24. Query `cafe` matches a ticket named `Café Central`; a note-only match also returns; Spanish shell uses “Buscar”.
 25. Hard-delete that ticket → it disappears from Search.
+26. On August Actuals, type `ca` in the new-ticket name: suggestions include prefix matches from August, July, and June; a May ticket with the same prefix does not appear.
+27. User B’s add-actual suggestions never include User A’s ticket names.
+28. One character typed → no suggestion list. Picking a suggestion fills the name with the stored spelling; category and amount stay empty until the user sets them.
 
 ---
 
@@ -556,7 +570,8 @@ Mobile-first: add an actual from the month workspace. Search is first-mobile: fi
 | Deletes | Soft catalogs (including annuals); hard month money rows. |
 | Cookie | Language + last opened month. |
 | Annuals | Remind by month-number, any year. Never auto-create lines. |
-| Search | Name or observations, sanitized `LIKE`, read-only. Not autocomplete. |
+| Search | Name or observations, sanitized `LIKE`, read-only. Explicit submit. Not the add-actual autocomplete. |
+| Add-actual name autocomplete | This month + 2 prior months, name prefix, max 5, name only. |
 
 No blocking product questions remain for V1 money behavior.
 
@@ -575,7 +590,8 @@ No blocking product questions remain for V1 money behavior.
 9. Last-month cookie + PWA install  
 10. Annuals catalog + month-workspace reminders (never auto-create)  
 11. Tests: isolation, clone snapshot, August must not leak into September  
-12. Search actuals by name or notes (read-only) 
+12. Search actuals by name or notes (read-only)
+13. Add-actual name autocomplete (this month + 2 prior, prefix) 
 
 ---
 
@@ -592,3 +608,4 @@ No blocking product questions remain for V1 money behavior.
 - Annual reminder: “Usually charged in {month}. Add an estimated/committed line manually if it applies this year.”
 - Search idle: “Find a ticket from any year. Search matches the name or the note.”
 - Search empty: “No tickets match that text. Try another word.”
+- Actual name autocomplete list: “Recent names.”

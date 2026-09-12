@@ -247,7 +247,13 @@
       "confirmPassToActual": "¿Pasar esta línea a reales? La línea reservada se convierte en un ticket de gasto."
     },
     "noActiveCategories": "Crea primero una categoría de gasto activa.",
-    "historicalInactiveNote": "La categoría de este ticket está inactiva. Sigue mostrándose porque el ticket se añadió antes."
+    "historicalInactiveNote": "La categoría de este ticket está inactiva. Sigue mostrándose porque el ticket se añadió antes.",
+    "autocomplete": {
+      "listLabel": "Nombres recientes",
+      "a11y": {
+        "suggestions": "{count, plural, one {# nombre reciente} other {# nombres recientes}}"
+      }
+    }
   },
   "reservedLines": {
     "committedTitle": "Líneas reservadas comprometidas",

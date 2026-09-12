@@ -8,6 +8,10 @@ import {
   type NewMonthActualExpense,
 } from "@/server/db/schema";
 import type { Tx } from "@/server/repositories/user";
+import { foldAccents } from "@/server/search/sanitize";
+import {
+  ACTUAL_NAME_CORPUS_LIMIT,
+} from "@/lib/actual-name-suggestions";
 
 // ============================================================================
 // Month actual-expense repository (UC-08, PRD §6.7 / §7.2 / §7.3 / C15,
@@ -162,4 +166,59 @@ export async function listActualsForMonthForUser(
     .innerJoin(month, eq(monthActualExpense.monthId, month.id))
     .where(and(eq(month.userId, userId), eq(monthActualExpense.monthId, monthId)))
     .orderBy(monthActualExpense.createdAt);
+}
+
+export type ActualNameSuggestionRow = {
+  name: string;
+  year: number;
+  month: number;
+};
+
+export async function listRecentActualNames(
+  userId: string,
+  periods: { year: number; month: number }[],
+  tx: Tx | typeof db = db,
+): Promise<ActualNameSuggestionRow[]> {
+  if (periods.length === 0) return [];
+
+  const periodTuples = sql.join(
+    periods.map((period) => sql`(${period.year}::int, ${period.month}::int)`),
+    sql`, `,
+  );
+
+  // Bounded 3-month window (household size). Unique-on-folded-name is applied
+  // here rather than DISTINCT ON: parameterizing the translate() alphabet
+  // twice makes Postgres treat DISTINCT ON and ORDER BY as different
+  // expressions (42P10).
+  const rows = await tx.execute<{
+    name: string;
+    year: number;
+    month: number;
+  }>(sql`
+    SELECT
+      ${monthActualExpense.name} AS name,
+      ${month.year} AS year,
+      ${month.month} AS month
+    FROM ${monthActualExpense}
+    INNER JOIN ${month} ON ${month.id} = ${monthActualExpense.monthId}
+    WHERE ${month.userId} = ${userId}
+      AND (${month.year}, ${month.month}) IN (${periodTuples})
+    ORDER BY ${monthActualExpense.createdAt} DESC
+    LIMIT 1000
+  `);
+
+  const seen = new Set<string>();
+  const unique: ActualNameSuggestionRow[] = [];
+  for (const row of rows) {
+    const key = foldAccents(row.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push({
+      name: row.name,
+      year: Number(row.year),
+      month: Number(row.month),
+    });
+    if (unique.length >= ACTUAL_NAME_CORPUS_LIMIT) break;
+  }
+  return unique;
 }

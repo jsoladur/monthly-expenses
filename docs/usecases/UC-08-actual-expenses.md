@@ -1,7 +1,7 @@
 # UC-08 — Actual expenses (tickets)
 
 > **Database:** already migrated (UC-00). Uses `month_actual_expense`, `category` (expense kind). No schema changes.
-> **PRD refs:** UC-10, UC-16; §6.7; C13 (free-text name), C15 (hard delete); §7.2–7.3 (tickets never auto-reduce envelopes).
+> **PRD refs:** UC-10, UC-16; §6.7; C13 (free-text name; add-form autocomplete is UC-17 / PRD UC-22), C15 (hard delete); §7.2–7.3 (tickets never auto-reduce envelopes).
 > **ARCH refs:** §5, ADR-6. Month workspace screen 4 — add-actual is the primary mobile action (PRD §10).
 
 ## Goal
@@ -17,7 +17,7 @@ Unlimited real-expense tickets per month: add, edit, hard-delete. Adding a ticke
 ## Rules
 
 - Category must be an ACTIVE expense category at creation (PRD §6.7); old tickets keep displaying a since-deactivated category's name (PRD §6.2).
-- `name` is free text — no autocomplete (PRD C13); `observations` optional.
+- `name` is free text (PRD C13); add-form prefix autocomplete of recent names is **UC-17** (not this slice); `observations` optional.
 - `amount` may be negative; totals are algebraic sums (PRD §7.6, UC-16).
 - No side effects on `month_fixed_line` — never auto-balance envelopes (PRD §16).
 

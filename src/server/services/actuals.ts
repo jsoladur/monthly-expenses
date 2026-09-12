@@ -9,8 +9,11 @@ import {
   findActualById,
   insertActual,
   listActualsForMonthForUser,
+  listRecentActualNames,
   updateActual as repoUpdate,
+  type ActualNameSuggestionRow,
 } from "@/server/repositories/actual";
+import { recentMonthWindow } from "@/lib/actual-name-suggestions";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
 
@@ -37,8 +40,9 @@ import type { Tx } from "@/server/repositories/user";
 //   - Hard delete only (PRD C15 / §13) — `deleteActual` returns `true` on
 //     success and `false` when the row was already gone (so the service
 //     layer maps the latter to `ActualNotFoundError`).
-//   - `name` is free text (PRD C13); `amount` is mandatory; `observations`
-//     is OPTIONAL (PRD §6.7). Amount may be negative (PRD UC-16).
+//   - `name` is free text (PRD C13); add-form prefix autocomplete of recent
+//     names is UC-17. `amount` is mandatory; `observations` is OPTIONAL
+//     (PRD §6.7). Amount may be negative (PRD UC-16).
 //   - Adding a ticket NEVER mutates any `month_fixed_line.remaining_amount`
 //     (PRD §7.2 / §7.3) — there is no auto-balance envelope rule.
 //   - Editing ALWAYS sets `edited_after_conversion = true` (PRD §7.5). This
@@ -182,6 +186,16 @@ export async function listActualsForMonth(
   tx: Tx | typeof db = db,
 ): Promise<MonthActualExpense[]> {
   return listActualsForMonthForUser(userId, monthId, tx);
+}
+
+export async function listRecentActualNameSuggestions(
+  userId: string,
+  year: number,
+  monthNumber: number,
+  tx: Tx | typeof db = db,
+): Promise<ActualNameSuggestionRow[]> {
+  const periods = recentMonthWindow(year, monthNumber);
+  return listRecentActualNames(userId, periods, tx);
 }
 
 // ----------------------------------------------------------------------------

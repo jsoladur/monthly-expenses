@@ -34,7 +34,7 @@ Do **not** build:
 
 - Search of incomes, reserved lines, templates, annuals, or categories.
 - Live-as-you-type / debounce search (C13 is free-text names; this page is an explicit submit).
-- Autocomplete, typeahead, or saved recent queries (PRD C13: autocomplete is not MVP).
+- Autocomplete, typeahead, or saved recent queries on **this page** (add-actual name autocomplete is UC-17 / C13, a different surface).
 - Filters (year, category, amount range), sort pickers, or pagination controls. One ordered list, hard cap (§6.5).
 - Mutations: no edit, delete, undo-pass, swipe-to-delete, or pass-to-actual on this screen. Edit happens in the month workspace.
 - Full-text search (`tsvector`), `pg_trgm`, `unaccent` extension, or extra columns for a search vector.
