@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-09-12
+
+### Changed
+- Month workspace Data tab label: Reserved → Estimated (EN) / Reservado → Estimado (ES).
+
 ## [0.5.2] - 2026-09-04
 
 ### Fixed

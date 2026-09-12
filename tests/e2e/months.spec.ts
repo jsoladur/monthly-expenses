@@ -65,7 +65,7 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await page.getByRole("button", { name: /Committed/ }).click();
     await expect(page.getByRole("listitem").getByText("Mortgage", { exact: true })).toBeVisible();
     await expect(page.getByText("800.00 €", { exact: true })).toBeVisible();
-    await page.getByRole("tab", { name: /Reserved/ }).click();
+    await page.getByRole("tab", { name: /Estimated/ }).click();
     await expect(page.getByText("Groceries", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("400.00 €", { exact: true })).toBeVisible();
 

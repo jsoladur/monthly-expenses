@@ -111,7 +111,7 @@ test.describe("UC-10 pass-to-actual & undo", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
-    await page.getByRole("tab", { name: /Reserved/ }).click();
+    await page.getByRole("tab", { name: /Estimated/ }).click();
     await expect(
       page.getByRole("button", { name: "Pass to actual", exact: true }).first(),
     ).toBeVisible();
