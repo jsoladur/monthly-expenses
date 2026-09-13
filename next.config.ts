@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Don't fail the build when DB env vars are not set (CI image build).
   // Runtime check happens in src/server/db/client.ts.
-  serverExternalPackages: ["postgres"],
+  serverExternalPackages: ["postgres", "exceljs"],
   images: {
     remotePatterns: [
       {

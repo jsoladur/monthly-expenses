@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, or } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import {
   month,
@@ -107,6 +107,38 @@ export async function listMonthsByYear(
     .from(month)
     .where(and(eq(month.userId, userId), eq(month.year, year)))
     .orderBy(desc(month.month));
+}
+
+export async function listMonthsByYears(
+  userId: string,
+  years: readonly number[],
+  tx: Tx | typeof db = db,
+): Promise<Month[]> {
+  if (years.length === 0) return [];
+  return tx
+    .select()
+    .from(month)
+    .where(and(eq(month.userId, userId), inArray(month.year, [...years])))
+    .orderBy(desc(month.year), desc(month.month));
+}
+
+export async function listMonthsByPeriods(
+  userId: string,
+  periods: ReadonlyArray<{ year: number; month: number }>,
+  tx: Tx | typeof db = db,
+): Promise<Month[]> {
+  if (periods.length === 0) return [];
+  const periodMatch = or(
+    ...periods.map((period) =>
+      and(eq(month.year, period.year), eq(month.month, period.month)),
+    ),
+  );
+  if (!periodMatch) return [];
+  return tx
+    .select()
+    .from(month)
+    .where(and(eq(month.userId, userId), periodMatch))
+    .orderBy(desc(month.year), desc(month.month));
 }
 
 export async function listUpcomingMonthsInYear(

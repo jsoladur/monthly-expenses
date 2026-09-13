@@ -19,7 +19,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 1. Sources of truth
 
 - `docs/prds/GLOBAL.md` — behavior (PRD). Constraints C1–C20 and money rules §7 are normative.
-- `docs/architecture/ARCHITECTURE.md` — tech. ADR-1…ADR-10 are binding; do not deviate without asking the Product Owner (ARCH §10).
+- `docs/architecture/ARCHITECTURE.md` — tech. ADR-1…ADR-11 are binding; do not deviate without asking the Product Owner (ARCH §10).
 - `docs/usecases/UC-INDEX.md` + `docs/IMPLEMENTATION-STATUS.md` — the work plan and its live state.
 - Conflicts: the PRD wins for behavior, the architecture wins for tech. Gaps: ask — never invent libraries, vendors, or behavior.
 - Next.js APIs and conventions: trust the bundled docs in `node_modules/next/dist/docs/` (see the managed block above), not training data.
@@ -28,7 +28,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - **Tenancy (P0):** every repository function takes `userId` as its first argument and applies it in every `WHERE`. A missing `user_id` filter is a P0 bug (PRD §5.1). Session checks live in the data-access layer via `requireUserId()`, not only in middleware (ARCH §3.2).
 - **Money:** `numeric(14,2)` in the DB, integer cents in domain code, strings matching `^-?\d{1,12}\.\d{2}$` on the wire. Never `float`/`number` arithmetic on amounts (ADR-5, ARCH §8).
-- **Layering (ARCH §5):** reads in React Server Components; mutations as thin server actions (Zod parse → service call → revalidate); services own ALL domain rules and transactions (`cloneMonth`, `passToActual`, `undoPassToActual`, summaries); repositories are the only place SQL lives.
+- **Layering (ARCH §5):** reads in React Server Components; mutations as thin server actions (Zod parse → service call → revalidate); UC-19 Excel export is a read-shaped action that returns file bytes (no revalidate); services own ALL domain rules and transactions (`cloneMonth`, `passToActual`, `undoPassToActual`, summaries, export); repositories are the only place SQL lives.
 - **Deletes (PRD §13):** soft delete for catalogs (`category`, `template`); hard delete for month-scoped money rows (`month_income`, `month_fixed_line`, `month_actual_expense`).
 - **Months:** never auto-created; templates cloned ONCE at creation; months never sync with templates or each other afterwards; no rollover (PRD C6/C7/C17/§7.8).
 - **i18n:** every user-facing string keyed (`en`/`es`); month names from locale; amount input stays dot-decimal in both locales (PRD §11).

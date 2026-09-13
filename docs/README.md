@@ -31,13 +31,13 @@ The single source of truth for WHAT to build and HOW to build it. Code that cont
 
 ## What UC-INDEX.md means
 
-The PRD is split into implementation slices, `UC-00` … `UC-16`, so the app can be built in steps. `UC-INDEX.md` is the entry point that ties them together:
+The PRD is split into implementation slices, `UC-00` … `UC-19`, so the app can be built in steps. `UC-INDEX.md` is the entry point that ties them together:
 
 - **Build order & dependency table** — a slice is implementable ONLY when every slice in its "Depends on" column is DONE in `IMPLEMENTATION-STATUS.md`.
 - **Dependency graph** (mermaid) — the same information visually.
 - **Global invariants** — rules that apply to EVERY slice (tenancy, money, deletes, i18n, no auto-months).
 - **PRD §15 test-scenario map** — which of the 25 normative test scenarios each slice must turn into green tests.
-- **Key architectural fact:** UC-00 creates the database in one migration. Slices contain NO schema work — the sole exception is **UC-14**, which adds the `annual` table via migration 0002. Annuals are in the PRD as **UC-20** / C19. **UC-15 (Global Stats)** is a Product Owner decision (2026-09-01) that delivers PRD C16 reports; until merged, `docs/usecases/UC-15-global-stats.md` is the behavior source of truth. UC-15 adds **no** tables. **UC-16 (Search)** is PRD **UC-21** / C20; it adds **no** tables. **UC-17 (actual name autocomplete)** is PRD **UC-22** / C13; it adds **no** tables. **UC-18 (pass estimated line to an upcoming month)** is PRD **UC-23** / C21; it adds **no** tables.
+- **Key architectural fact:** UC-00 creates the database in one migration. Slices contain NO schema work — the sole exception is **UC-14**, which adds the `annual` table via migration 0002. Annuals are in the PRD as **UC-20** / C19. **UC-15 (Global Stats)** is a Product Owner decision (2026-09-01) that delivers PRD C16 reports; until merged, `docs/usecases/UC-15-global-stats.md` is the behavior source of truth. UC-15 adds **no** tables. **UC-16 (Search)** is PRD **UC-21** / C20; it adds **no** tables. **UC-17 (actual name autocomplete)** is PRD **UC-22** / C13; it adds **no** tables. **UC-18 (pass estimated line to an upcoming month)** is PRD **UC-23** / C21; it adds **no** tables. **UC-19 (Excel export)** is PRD **UC-24** / C22; it adds **no** tables.
 
 ## Standard work loop (agents)
 
@@ -56,5 +56,5 @@ The PRD is split into implementation slices, `UC-00` … `UC-16`, so the app can
 - **Deletes:** soft for catalogs (`category`, `template`, `annual`); hard for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string keyed, `en`/`es`; month names from locale; amount input always dot-decimal (PRD §11).
 - **Months:** never auto-created; cloned once from active templates at creation; fully independent afterwards (PRD C6/C17/§7.8).
-- **Schema:** table names are singular; the users table is `app_user` because `user` is reserved in PostgreSQL. Only UC-14 adds a table (`annual`). UC-16 (Search), UC-17 (actual name autocomplete), and UC-18 (pass to upcoming month) add none.
+- **Schema:** table names are singular; the users table is `app_user` because `user` is reserved in PostgreSQL. Only UC-14 adds a table (`annual`). UC-16 (Search), UC-17 (actual name autocomplete), UC-18 (pass to upcoming month), and UC-19 (Excel export) add none.
 - **Styling:** all UI follows `style/STYLE-GUIDE.md` — no colors, fonts, or radii outside its tokens.

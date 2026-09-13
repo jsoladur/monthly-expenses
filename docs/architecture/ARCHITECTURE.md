@@ -51,6 +51,7 @@ Key properties:
 | ADR-8 | **next-intl for i18n** | react-i18next; DIY | App Router support, cookie-persisted locale, matches PRD C4 (`en`/`es`, browser locale fallback). |
 | ADR-9 | **Tailwind + shadcn/ui** | MUI; Chakra; plain CSS | Mobile-first (PRD §10), agents generate competent UI with it, tree-shakeable. |
 | ADR-10 | **Vitest (unit/domain) + Playwright (E2E)** | Jest; Cypress | Vitest is native to the Vite-era toolchain; Playwright covers the PRD UC flows in a real browser. |
+| ADR-11 | **ExcelJS for `.xlsx` export (UC-19)** | SheetJS community `xlsx` (weak styling, license trap for Pro); CSV zip | Need multi-sheet workbooks with header fills, 2-decimal number format, freeze panes, and print setup. ExcelJS is MIT and runs in Node only (`serverExternalPackages`). |
 
 ---
 
@@ -193,8 +194,8 @@ Invariants enforced by the schema and service layer:
 ```mermaid
 flowchart TD
     RSC["Server Components (reads)"] --> SVC
-    ACT["Server Actions (mutations, one per PRD use case)"] --> ZOD["Zod input validation"]
-    ZOD --> SVC["Service layer — domain rules<br/>cloneMonth, passToActual, undoPass,<br/>passToUpcomingMonth, potentialSavings, overspendWarnings"]
+    ACT["Server Actions (mutations, one per PRD use case; UC-19 export is a read-shaped action that returns a file)"] --> ZOD["Zod input validation"]
+    ZOD --> SVC["Service layer — domain rules<br/>cloneMonth, passToActual, undoPass,<br/>passToUpcomingMonth, potentialSavings, overspendWarnings, exportExpenses"]
     SVC --> REPO["Repository layer (Drizzle)<br/>EVERY function takes userId as first arg"]
     REPO --> DB[("PostgreSQL")]
     SVC --> TX["db.transaction for clone / pass-to-actual / undo / pass-to-upcoming"]
@@ -204,7 +205,7 @@ Rules:
 
 1. **Repositories require `userId` as an explicit first parameter** and apply it in every `WHERE`. There is no way to call a repository without a tenant id. This is the enforcement mechanism for PRD §5.1.
 2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot, pass-to-actual (committed only), pass-to-upcoming-month (estimated, current year, later created month), overspend vs **active template** sums.
-3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16, and the add-actual name corpus, UC-17) stay in RSC: GET `?q=` or page load → service → repository SQL. Do not add a mutation-shaped server action for a search or for name suggestions. **Pass to upcoming month** (UC-18) is a mutation: Zod → service transaction → revalidate source and target month pages.
+3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16, and the add-actual name corpus, UC-17) stay in RSC: GET `?q=` or page load → service → repository SQL. Do not add a mutation-shaped server action for a search or for name suggestions. **Pass to upcoming month** (UC-18) is a mutation: Zod → service transaction → revalidate source and target month pages. **Excel export** (UC-19) is a **read**: Zod → `requireUserId()` → service → `{ filename, base64 }`. RSC cannot trigger a file download, so a Server Action carries the bytes (CSRF). It must **not** `revalidatePath`. `exceljs` is imported only from server modules.
 4. Amounts cross the wire as **strings** (`"1234.56"`). Zod schema: `^-?\d{1,12}\.\d{2}$` (PRD C9: dot decimal, 2 places, may be negative).
 
 ---
@@ -249,6 +250,7 @@ expenses/
 │   │   │   └── client.ts
 │   │   ├── repositories/          # userId-first data access; the ONLY place SQL lives
 │   │   ├── services/              # domain logic; transactions live here
+│   │   ├── export/                # ExcelJS workbook builder (UC-19, server-only)
 │   │   └── money.ts               # cents-based arithmetic helpers
 │   ├── actions/                   # server actions, one file per PRD use case
 │   ├── components/
@@ -277,7 +279,7 @@ expenses/
 ## 8. Money handling (normative)
 
 1. DB columns: `numeric(14,2)`. Never `float`, `real`, or JS `number` arithmetic on amounts.
-2. Domain code converts to **integer cents** on entry and back to `"1234.56"` strings on exit (wire + amount input). All sums (potential savings, overspend baselines) are integer-cents algebra — including negatives (PRD §7.6). **Display** via `formatMoney` adds a comma thousands separator (`1,234.56 €`); the decimal remains a dot in both locales.
+2. Domain code converts to **integer cents** on entry and back to `"1234.56"` strings on exit (wire + amount input). All sums (potential savings, overspend baselines, Excel sheet totals) are integer-cents algebra — including negatives (PRD §7.6). **Display** via `formatMoney` adds a comma thousands separator (`1,234.56 €`); the decimal remains a dot in both locales. **Excel cells** (UC-19) convert once at the write boundary with `Number(formatCents(cents))` and number format `#,##0.00`. Do not use Excel `=SUM()` for app totals.
 3. Potential savings (PRD §7.1): `sum(incomes) − (sum(actuals) + sum(remaining_amount of fixed/estimated lines))`. Hard-deleted rows are excluded by virtue of being gone.
 4. Overspend warning (PRD §7.4): `sum(actuals in category)` vs `sum(ACTIVE TEMPLATE amounts in category)` (committed + estimated) — never the month remaining. Warn only, never block. Categories with no active templates get no warning.
 5. **Percent change (UC-15):** `ratioChangeToPercentTenths(currentCents, priorCents)` returns `(current/prior − 1)` as integer tenths of a percent (25.0% → `250`), half-up. Omit when `prior === 0`. Never divide euro floats.

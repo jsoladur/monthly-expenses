@@ -15,6 +15,8 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 
 A **Search** screen finds already-recorded actual tickets across years by name or notes (read-only). It does not replace History or the month workspace.
 
+Home can **export** created months to an Excel workbook (one sheet per month). It does not replace Stats or the month workspace.
+
 **Not V1 (explicit future):** year view, category totals across months, and other reports. Do not build them now. Keep the model compatible later (stable categories, months, amounts).
 
 ---
@@ -44,6 +46,7 @@ A **Search** screen finds already-recorded actual tickets across years by name o
 | C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
 | C20 | **Search** finds the user’s own `month_actual_expense` rows by **name or observations** across every created month. Read-only. Explicit submit (not the add-actual autocomplete — that is C13 / UC-22). |
 | C21 | **Pass to upcoming month** moves an **estimated** reserved line to a **later month of the same calendar year that already exists**. Current year only. Not History. Never auto-creates the target (C6). Not automatic leftover rollover (C7). |
+| C22 | **Excel export** downloads the signed-in user’s created months as one `.xlsx` workbook, one sheet per month. Scopes: all months, one or more years that already have months, or a checked set of created months. Year and month pickers are descending. Read-only. Never auto-creates a month (C6). |
 
 ---
 
@@ -77,6 +80,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Pass to upcoming month** | One-tap **cut and paste** of an **estimated** line onto a later created month of the **current year**. The line leaves this month’s Estimated tab and appears there as a month-only estimate. No undo. |
 | **Annual** | Yearly recurring expense reminder (insurance, vehicle tax). Catalog only — not cloned, not a spend series. |
 | **Search** | Read-only finder of actual tickets by name or observations, any year. Not History (browse months) and not Stats (aggregates). Distinct from add-actual name autocomplete (UC-22). |
+| **Export** | Read-only Excel download of created month workspaces (incomes, actuals, committed, estimated, summary totals). Lives on Home. Not Stats (aggregates) and not a catalog dump. |
 | **Logical erase** | Soft-delete / deactivate catalogs (categories, templates, annuals). Hidden from new pickers and from annual reminders. Month rows that already reference a category/template keep the id. |
 | **Hard delete** | Row removed. Used for month incomes, month actuals, month fixed lines. |
 
@@ -459,6 +463,16 @@ Implementation slice: `docs/usecases/UC-18-pass-to-upcoming-month.md` (PRD **UC-
 - Committed lines, other years, and missing targets are rejected. No undo.
 - User B never moves User A’s lines.
 
+### UC-24 — Excel export of month expenses
+
+Implementation slice: `docs/usecases/UC-19-excel-export.md`.
+
+- Signed-in user opens **Export** on Home. A picker offers **All**, **Select by year**, or **Select specific months**.
+- Year options are only years that already have at least one `month` row, newest first; **more than one year can be checked**. Month options are only created `(year, month)` rows, newest first.
+- Download is an `.xlsx` file with **one sheet per exported month** (newest first). Each sheet lists Incomes, Actuals, Committed, Estimated, and the same summary totals as the workspace (PRD §7.1). No charts.
+- User B never sees User A’s months, including via a crafted year or period list.
+- Does not export catalogs (categories, templates, annuals). Does not create months (C6). Does not import.
+
 ---
 
 ## 10. Screens (logical)
@@ -475,8 +489,9 @@ Implementation slice: `docs/usecases/UC-18-pass-to-upcoming-month.md` (PRD **UC-
 10. Install PWA — if not installed  
 11. Annuals catalog — yearly reminders, grouped by charge month  
 12. Search — find actual tickets by name or note, any year  
+13. Home export picker — All / year / specific months → Excel download  
 
-Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list.
+Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list. Export is a Home header button that opens a bottom sheet.
 
 ---
 
@@ -485,7 +500,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker, export picker and workbook section labels.
 
 ---
 
@@ -528,7 +543,6 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - Physical delete of categories
 - FX conversion
 - Reports (year view, category totals, charts) — future
-- Export/backup UI
 - Income templates / cloning incomes
 - Auto-create reserved lines or actuals from annuals
 - Dismiss / hide an annual reminder after adding a line (future)
@@ -536,6 +550,8 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - Pass an estimated line to a different calendar year
 - Pass a committed line to an upcoming month
 - Undo pass-to-upcoming-month
+- Import from Excel / round-trip edit
+- Charts, CSV, or catalog tables inside the Excel export
 
 ---
 
@@ -572,6 +588,9 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 29. September Groceries estimated remaining 280; October already exists. Pass to upcoming → October: line gone from September Estimated; October Estimated has Groceries 280 as a month-only estimate.
 30. September of the current year with no later month created: no Pass to upcoming month button. A previous-year month opened from History also has no button, even if later months of that year exist.
 31. User B cannot pass User A’s estimated line, including by targeting User A’s October.
+32. Alice exports All: one sheet per Alice month, newest first; Bob’s months are absent; Aug 2026 with income 2000, actual 50, reserved remaining 1200 → savings 750.
+33. Year picker lists only years that have months, descending; **multiple years can be checked**. Export years 2026+2025 includes Alice’s 2026-08 and 2025-12 sheets.
+34. Month picker lists owned months descending. Checking Aug 2026 and Dec 2025 yields those two sheets only; totals match the workspace summary.
 
 ---
 
@@ -605,6 +624,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Search | Name or observations, sanitized `LIKE`, read-only. Explicit submit. Not the add-actual autocomplete. |
 | Add-actual name autocomplete | This month + 2 prior months, name prefix, max 5, name only. |
 | Pass estimated line to upcoming month | Current calendar year only. Later created months of that year. Estimated kind only. Never auto-create. No undo. Not History. |
+| Excel export | Home picker. All / one or more years with data / specific created months. One sheet per month. No charts. Tenant-scoped. |
 
 No blocking product questions remain for V1 money behavior.
 
@@ -625,7 +645,8 @@ No blocking product questions remain for V1 money behavior.
 11. Tests: isolation, clone snapshot, August must not leak into September  
 12. Search actuals by name or notes (read-only)
 13. Add-actual name autocomplete (this month + 2 prior, prefix)
-14. Pass estimated line to a later created month of the current year 
+14. Pass estimated line to a later created month of the current year
+15. Excel export from Home (all / year / specific months) 
 
 ---
 
@@ -644,3 +665,5 @@ No blocking product questions remain for V1 money behavior.
 - Search empty: “No tickets match that text. Try another word.”
 - Actual name autocomplete list: “Recent names.”
 - Pass to upcoming month: “Move this estimate to a later month you already created.”
+- Export idle: “Download an Excel file with one sheet per month.”
+- Export empty: “Create a month first. Nothing is exported until a month exists.”

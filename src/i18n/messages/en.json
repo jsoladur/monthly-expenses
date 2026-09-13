@@ -83,7 +83,8 @@
     "committedLineCannotPassToUpcoming": "Only estimated lines can move to an upcoming month.",
     "targetMonthNotFound": "That month no longer exists. Reload the page.",
     "targetNotUpcoming": "Pick a later month of this year that already exists.",
-    "notCurrentYear": "This move is only available in the current year."
+    "notCurrentYear": "This move is only available in the current year.",
+    "nothingToExport": "Nothing to export for that selection."
   },
   "warnings": {
     "title": "Warnings",
@@ -696,5 +697,42 @@
       "dismiss": "Not now"
     },
     "offlineNote": "Data is online only. The app shell loads instantly once installed."
+  },
+  "export": {
+    "button": "Export",
+    "title": "Export expenses",
+    "body": "Download an Excel file with one sheet per month.",
+    "mode": {
+      "all": "All",
+      "allHelp": "Every month you have created.",
+      "year": "Select by year",
+      "yearHelp": "Pick one or more years that already have a month.",
+      "months": "Select specific months",
+      "monthsHelp": "Pick any months you have created."
+    },
+    "yearList": "Years",
+    "monthList": "Months",
+    "download": "Download Excel",
+    "empty": "Create a month first. Nothing is exported until a month exists.",
+    "needYear": "Pick at least one year.",
+    "needMonth": "Pick at least one month.",
+    "sheet": {
+      "incomes": "Incomes",
+      "actuals": "Actuals",
+      "committed": "Committed",
+      "estimated": "Estimated",
+      "summary": "Summary",
+      "category": "Category",
+      "name": "Name",
+      "notes": "Notes",
+      "amount": "Amount",
+      "remaining": "Remaining",
+      "original": "Original",
+      "origin": "Origin",
+      "total": "Total",
+      "currency": "Currency",
+      "originCloned": "Cloned",
+      "originMonthOnly": "One-off"
+    }
   }
 }

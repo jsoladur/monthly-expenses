@@ -83,7 +83,8 @@
     "committedLineCannotPassToUpcoming": "Solo las líneas estimadas pueden pasar a un mes próximo.",
     "targetMonthNotFound": "Ese mes ya no existe. Recarga la página.",
     "targetNotUpcoming": "Elige un mes posterior de este año que ya exista.",
-    "notCurrentYear": "Este movimiento solo está disponible en el año actual."
+    "notCurrentYear": "Este movimiento solo está disponible en el año actual.",
+    "nothingToExport": "No hay nada que exportar para esa selección."
   },
   "warnings": {
     "title": "Avisos",
@@ -696,5 +697,42 @@
       "dismiss": "Ahora no"
     },
     "offlineNote": "Los datos son solo en línea. La aplicación se carga al instante una vez instalada."
+  },
+  "export": {
+    "button": "Exportar",
+    "title": "Exportar gastos",
+    "body": "Descarga un archivo Excel con una hoja por mes.",
+    "mode": {
+      "all": "Todos",
+      "allHelp": "Todos los meses que hayas creado.",
+      "year": "Elegir por año",
+      "yearHelp": "Elige uno o más años que ya tengan un mes.",
+      "months": "Elegir meses concretos",
+      "monthsHelp": "Elige meses que ya hayas creado."
+    },
+    "yearList": "Años",
+    "monthList": "Meses",
+    "download": "Descargar Excel",
+    "empty": "Crea un mes primero. No hay nada que exportar hasta que exista un mes.",
+    "needYear": "Elige al menos un año.",
+    "needMonth": "Elige al menos un mes.",
+    "sheet": {
+      "incomes": "Ingresos",
+      "actuals": "Gastos reales",
+      "committed": "Comprometidos",
+      "estimated": "Estimados",
+      "summary": "Resumen",
+      "category": "Categoría",
+      "name": "Nombre",
+      "notes": "Notas",
+      "amount": "Importe",
+      "remaining": "Pendiente",
+      "original": "Original",
+      "origin": "Origen",
+      "total": "Total",
+      "currency": "Moneda",
+      "originCloned": "Copiada",
+      "originMonthOnly": "Puntual"
+    }
   }
 }

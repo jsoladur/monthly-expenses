@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Home Export downloads a multi-sheet Excel workbook of month incomes, actuals, committed, and estimated lines (UC-19).
+
+### Changed
+- Select by year in Excel export accepts multiple years (UC-19).
+
 ## [0.7.0] - 2026-09-12
 
 ### Added

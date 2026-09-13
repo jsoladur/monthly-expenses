@@ -7,7 +7,9 @@ import { isAppLocale, monthYear, monthName } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { MonthCreateForm } from "@/app/[locale]/month-create-form";
 import { AppShell } from "@/components/app-shell";
+import { ExportExpensesDrawer } from "@/components/export-expenses-drawer";
 import { Link } from "@/i18n/navigation";
+import { uniqueYearsDescending } from "@/lib/export-selection";
 
 export default async function LocaleHome({
   params,
@@ -34,6 +36,12 @@ export default async function LocaleHome({
   const avatarUrl = session?.user?.image ?? null;
   const monthNames = Array.from({ length: 12 }, (_, i) => monthName(locale as AppLocale, i + 1));
   const existingMonths = allMonths.map((m) => ({ year: m.year, month: m.month }));
+  const exportYears = uniqueYearsDescending(existingMonths);
+  const exportMonths = allMonths.map((m) => ({
+    year: m.year,
+    month: m.month,
+    label: monthYear(locale as AppLocale, m.year, m.month),
+  }));
 
   async function startSignOut() {
     "use server";
@@ -43,9 +51,12 @@ export default async function LocaleHome({
   return (
     <AppShell email={email} displayName={displayName} avatarUrl={avatarUrl} signOutAction={startSignOut}>
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("title")}
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("title")}
+          </h1>
+          <ExportExpensesDrawer years={exportYears} months={exportMonths} />
+        </div>
 
         {months.length === 0 ? (
           <section

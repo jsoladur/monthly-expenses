@@ -17,7 +17,7 @@
 - **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind.
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), and UC-17 (actual name autocomplete) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables.
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables.
 
 ## Build order and dependencies
 
@@ -42,6 +42,7 @@
 | UC-16 | Search (find actual expenses across years) | PRD **UC-21** / C20. THIS file is the detailed slice | UC-01, UC-02, UC-03, UC-04, UC-06, UC-08. **No schema change** |
 | UC-17 | Actual name autocomplete (add-ticket form) | PRD **UC-22** / C13. THIS file is the detailed slice | UC-01, UC-02, UC-06, UC-08. **No schema change** |
 | UC-18 | Pass estimated line to an upcoming month | PRD **UC-23** / C21. THIS file is the detailed slice | UC-01, UC-02, UC-06, UC-09. **No schema change** |
+| UC-19 | Excel export of month expenses | PRD **UC-24** / C22. THIS file is the detailed slice | UC-01, UC-02, UC-04, UC-06, UC-07, UC-08, UC-09, UC-11. **No schema change** |
 
 ```mermaid
 flowchart TD
@@ -59,6 +60,7 @@ flowchart TD
     UC01 & UC02 & UC08 --> UC16
     UC01 & UC02 & UC08 --> UC17
     UC06 & UC09 --> UC18
+    UC04 & UC07 & UC08 & UC11 --> UC19
 ```
 
 ## PRD §15 test-scenario map
@@ -96,5 +98,8 @@ flowchart TD
 | 29 Pass September estimate to existing October → gone from Sep Estimated, present on Oct Estimated | UC-18 |
 | 30 No later month this year, or History / other year → no Pass to upcoming month button | UC-18 |
 | 31 Pass-to-upcoming is tenant-scoped (user B cannot move user A’s line) | UC-18 |
+| 32 Export All is tenant-scoped; one sheet per owned month, newest first | UC-19 |
+| 33 Select by year lists only years with months (desc); multiple years can be checked | UC-19 |
+| 34 Select specific months lists owned months (desc); only checked months appear; totals match §7.1 | UC-19 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.
