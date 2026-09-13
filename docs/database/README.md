@@ -3,7 +3,7 @@
 | Path | What it is |
 | --- | --- |
 | [`database.dbml`](database.dbml) | Schema only (no rows). |
-| [`seed-ui-evaluation.sql`](seed-ui-evaluation.sql) | **Fake** demo data for UI evaluation. Generic names and round amounts. |
+| [`seed-ui-evaluation.sql`](seed-ui-evaluation.sql) | **Fake** demo data for UI evaluation. Generic names. Months 2018-01 … 2026-09; salaries ~10–15k EUR; about 80% have positive potential savings. |
 | `prod/` (gitignored) | Local tenant dumps for restoring a private database. **Do not commit or push.** |
 
 To restore a dump in `prod/backup.sql`:

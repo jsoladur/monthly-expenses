@@ -100,5 +100,9 @@ $RECYCLE.BIN/
 /docs/database/prod/
 
 
+# local README screenshot helper (Playwright; not part of the app)
+/scripts/capture-readme-screenshots.ts
+
+
 # misc
 *.pem

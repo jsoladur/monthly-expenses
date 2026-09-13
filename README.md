@@ -61,6 +61,96 @@ The goal was to see how far a tightly constrained personal product can be taken 
 
 ---
 
+## Screenshots
+
+These captures use **fake** demo rows from [`docs/database/seed-ui-evaluation.sql`](docs/database/seed-ui-evaluation.sql), not a real household ledger. Light theme. The seed fills 2018–2026; about 80% of months have positive potential savings.
+
+### Mobile
+
+<p align="center">
+  <img src="docs/images/home.png" alt="Home: created months and Export" width="280">
+  &nbsp;
+  <img src="docs/images/month-workspace.png" alt="September 2026 workspace: potential savings, incomes, actuals, reserved" width="280">
+</p>
+
+**Stats**
+
+<p align="center">
+  <img src="docs/images/stats.png" alt="Stats overview KPIs" width="220">
+  &nbsp;
+  <img src="docs/images/stats-overview.png" alt="Stats Overview charts: income vs actual spend" width="220">
+  &nbsp;
+  <img src="docs/images/stats-trends.png" alt="Stats Trends: rolling category charts" width="220">
+</p>
+
+<p align="center">
+  <img src="docs/images/stats-inflation.png" alt="Stats Inflation: what drove the latest spend change" width="220">
+  &nbsp;
+  <img src="docs/images/stats-expenses.png" alt="Stats Expenses: yearly totals" width="220">
+  &nbsp;
+  <img src="docs/images/stats-incomes.png" alt="Stats Incomes: yearly totals" width="220">
+</p>
+
+**Catalogs & settings**
+
+<p align="center">
+  <img src="docs/images/categories.png" alt="Categories: expense and income catalogs" width="220">
+  &nbsp;
+  <img src="docs/images/fixed.png" alt="Fixed expenses: committed and estimated templates" width="220">
+</p>
+
+<p align="center">
+  <img src="docs/images/annuals.png" alt="Annuals: yearly reminders" width="220">
+  &nbsp;
+  <img src="docs/images/settings.png" alt="Profile settings: currency and theme" width="220">
+</p>
+
+### Desktop
+
+<p align="center">
+  <img src="docs/images/home-desktop.png" alt="Desktop Home: sidebar and created months" width="720">
+</p>
+
+<p align="center">
+  <img src="docs/images/month-workspace-desktop.png" alt="Desktop September 2026 workspace: potential savings, incomes, actuals, reserved" width="720">
+</p>
+
+**Stats**
+
+<p align="center">
+  <img src="docs/images/stats-desktop.png" alt="Desktop Stats overview KPIs" width="480">
+  &nbsp;
+  <img src="docs/images/stats-overview-desktop.png" alt="Desktop Stats Overview charts: income vs actual spend" width="480">
+</p>
+
+<p align="center">
+  <img src="docs/images/stats-trends-desktop.png" alt="Desktop Stats Trends: rolling category charts" width="480">
+  &nbsp;
+  <img src="docs/images/stats-inflation-desktop.png" alt="Desktop Stats Inflation: what drove the latest spend change" width="480">
+</p>
+
+<p align="center">
+  <img src="docs/images/stats-expenses-desktop.png" alt="Desktop Stats Expenses: yearly totals" width="480">
+  &nbsp;
+  <img src="docs/images/stats-incomes-desktop.png" alt="Desktop Stats Incomes: yearly totals" width="480">
+</p>
+
+**Catalogs & settings**
+
+<p align="center">
+  <img src="docs/images/categories-desktop.png" alt="Desktop Categories: expense and income catalogs" width="480">
+  &nbsp;
+  <img src="docs/images/fixed-desktop.png" alt="Desktop Fixed expenses: committed and estimated templates" width="480">
+</p>
+
+<p align="center">
+  <img src="docs/images/annuals-desktop.png" alt="Desktop Annuals: yearly reminders" width="480">
+  &nbsp;
+  <img src="docs/images/settings-desktop.png" alt="Desktop Profile settings: currency and theme" width="480">
+</p>
+
+---
+
 ## Architecture Overview
 
 One Next.js app is the UI and the backend (BFF). PostgreSQL is the only datastore. Google is the only identity provider.
@@ -153,7 +243,7 @@ pnpm lint
 The image is self-contained — no Compose, no bundled Postgres. It runs `scripts/migrate.mjs` on every start.
 
 ```sh
-docker build -t jsoladur/monthly-expenses:0.7.0 .
+docker build -t jsoladur/monthly-expenses:0.8.0 .
 docker run -d --name expenses -p 3000:3000 \
   -e DATABASE_URL=postgres://user:pass@db.example.com:5432/expenses \
   -e AUTH_SECRET="$(openssl rand -base64 32)" \
@@ -162,13 +252,13 @@ docker run -d --name expenses -p 3000:3000 \
   -e ALLOWED_EMAILS=you@example.com \
   -e AUTH_URL=https://expenses.example.com \
   -e NEXT_PUBLIC_APP_URL=https://expenses.example.com \
-  jsoladur/monthly-expenses:0.7.0
+  jsoladur/monthly-expenses:0.8.0
 ```
 
 To run migrations only:
 
 ```sh
-docker run --rm jsoladur/monthly-expenses:0.7.0 node scripts/migrate.mjs
+docker run --rm jsoladur/monthly-expenses:0.8.0 node scripts/migrate.mjs
 ```
 
 ---

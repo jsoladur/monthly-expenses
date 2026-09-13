@@ -1,478 +1,225 @@
 -- ============================================================================
--- Monthly Expenses — Seed script for UI/UX evaluation
--- One-off execution: populates the app with fake data for demonstration
--- Target: PostgreSQL 16 · Assumes exactly ONE row exists in app_user
+-- Monthly Expenses — Fake UI-evaluation seed
+--
+-- Invented household. Generic English names and round amounts.
+-- NOT copied from any tenant dump. Safe to commit.
+--
+-- Coverage: every month 2018-01 … 2026-09 (105 months).
+-- About 80% of months have positive potential savings
+--   (income − actuals − reserved remaining). The rest overspend on purpose
+--   so Stats still has deficit / warning examples.
+-- Amounts are exaggerated on purpose (monthly salary roughly 10–15k EUR)
+-- so README shots are obviously fake, not a real household.
+-- Reserved lines exist only on the in-progress month (2026-09).
+--
+-- Requires exactly one app_user (+ profile_settings). Wipes catalog/money
+-- tables first; never touches app_user.
 -- ============================================================================
 
 BEGIN;
 
--- ============================================================================
--- 0. Get the only user in the system
--- ============================================================================
+TRUNCATE TABLE
+  month_actual_expense,
+  month_income,
+  month_fixed_line,
+  month,
+  template,
+  annual,
+  category
+RESTART IDENTITY;
+
 DO $$
 DECLARE
-    v_user_id uuid;
-    v_month_id uuid;
-    v_category_id uuid;
-    v_template_id uuid;
-    v_actual_id uuid;
-    v_fixed_line_id uuid;
-    v_income_id uuid;
-    
-    -- Category IDs (expense)
-    v_cat_groceries uuid;
-    v_cat_transport uuid;
-    v_cat_restaurants uuid;
-    v_cat_entertainment uuid;
-    v_cat_health uuid;
-    v_cat_education uuid;
-    v_cat_clothing uuid;
-    v_cat_home uuid;
-    v_cat_utilities uuid;
-    v_cat_personal uuid;
-    
-    -- Category IDs (income)
-    v_cat_salary uuid;
-    v_cat_freelance uuid;
-    v_cat_investments uuid;
-    v_cat_rental uuid;
-    v_cat_bonuses uuid;
-    v_cat_dividends uuid;
-    v_cat_interest uuid;
-    v_cat_side_business uuid;
-    v_cat_gifts uuid;
-    v_cat_refunds uuid;
-    
-    -- Template IDs
-    v_tmpl_rent uuid;
-    v_tmpl_mortgage uuid;
-    v_tmpl_internet uuid;
-    v_tmpl_phone uuid;
-    v_tmpl_electricity uuid;
-    v_tmpl_water uuid;
-    v_tmpl_gas uuid;
-    v_tmpl_insurance uuid;
-    v_tmpl_gym uuid;
-    v_tmpl_streaming uuid;
-    v_tmpl_groceries_budget uuid;
-    v_tmpl_transport_budget uuid;
-    v_tmpl_restaurants_budget uuid;
-    v_tmpl_entertainment_budget uuid;
-    v_tmpl_health_budget uuid;
-    v_tmpl_education_budget uuid;
-    v_tmpl_clothing_budget uuid;
-    v_tmpl_home_maintenance uuid;
-    v_tmpl_personal_care uuid;
-    v_tmpl_miscellaneous uuid;
-    
-    -- Month IDs for 2026
-    v_month_jan_2026 uuid;
-    v_month_feb_2026 uuid;
-    v_month_mar_2026 uuid;
-    v_month_apr_2026 uuid;
-    v_month_may_2026 uuid;
-    v_month_jun_2026 uuid;
-    v_month_jul_2026 uuid;
-    
-    -- Counters for loops
-    i int;
-    j int;
-    v_amount numeric(14,2);
-    v_names text[];
-    v_observations text[];
+  v_user_id uuid;
+  v_month_id uuid;
+  v_year int;
+  v_month int;
+  v_last_month int;
+  v_income numeric(14,2);
+  v_target_actuals numeric(14,2);
+  v_factor numeric;
+  v_overspend boolean;
+  v_n int;
+  v_i int;
+  v_cat int;
+  v_base numeric(14,2);
+  v_amt numeric(14,2);
+  v_sum numeric(14,2);
+  v_name text;
+  v_note text;
+  v_positive int := 0;
+  v_negative int := 0;
+  v_months int := 0;
+
+  v_exp uuid[] := ARRAY[]::uuid[];
+  v_inc uuid[] := ARRAY[]::uuid[];
+  v_id uuid;
+
+  v_exp_names text[] := ARRAY[
+    'Groceries', 'Housing', 'Transport', 'Utilities', 'Health',
+    'Leisure', 'Clothing', 'Education', 'Household', 'Other'
+  ];
+  v_inc_names text[] := ARRAY['Salary', 'Freelance', 'Other income'];
+
+  v_ticket_names text[][] := ARRAY[
+    ARRAY['Weekly market', 'Supermarket', 'Bakery', 'Corner shop', 'Farm stall'],
+    ARRAY['Building fees', 'Small repair', 'Hardware store', 'Furniture', 'HOA extra'],
+    ARRAY['Transit pass', 'Fuel', 'Parking', 'Train ticket', 'Bike service'],
+    ARRAY['Electricity', 'Water', 'Internet', 'Phone plan', 'Waste fee'],
+    ARRAY['Pharmacy', 'Clinic visit', 'Dentist', 'Glasses', 'Vitamins'],
+    ARRAY['Cinema', 'Concert', 'Museum', 'Streaming extra', 'Day trip'],
+    ARRAY['Shoes', 'Jacket', 'Kids clothes', 'Sportswear', 'Accessories'],
+    ARRAY['Course fee', 'Textbooks', 'Workshop', 'School supplies', 'Online class'],
+    ARRAY['Cleaning kit', 'Kitchenware', 'Bedding', 'Garden bits', 'Light bulbs'],
+    ARRAY['Bank fee', 'Gift', 'Donation', 'Postage', 'Misc.']
+  ];
+  v_ticket_notes text[] := ARRAY[
+    'Regular shop', 'Monthly stock', 'Weekend', 'Quick top-up', 'On offer'
+  ];
 BEGIN
-    -- Get the only user
-    SELECT id INTO v_user_id FROM app_user LIMIT 1;
-    
-    IF v_user_id IS NULL THEN
-        RAISE EXCEPTION 'No user found in app_user table. Please ensure exactly one user exists.';
-    END IF;
-    
-    RAISE NOTICE 'Using user_id: %', v_user_id;
-    
-    -- ============================================================================
-    -- 1. Create 10 Expense Categories
-    -- ============================================================================
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Groceries', 'expense', true) RETURNING id INTO v_cat_groceries;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Transportation', 'expense', true) RETURNING id INTO v_cat_transport;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Restaurants', 'expense', true) RETURNING id INTO v_cat_restaurants;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Entertainment', 'expense', true) RETURNING id INTO v_cat_entertainment;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Health', 'expense', true) RETURNING id INTO v_cat_health;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Education', 'expense', true) RETURNING id INTO v_cat_education;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Clothing', 'expense', true) RETURNING id INTO v_cat_clothing;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Home', 'expense', true) RETURNING id INTO v_cat_home;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Utilities', 'expense', true) RETURNING id INTO v_cat_utilities;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Personal Care', 'expense', true) RETURNING id INTO v_cat_personal;
-    
-    -- ============================================================================
-    -- 2. Create 10 Income Categories
-    -- ============================================================================
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Salary', 'income', true) RETURNING id INTO v_cat_salary;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Freelance', 'income', true) RETURNING id INTO v_cat_freelance;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Investments', 'income', true) RETURNING id INTO v_cat_investments;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Rental Income', 'income', true) RETURNING id INTO v_cat_rental;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Bonuses', 'income', true) RETURNING id INTO v_cat_bonuses;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Dividends', 'income', true) RETURNING id INTO v_cat_dividends;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Interest', 'income', true) RETURNING id INTO v_cat_interest;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Side Business', 'income', true) RETURNING id INTO v_cat_side_business;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Gifts', 'income', true) RETURNING id INTO v_cat_gifts;
-    INSERT INTO category (user_id, name, kind, active) VALUES
-        (v_user_id, 'Refunds', 'income', true) RETURNING id INTO v_cat_refunds;
-    
-    -- ============================================================================
-    -- 3. Create 10 Committed Templates
-    -- ============================================================================
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_home, 'Rent', 1200.00, 'committed', true) RETURNING id INTO v_tmpl_rent;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_home, 'Mortgage', 850.00, 'committed', true) RETURNING id INTO v_tmpl_mortgage;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_utilities, 'Internet', 45.00, 'committed', true) RETURNING id INTO v_tmpl_internet;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_utilities, 'Phone', 35.00, 'committed', true) RETURNING id INTO v_tmpl_phone;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_utilities, 'Electricity', 80.00, 'committed', true) RETURNING id INTO v_tmpl_electricity;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_utilities, 'Water', 30.00, 'committed', true) RETURNING id INTO v_tmpl_water;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_utilities, 'Gas', 50.00, 'committed', true) RETURNING id INTO v_tmpl_gas;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_home, 'Insurance', 120.00, 'committed', true) RETURNING id INTO v_tmpl_insurance;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_personal, 'Gym', 40.00, 'committed', true) RETURNING id INTO v_tmpl_gym;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_entertainment, 'Streaming Services', 25.00, 'committed', true) RETURNING id INTO v_tmpl_streaming;
-    
-    -- ============================================================================
-    -- 4. Create 10 Estimated Templates
-    -- ============================================================================
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_groceries, 'Groceries Budget', 400.00, 'estimated', true) RETURNING id INTO v_tmpl_groceries_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_transport, 'Transportation Budget', 150.00, 'estimated', true) RETURNING id INTO v_tmpl_transport_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_restaurants, 'Restaurants Budget', 200.00, 'estimated', true) RETURNING id INTO v_tmpl_restaurants_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_entertainment, 'Entertainment Budget', 100.00, 'estimated', true) RETURNING id INTO v_tmpl_entertainment_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_health, 'Health Budget', 80.00, 'estimated', true) RETURNING id INTO v_tmpl_health_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_education, 'Education Budget', 60.00, 'estimated', true) RETURNING id INTO v_tmpl_education_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_clothing, 'Clothing Budget', 100.00, 'estimated', true) RETURNING id INTO v_tmpl_clothing_budget;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_home, 'Home Maintenance', 75.00, 'estimated', true) RETURNING id INTO v_tmpl_home_maintenance;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_personal, 'Personal Care', 50.00, 'estimated', true) RETURNING id INTO v_tmpl_personal_care;
-    INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-        (v_user_id, v_cat_groceries, 'Miscellaneous', 100.00, 'estimated', true) RETURNING id INTO v_tmpl_miscellaneous;
-    
-    -- ============================================================================
-    -- 5. Create 6 Annuals (yearly recurring expense reminders)
-    -- ============================================================================
-    INSERT INTO annual (user_id, category_id, name, observations, amount, charge_month, is_direct_debit, active) VALUES
-        (v_user_id, v_cat_home, 'Annual Home Insurance', 'Yearly home insurance premium', 520.00, 1, true, true),
-        (v_user_id, v_cat_transport, 'Vehicle Tax', 'Annual vehicle tax payment', 145.50, 3, false, true),
-        (v_user_id, v_cat_education, 'School association fee', 'Annual school association fee', 225.00, 9, true, true),
-        (v_user_id, v_cat_home, 'Home Insurance Renewal', 'Annual home insurance renewal', NULL, 7, true, true),
-        (v_user_id, v_cat_entertainment, 'Summer Camp', 'Annual summer camp for kids', 650.00, 7, false, true),
-        (v_user_id, v_cat_personal, 'Holiday Bonus', 'Year-end bonus expense', NULL, 12, false, true);
-    
-    -- ============================================================================
-    -- 6. Create all months from January to July 2026
-    -- ============================================================================
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 1) RETURNING id INTO v_month_jan_2026;
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 2) RETURNING id INTO v_month_feb_2026;
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 3) RETURNING id INTO v_month_mar_2026;
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 4) RETURNING id INTO v_month_apr_2026;
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 5) RETURNING id INTO v_month_may_2026;
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 6) RETURNING id INTO v_month_jun_2026;
-    INSERT INTO month (user_id, year, month) VALUES
-        (v_user_id, 2026, 7) RETURNING id INTO v_month_jul_2026;
-    
-    -- ============================================================================
-    -- 7. Create all months for 2020-2025 (72 months total)
-    -- ============================================================================
-    FOR i IN 2020..2025 LOOP
-        FOR j IN 1..12 LOOP
-            INSERT INTO month (user_id, year, month) VALUES (v_user_id, i, j);
-        END LOOP;
-    END LOOP;
-    
-    -- ============================================================================
-    -- 8. July 2026: Clone templates to month_fixed_line (20 rows)
-    -- ============================================================================
-    
-    -- Clone committed templates
-    INSERT INTO month_fixed_line (month_id, category_id, name, observations, remaining_amount, original_amount, kind, origin)
-    VALUES
-        (v_month_jul_2026, v_cat_home, 'Rent', 'Monthly rent payment', 1200.00, 1200.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_home, 'Mortgage', 'Monthly mortgage payment', 850.00, 850.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_utilities, 'Internet', 'Monthly internet bill', 45.00, 45.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_utilities, 'Phone', 'Monthly phone bill', 35.00, 35.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_utilities, 'Electricity', 'Monthly electricity bill', 80.00, 80.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_utilities, 'Water', 'Monthly water bill', 30.00, 30.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_utilities, 'Gas', 'Monthly gas bill', 50.00, 50.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_home, 'Insurance', 'Monthly insurance premium', 120.00, 120.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_personal, 'Gym', 'Monthly gym membership', 40.00, 40.00, 'committed', 'cloned'),
-        (v_month_jul_2026, v_cat_entertainment, 'Streaming Services', 'Netflix, Spotify, etc.', 25.00, 25.00, 'committed', 'cloned');
-    
-    -- Clone estimated templates
-    INSERT INTO month_fixed_line (month_id, category_id, name, observations, remaining_amount, original_amount, kind, origin)
-    VALUES
-        (v_month_jul_2026, v_cat_groceries, 'Groceries Budget', 'Monthly groceries budget', 400.00, 400.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_transport, 'Transportation Budget', 'Monthly transport budget', 150.00, 150.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_restaurants, 'Restaurants Budget', 'Monthly dining out budget', 200.00, 200.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_entertainment, 'Entertainment Budget', 'Monthly entertainment budget', 100.00, 100.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_health, 'Health Budget', 'Monthly health budget', 80.00, 80.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_education, 'Education Budget', 'Monthly education budget', 60.00, 60.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_clothing, 'Clothing Budget', 'Monthly clothing budget', 100.00, 100.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_home, 'Home Maintenance', 'Monthly home maintenance budget', 75.00, 75.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_personal, 'Personal Care', 'Monthly personal care budget', 50.00, 50.00, 'estimated', 'cloned'),
-        (v_month_jul_2026, v_cat_groceries, 'Miscellaneous', 'Monthly miscellaneous budget', 100.00, 100.00, 'estimated', 'cloned');
-    
-    -- ============================================================================
-    -- 9. July 2026: Create 200 actual expense records
-    -- ============================================================================
-    
-    -- Groceries (20 records)
-    v_names := ARRAY['Supermarket', 'Fresh Market', 'Organic Store', 'Local Farm', 'Bulk Store', 
-                     'Corner Shop', 'Food Market', 'Grocery Outlet', 'Discount Market', 'Premium Foods',
-                     'Weekly Shopping', 'Monthly Stock', 'Fresh Produce', 'Dairy Products', 'Meat & Fish',
-                     'Fruits & Vegetables', 'Bread & Bakery', 'Snacks', 'Beverages', 'Frozen Foods'];
-    v_observations := ARRAY['Weekly groceries', 'Monthly bulk buy', 'Fresh produce', 'Organic items', 
-                            'Discount items', 'Special occasion', 'Party supplies', 'Holiday shopping',
-                            'Emergency purchase', 'Regular shopping', 'Seasonal items', 'Local produce',
-                            'Imported goods', 'Dietary specific', 'Quick top-up', 'Weekend shopping',
-                            'Midweek top-up', 'Special offers', 'New products', 'Favorite brands'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 80 + 10)::numeric(14,2);
+  PERFORM setseed(0.42);
+
+  SELECT id INTO v_user_id FROM app_user LIMIT 1;
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'No user found in app_user. Sign in once, then re-run this seed.';
+  END IF;
+
+  FOREACH v_name IN ARRAY v_exp_names LOOP
+    INSERT INTO category (user_id, name, kind, active)
+    VALUES (v_user_id, v_name, 'expense', true)
+    RETURNING id INTO v_id;
+    v_exp := v_exp || v_id;
+  END LOOP;
+
+  FOREACH v_name IN ARRAY v_inc_names LOOP
+    INSERT INTO category (user_id, name, kind, active)
+    VALUES (v_user_id, v_name, 'income', true)
+    RETURNING id INTO v_id;
+    v_inc := v_inc || v_id;
+  END LOOP;
+
+  INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
+    (v_user_id, v_exp[2], 'Rent', 1850.00, 'committed', true),
+    (v_user_id, v_exp[4], 'Internet', 55.00, 'committed', true),
+    (v_user_id, v_exp[4], 'Phone', 35.00, 'committed', true),
+    (v_user_id, v_exp[2], 'Home insurance', 75.00, 'committed', true),
+    (v_user_id, v_exp[5], 'Health cover', 110.00, 'committed', true),
+    (v_user_id, v_exp[6], 'Streaming', 25.00, 'committed', true),
+    (v_user_id, v_exp[1], 'Groceries envelope', 750.00, 'estimated', true),
+    (v_user_id, v_exp[3], 'Transport envelope', 220.00, 'estimated', true),
+    (v_user_id, v_exp[6], 'Leisure envelope', 180.00, 'estimated', true),
+    (v_user_id, v_exp[9], 'Household envelope', 120.00, 'estimated', true);
+
+  INSERT INTO annual (
+    user_id, category_id, name, observations, amount, charge_month, is_direct_debit, active
+  ) VALUES
+    (v_user_id, v_exp[2], 'Building insurance', 'Yearly building policy', 890.00, 1, true, true),
+    (v_user_id, v_exp[3], 'Vehicle tax', 'Annual road tax', 280.00, 3, false, true),
+    (v_user_id, v_exp[8], 'School trip', 'Optional school trip deposit', 450.00, 5, false, true),
+    (v_user_id, v_exp[6], 'Summer camp', 'One week of camp', 1200.00, 7, false, true),
+    (v_user_id, v_exp[2], 'Boiler service', 'Annual service', 180.00, 9, true, true),
+    (v_user_id, v_exp[10], 'Year-end gifts', NULL, NULL, 12, false, true);
+
+  FOR v_year IN 2018..2026 LOOP
+    v_last_month := CASE WHEN v_year = 2026 THEN 9 ELSE 12 END;
+    v_factor := 1 + (v_year - 2018) * 0.045;
+
+    FOR v_month IN 1..v_last_month LOOP
+      INSERT INTO month (user_id, year, month)
+      VALUES (v_user_id, v_year, v_month)
+      RETURNING id INTO v_month_id;
+
+      -- Salary lands roughly 10–15k EUR across 2018–2026. Not a real payroll.
+      v_income := round((12200 * v_factor + (v_month % 4) * 180)::numeric, 2);
+      v_overspend := ((v_year * 12 + v_month) % 5 = 0);
+      IF v_overspend THEN
+        v_target_actuals := round((v_income * 1.12)::numeric, 2);
+      ELSE
+        v_target_actuals := round((v_income * (0.72 + (v_month % 5) * 0.015))::numeric, 2);
+      END IF;
+      -- Open month still has reserved envelopes; keep actuals lower so savings stay green.
+      IF v_year = 2026 AND v_month = 9 THEN
+        v_overspend := false;
+        v_target_actuals := round((v_income * 0.48)::numeric, 2);
+      END IF;
+
+      INSERT INTO month_income (month_id, category_id, name, amount) VALUES
+        (v_month_id, v_inc[1], 'Monthly salary', round((v_income * 0.86)::numeric, 2)),
+        (v_month_id, v_inc[2], 'Side project', round((v_income * 0.14)::numeric, 2));
+
+      v_sum := 0;
+      -- Closed months record rent as an actual. The open month keeps it reserved.
+      IF NOT (v_year = 2026 AND v_month = 9) THEN
+        v_amt := round((1800 * v_factor)::numeric, 2);
         INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_groceries, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Transportation (20 records)
-    v_names := ARRAY['Metro Pass', 'Bus Ticket', 'Taxi Ride', 'Uber Trip', 'Gas Station',
-                     'Parking Fee', 'Toll Road', 'Car Wash', 'Car Maintenance', 'Bike Repair',
-                     'Train Ticket', 'Flight Booking', 'Car Rental', 'Insurance Payment', 'Vehicle Tax',
-                     'Tire Replacement', 'Oil Change', 'Public Transport', 'Ride Share', 'Emergency Taxi'];
-    v_observations := ARRAY['Monthly pass', 'Daily commute', 'Night out', 'Airport transfer', 'Weekly fuel',
-                            'City center', 'Highway toll', 'Monthly wash', 'Annual service', 'Puncture fix',
-                            'Intercity travel', 'Vacation flight', 'Weekend trip', 'Quarterly premium', 'Annual tax',
-                            'New tires', 'Regular maintenance', 'Weekly ticket', 'Shared ride', 'Late night'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 60 + 5)::numeric(14,2);
+        VALUES (v_month_id, v_exp[2], 'Rent', 'Monthly rent', v_amt);
+        v_sum := v_amt;
+      END IF;
+
+      v_n := 36 + (v_month % 9);
+      FOR v_i IN 1..v_n LOOP
+        v_cat := 1 + ((v_i + v_month + v_year) % 10);
+        v_base := (v_target_actuals - v_sum) / greatest(v_n - v_i + 1, 1);
+        IF v_cat = 6 THEN
+          v_base := v_base * (1.0 + (v_year - 2018) * 0.03);
+        ELSIF v_cat = 1 THEN
+          v_base := v_base * 1.1;
+        END IF;
+        v_amt := round((v_base * (0.55 + ((v_i * 7 + v_month) % 9) * 0.08))::numeric, 2);
+        IF v_amt < 4 THEN
+          v_amt := 4.00;
+        END IF;
+        IF v_i = v_n THEN
+          v_amt := round((v_target_actuals - v_sum)::numeric, 2);
+          IF v_amt < 1 THEN
+            v_amt := 1.00;
+          END IF;
+        END IF;
+        v_sum := v_sum + v_amt;
+        v_name := v_ticket_names[v_cat][1 + (v_i % 5)];
+        v_note := v_ticket_notes[1 + (v_i % 5)];
         INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_transport, v_names[i], v_observations[i], v_amount);
+        VALUES (v_month_id, v_exp[v_cat], v_name, v_note, v_amt);
+      END LOOP;
+
+      IF v_year = 2026 AND v_month = 9 THEN
+        INSERT INTO month_fixed_line (
+          month_id, category_id, name, observations,
+          remaining_amount, original_amount, kind, origin
+        ) VALUES
+          (v_month_id, v_exp[2], 'Rent', 'Monthly rent', 1850.00, 1850.00, 'committed', 'cloned'),
+          (v_month_id, v_exp[4], 'Internet', NULL, 55.00, 55.00, 'committed', 'cloned'),
+          (v_month_id, v_exp[4], 'Phone', NULL, 35.00, 35.00, 'committed', 'cloned'),
+          (v_month_id, v_exp[2], 'Home insurance', NULL, 75.00, 75.00, 'committed', 'cloned'),
+          (v_month_id, v_exp[5], 'Health cover', NULL, 110.00, 110.00, 'committed', 'cloned'),
+          (v_month_id, v_exp[6], 'Streaming', NULL, 25.00, 25.00, 'committed', 'cloned'),
+          (v_month_id, v_exp[1], 'Groceries envelope', NULL, 420.00, 750.00, 'estimated', 'cloned'),
+          (v_month_id, v_exp[3], 'Transport envelope', NULL, 90.00, 220.00, 'estimated', 'cloned'),
+          (v_month_id, v_exp[6], 'Leisure envelope', NULL, 80.00, 180.00, 'estimated', 'cloned'),
+          (v_month_id, v_exp[9], 'Household envelope', NULL, 40.00, 120.00, 'estimated', 'cloned');
+      END IF;
+
+      v_months := v_months + 1;
     END LOOP;
-    
-    -- Restaurants (20 records)
-    v_names := ARRAY['Italian Restaurant', 'Sushi Bar', 'Burger Joint', 'Pizza Place', 'Thai Cuisine',
-                     'Mexican Grill', 'Chinese Takeaway', 'Indian Curry', 'French Bistro', 'Spanish Tapas',
-                     'Coffee Shop', 'Brunch Cafe', 'Ice Cream Parlor', 'Bakery', 'Fast Food',
-                     'Fine Dining', 'Family Restaurant', 'Food Court', 'Street Food', 'Buffet'];
-    v_observations := ARRAY['Date night', 'Birthday celebration', 'Quick lunch', 'Weekend dinner', 'Takeaway order',
-                            'Group dinner', 'Business lunch', 'Anniversary', 'Special occasion', 'Tourist area',
-                            'Morning coffee', 'Weekend brunch', 'Summer treat', 'Fresh bread', 'Quick meal',
-                            'Anniversary dinner', 'Kids meal', 'Mall visit', 'Quick snack', 'All-you-can-eat'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 50 + 15)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_restaurants, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Entertainment (20 records)
-    v_names := ARRAY['Movie Theater', 'Concert Tickets', 'Museum Entry', 'Theater Show', 'Amusement Park',
-                     'Bowling Alley', 'Escape Room', 'Karaoke Bar', 'Comedy Club', 'Art Gallery',
-                     'Video Games', 'Book Purchase', 'Music Subscription', 'Streaming Service', 'Gym Class',
-                     'Yoga Session', 'Dance Class', 'Sports Event', 'Festival Ticket', 'Workshop'];
-    v_observations := ARRAY['Weekend movie', 'Favorite band', 'Cultural visit', 'Broadway show', 'Family day out',
-                            'Friends night', 'Team building', 'Party night', 'Stand-up show', 'Exhibition visit',
-                            'New release', 'Bestseller', 'Monthly subscription', 'Annual plan', 'Special class',
-                            'Weekly practice', 'Social dance', 'Local team', 'Summer festival', 'Skill building'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 40 + 10)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_entertainment, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Health (20 records)
-    v_names := ARRAY['Pharmacy', 'Doctor Visit', 'Dentist Appointment', 'Eye Exam', 'Physiotherapy',
-                     'Vitamins', 'First Aid Supplies', 'Health Insurance', 'Gym Membership', 'Personal Trainer',
-                     'Massage Therapy', 'Chiropractor', 'Mental Health', 'Blood Test', 'X-Ray',
-                     'Prescription Medicine', 'Over-the-Counter', 'Health Supplements', 'Fitness Equipment', 'Wellness App'];
-    v_observations := ARRAY['Monthly refill', 'Annual checkup', 'Routine cleaning', 'Vision test', 'Back pain treatment',
-                            'Daily vitamins', 'Home kit', 'Monthly premium', 'Monthly fee', 'Session fee',
-                            'Relaxation session', 'Spine adjustment', 'Therapy session', 'Lab work', 'Imaging',
-                            'Monthly prescription', 'Cold & flu', 'Protein powder', 'Home gym', 'Subscription'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 70 + 20)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_health, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Education (20 records)
-    v_names := ARRAY['Online Course', 'Textbook', 'Workshop Fee', 'Certification Exam', 'Tutoring Session',
-                     'Language Class', 'Music Lesson', 'Art Class', 'Coding Bootcamp', 'Professional Development',
-                     'Conference Ticket', 'Membership Fee', 'Software License', 'Study Materials', 'Lab Fee',
-                     'Library Fine', 'School Supplies', 'Educational App', 'Research Paper', 'Seminar'];
-    v_observations := ARRAY['Udemy course', 'Required reading', 'Weekend workshop', 'Professional cert', 'Weekly tutoring',
-                            'Spanish class', 'Piano lesson', 'Painting class', 'Web development', 'Leadership training',
-                            'Industry event', 'Professional body', 'Annual license', 'Semester books', 'Chemistry lab',
-                            'Overdue book', 'New semester', 'Language learning', 'Journal access', 'Full day event'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 50 + 15)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_education, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Clothing (20 records)
-    v_names := ARRAY['T-Shirt', 'Jeans', 'Dress Shirt', 'Sneakers', 'Jacket',
-                     'Socks Pack', 'Underwear', 'Sweater', 'Coat', 'Shorts',
-                     'Formal Shoes', 'Boots', 'Hat', 'Scarf', 'Gloves',
-                     'Swimwear', 'Sportswear', 'Pajamas', 'Belt', 'Tie'];
-    v_observations := ARRAY['Casual wear', 'Everyday jeans', 'Work attire', 'Running shoes', 'Winter jacket',
-                            'Monthly supply', 'Monthly supply', 'Autumn wear', 'Heavy winter', 'Summer wear',
-                            'Office wear', 'Winter boots', 'Sun protection', 'Winter accessory', 'Winter accessory',
-                            'Beach vacation', 'Gym wear', 'Sleepwear', 'Formal accessory', 'Formal accessory'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 60 + 20)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_clothing, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Home (20 records)
-    v_names := ARRAY['Furniture', 'Kitchen Appliances', 'Bedding', 'Towels', 'Cookware',
-                     'Cleaning Supplies', 'Home Decor', 'Lighting', 'Storage Solutions', 'Garden Tools',
-                     'Tools', 'Paint', 'Curtains', 'Rugs', 'Mirrors',
-                     'Shelving', 'Organization', 'Safety Equipment', 'Moving Supplies', 'Repairs'];
-    v_observations := ARRAY['New sofa', 'Blender purchase', 'New sheets', 'Bath towels', 'New pans',
-                            'Monthly cleaning', 'Wall art', 'New lamp', 'Closet organizer', 'Lawn mower',
-                            'Drill set', 'Room refresh', 'Window treatment', 'Living room rug', 'Hallway mirror',
-                            'Bookshelf', 'Drawer dividers', 'Fire extinguisher', 'Box set', 'Plumber visit'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 80 + 25)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_home, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Utilities (20 records)
-    v_names := ARRAY['Electricity Bill', 'Water Bill', 'Gas Bill', 'Internet Bill', 'Phone Bill',
-                     'Waste Collection', 'Sewage', 'Home Insurance', 'Content Insurance', 'Security System',
-                     'Landline Phone', 'Mobile Insurance', 'Device Protection', 'Extended Warranty', 'Service Call',
-                     'Installation Fee', 'Activation Fee', 'Late Fee', 'Reconnection Fee', 'Upgrade Fee'];
-    v_observations := ARRAY['Monthly usage', 'Quarterly bill', 'Monthly usage', 'Monthly subscription', 'Monthly plan',
-                            'Monthly collection', 'Monthly service', 'Annual premium', 'Annual premium', 'Monthly monitoring',
-                            'Home phone', 'Device coverage', 'Annual coverage', 'Extended protection', 'Emergency call',
-                            'New service', 'Account setup', 'Payment penalty', 'Service restoration', 'Plan upgrade'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 50 + 15)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_utilities, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- Personal Care (20 records)
-    v_names := ARRAY['Haircut', 'Shampoo', 'Conditioner', 'Body Wash', 'Deodorant',
-                     'Toothpaste', 'Toothbrush', 'Skincare', 'Makeup', 'Perfume',
-                     'Nail Care', 'Hair Products', 'Razors', 'Shaving Cream', 'Sunscreen',
-                     'Lip Balm', 'Hand Cream', 'Face Mask', 'Essential Oils', 'Spa Treatment'];
-    v_observations := ARRAY['Monthly trim', 'Weekly wash', 'After shampoo', 'Daily shower', 'Daily use',
-                            'Daily hygiene', 'Monthly replacement', 'Daily routine', 'Special occasion', 'Daily wear',
-                            'Monthly manicure', 'Styling products', 'Monthly supply', 'Daily shave', 'Daily protection',
-                            'Daily use', 'Daily moisture', 'Weekly treatment', 'Aromatherapy', 'Relaxation session'];
-    
-    FOR i IN 1..20 LOOP
-        v_amount := (random() * 40 + 10)::numeric(14,2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_jul_2026, v_cat_personal, v_names[i], v_observations[i], v_amount);
-    END LOOP;
-    
-    -- ============================================================================
-    -- 10. July 2026: Create income records
-    -- ============================================================================
-    
-    -- Salary (2 records)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_salary, 'Monthly Salary', 3500.00),
-        (v_month_jul_2026, v_cat_salary, 'Overtime Payment', 450.00);
-    
-    -- Freelance (3 records)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_freelance, 'Web Design Project', 1200.00),
-        (v_month_jul_2026, v_cat_freelance, 'Consulting Fee', 800.00),
-        (v_month_jul_2026, v_cat_freelance, 'Logo Design', 350.00);
-    
-    -- Investments (2 records)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_investments, 'Stock Dividends', 125.50),
-        (v_month_jul_2026, v_cat_investments, 'Bond Interest', 75.00);
-    
-    -- Rental Income (1 record)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_rental, 'Apartment Rent', 950.00);
-    
-    -- Bonuses (1 record)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_bonuses, 'Quarterly Bonus', 500.00);
-    
-    -- Side Business (2 records)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_side_business, 'E-commerce Sales', 680.00),
-        (v_month_jul_2026, v_cat_side_business, 'Digital Products', 220.00);
-    
-    -- Gifts (1 record)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_gifts, 'Birthday Gift', 200.00);
-    
-    -- Refunds (2 records)
-    INSERT INTO month_income (month_id, category_id, name, amount) VALUES
-        (v_month_jul_2026, v_cat_refunds, 'Product Return', 85.00),
-        (v_month_jul_2026, v_cat_refunds, 'Service Credit', 45.00);
-    
-    RAISE NOTICE 'Seed data created successfully!';
-    RAISE NOTICE '- 10 expense categories';
-    RAISE NOTICE '- 10 income categories';
-    RAISE NOTICE '- 10 committed templates';
-    RAISE NOTICE '- 10 estimated templates';
-    RAISE NOTICE '- 6 annuals (yearly recurring expense reminders)';
-    RAISE NOTICE '- 79 months (2020-2025 full + Jan-Jul 2026)';
-    RAISE NOTICE '- 20 cloned fixed lines in Jul 2026';
-    RAISE NOTICE '- 200 actual expenses in Jul 2026';
-    RAISE NOTICE '- 14 income records in Jul 2026';
+  END LOOP;
+
+  SELECT
+    count(*) FILTER (WHERE savings > 0),
+    count(*) FILTER (WHERE savings < 0)
+  INTO v_positive, v_negative
+  FROM (
+    SELECT
+      coalesce((SELECT sum(amount::numeric) FROM month_income i WHERE i.month_id = m.id), 0)
+      - (
+        coalesce((SELECT sum(amount::numeric) FROM month_actual_expense a WHERE a.month_id = m.id), 0)
+        + coalesce((SELECT sum(remaining_amount::numeric) FROM month_fixed_line l WHERE l.month_id = m.id), 0)
+      ) AS savings
+    FROM month m
+  ) s;
+
+  RAISE NOTICE 'Fake seed ready: % months, % positive savings, % negative (% percent positive)',
+    v_months, v_positive, v_negative,
+    round(100.0 * v_positive / v_months);
 END $$;
 
 COMMIT;

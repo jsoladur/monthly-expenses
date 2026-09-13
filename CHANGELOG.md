@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-13
+
 ### Added
 - Home Export downloads a multi-sheet Excel workbook of month incomes, actuals, committed, and estimated lines (UC-19).
 - CC BY-NC-SA 4.0 license: free to use, fork, and contribute; selling is not allowed; derivatives must stay free under the same terms.
+- README screenshots of Home, a month workspace, Stats, Categories, Fixed, Annuals, and Settings (fake seed, light theme, iPhone and 1440 desktop viewports).
 
 ### Changed
+- Fake UI-evaluation seed covers 2018–2026 with exaggerated demo salaries (~10–15k EUR) so README shots are obviously not a real ledger; about 80% of months show positive potential savings.
 - Select by year in Excel export accepts multiple years (UC-19).
 - Excel sheets are named `{month} {year}`, Summary sits at the top, Origin is omitted, amounts use the profile currency format, and Totals/Summary are Excel formulas (UC-19).
 - README rewritten for a public repo (features, architecture, setup, contributing) and to document the Cursor Pro + Cursor Grok 4.6 vibe-coding experiment.
