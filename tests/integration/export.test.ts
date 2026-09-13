@@ -47,11 +47,11 @@ suite("UC-19 Excel export", () => {
 
     const workbook = await loadWorkbook(result.buffer);
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-09 September",
-      "2026-08 August",
+      "September 2026",
+      "August 2026",
     ]);
 
-    const augustSheet = workbook.getWorksheet("2026-08 August");
+    const augustSheet = workbook.getWorksheet("August 2026");
     expect(augustSheet).toBeDefined();
     const summary = summaryAmounts(augustSheet!);
     expect(summary["Income"]).toBe(2000);
@@ -67,7 +67,7 @@ suite("UC-19 Excel export", () => {
     );
     const bobBook = await loadWorkbook(bobExport.buffer);
     expect(bobBook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-10 October",
+      "October 2026",
     ]);
 
     expect(august.id).toBeTruthy();
@@ -91,7 +91,7 @@ suite("UC-19 Excel export", () => {
     expect(result.filename).toBe("monthly-expenses-2026.xlsx");
     const workbook = await loadWorkbook(result.buffer);
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-08 August",
+      "August 2026",
     ]);
 
     const both = await exportExpenses(
@@ -102,8 +102,8 @@ suite("UC-19 Excel export", () => {
     expect(both.filename).toBe("monthly-expenses-selected.xlsx");
     const bothBook = await loadWorkbook(both.buffer);
     expect(bothBook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-08 August",
-      "2025-12 December",
+      "August 2026",
+      "December 2025",
     ]);
 
     await expect(
@@ -139,8 +139,8 @@ suite("UC-19 Excel export", () => {
     expect(result.filename).toBe("monthly-expenses-selected.xlsx");
     const workbook = await loadWorkbook(result.buffer);
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-08 August",
-      "2025-12 December",
+      "August 2026",
+      "December 2025",
     ]);
 
     expect(await countMonths(alice)).toBe(beforeCount);
@@ -158,7 +158,7 @@ suite("UC-19 Excel export", () => {
       { locale: "en", copy: EN_EXPORT_COPY },
     );
     const workbook = await loadWorkbook(result.buffer);
-    const sheet = workbook.getWorksheet("2026-08 August");
+    const sheet = workbook.getWorksheet("August 2026");
     const labels: string[] = [];
     sheet?.eachRow((row) => {
       labels.push(String(row.getCell(1).value ?? ""));
@@ -182,7 +182,7 @@ suite("UC-19 Excel export", () => {
       { locale: "en", copy: EN_EXPORT_COPY },
     );
     const workbook = await loadWorkbook(result.buffer);
-    const summary = summaryAmounts(workbook.getWorksheet("2026-08 August")!);
+    const summary = summaryAmounts(workbook.getWorksheet("August 2026")!);
     expect(summary["Actuals"]).toBe(30);
     expect(summary["Potential savings"]).toBe(770);
   });
@@ -228,19 +228,23 @@ async function loadWorkbook(buffer: Buffer): Promise<ExcelJS.Workbook> {
 
 function summaryAmounts(sheet: ExcelJS.Worksheet): Record<string, number> {
   const out: Record<string, number> = {};
-  let inSummary = false;
-  sheet.eachRow((row) => {
-    const label = String(row.getCell(1).value ?? "");
-    if (label === "Summary") {
-      inSummary = true;
-      return;
-    }
-    if (inSummary && label.length > 0) {
-      const value = row.getCell(2).value;
-      if (typeof value === "number") out[label] = value;
-    }
-  });
+  for (let row = 5; row <= 9; row++) {
+    const label = String(sheet.getCell(row, 1).value ?? "");
+    const amount = numericCell(sheet.getCell(row, 2));
+    if (label.length > 0 && amount !== undefined) out[label] = amount;
+  }
   return out;
+}
+
+function numericCell(cell: ExcelJS.Cell): number | undefined {
+  const value = cell.value;
+  if (typeof value === "number") return value;
+  if (value && typeof value === "object" && "formula" in value) {
+    const result = (value as { result?: unknown }).result;
+    if (typeof result === "number") return result;
+    return 0;
+  }
+  return undefined;
 }
 
 async function seedUser(googleSub: string): Promise<string> {

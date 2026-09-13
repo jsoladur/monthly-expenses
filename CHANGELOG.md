@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Home Export downloads a multi-sheet Excel workbook of month incomes, actuals, committed, and estimated lines (UC-19).
+- CC BY-NC-SA 4.0 license: free to use, fork, and contribute; selling is not allowed; derivatives must stay free under the same terms.
 
 ### Changed
 - Select by year in Excel export accepts multiple years (UC-19).
+- Excel sheets are named `{month} {year}`, Summary sits at the top, Origin is omitted, amounts use the profile currency format, and Totals/Summary are Excel formulas (UC-19).
+- README rewritten for a public repo (features, architecture, setup, contributing) and to document the Cursor Pro + Cursor Grok 4.6 vibe-coding experiment.
 
 ## [0.7.0] - 2026-09-12
 

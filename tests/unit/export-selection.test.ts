@@ -74,15 +74,14 @@ describe("export selection helpers (UC-19)", () => {
     ]);
   });
 
-  it("sanitizes sheet names and keeps the YYYY-MM prefix under 31 chars", () => {
-    expect(sanitizeSheetName(2026, 9, "September")).toBe("2026-09 September");
-    expect(sanitizeSheetName(2026, 9, "Sep[tem]ber?*")).toBe("2026-09 Sep tem ber");
+  it("sanitizes sheet names as month then year, under 31 chars", () => {
+    expect(sanitizeSheetName(2026, "September")).toBe("September 2026");
+    expect(sanitizeSheetName(2026, "Sep[tem]ber?*")).toBe("Sep tem ber 2026");
     const long = sanitizeSheetName(
       2026,
-      9,
       "A very long locale month name that would overflow",
     );
-    expect(long.startsWith("2026-09")).toBe(true);
+    expect(long.endsWith(" 2026")).toBe(true);
     expect(long.length).toBeLessThanOrEqual(31);
   });
 });

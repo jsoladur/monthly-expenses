@@ -40,9 +40,9 @@ test.describe("UC-19 Excel export", () => {
     expect(download.suggestedFilename()).toBe("monthly-expenses-all.xlsx");
     const workbook = await loadDownload(download);
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-09 September",
-      "2026-08 August",
-      "2025-12 December",
+      "September 2026",
+      "August 2026",
+      "December 2025",
     ]);
   });
 
@@ -75,8 +75,8 @@ test.describe("UC-19 Excel export", () => {
     expect(download.suggestedFilename()).toBe("monthly-expenses-selected.xlsx");
     const workbook = await loadDownload(download);
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2026-08 August",
-      "2025-12 December",
+      "August 2026",
+      "December 2025",
     ]);
   });
 
@@ -108,7 +108,7 @@ test.describe("UC-19 Excel export", () => {
     expect(download.suggestedFilename()).toBe("monthly-expenses-2025-12.xlsx");
     const workbook = await loadDownload(download);
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
-      "2025-12 December",
+      "December 2025",
     ]);
   });
 

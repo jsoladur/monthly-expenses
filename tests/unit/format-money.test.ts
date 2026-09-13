@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAxisCents, formatMoney } from "@/i18n/format";
+import { excelCurrencyNumFmt, formatAxisCents, formatMoney } from "@/i18n/format";
 
 // ============================================================================
 // UC-04 money formatting (PRD C9, §7.6, §11; ARCH §8).
@@ -63,6 +63,17 @@ describe("formatMoney", () => {
     expect(() => formatMoney(0, "EU")).toThrow(TypeError);
     expect(() => formatMoney(0, "EURO")).toThrow(TypeError);
     expect(() => formatMoney(0, "eu1")).toThrow(TypeError);
+  });
+});
+
+describe("excelCurrencyNumFmt", () => {
+  it("puts the display symbol after a two-decimal pattern", () => {
+    expect(excelCurrencyNumFmt("EUR")).toBe('#,##0.00 "€";-#,##0.00 "€"');
+    expect(excelCurrencyNumFmt("USD")).toBe('#,##0.00 "$";-#,##0.00 "$"');
+  });
+
+  it("rejects non-3-letter currency codes", () => {
+    expect(() => excelCurrencyNumFmt("EU")).toThrow(TypeError);
   });
 });
 

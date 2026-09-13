@@ -109,7 +109,7 @@ export async function exportExpenses(
 
     const localeMonth = monthName(opts.locale, row.month);
     return {
-      sheetName: sanitizeSheetName(row.year, row.month, localeMonth),
+      sheetName: sanitizeSheetName(row.year, localeMonth),
       title: monthYear(opts.locale, row.year, row.month),
       currency,
       incomes: monthIncomes,

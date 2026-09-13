@@ -83,7 +83,7 @@ Rules:
 - Format: Office Open XML `.xlsx` (ADR-11, ExcelJS).
 - **One worksheet per exported month.** No cover sheet. No charts.
 - Sheet order: `year DESC`, `month DESC`.
-- Sheet name: `{YYYY}-{MM} {locale month name}` (example `2026-09 September`), truncated/sanitized to Excel’s 31-character rule and forbidden characters `\ / ? * [ ]`. The `{YYYY}-{MM}` prefix keeps names unique after truncation.
+- Sheet name: `{locale month name} {year}` (example `September 2026` / `septiembre 2026`), truncated/sanitized to Excel’s 31-character rule and forbidden characters `\ / ? * [ ]`. Truncation keeps the year suffix so sheets stay identifiable.
 - Filename:
   - `all` → `monthly-expenses-all.xlsx`
   - `year` with one year → `monthly-expenses-{year}.xlsx`
@@ -98,26 +98,25 @@ Title block:
 1. App name (i18n) + locale month-year (e.g. `Monthly Expenses — September 2026`).
 2. Currency label from `profile_settings` (default `EUR` if the row is missing).
 
-Then four **data sections** in this order, matching the workspace vocabulary:
+Then a **Summary** block at the top (after the title/currency rows), then four **data sections**, matching the workspace vocabulary:
 
-1. **Incomes** — category, name, amount. Total row = `Σ amount` (integer cents).
-2. **Actuals** — category, name, notes (`observations`, blank when null), amount. Total row = `Σ amount`.
-3. **Committed** — category, name, notes, origin (`cloned` / `month_only` keyed labels), remaining, original. Total row = `Σ remaining`.
-4. **Estimated** — same columns as Committed. Total row = `Σ remaining`.
+1. **Summary** — Income, Actuals, Reserved, Total expenses, Potential savings. Each amount is an Excel formula that references section totals (and other Summary cells). Algebra matches UC-11 / PRD §7.1.
+2. **Incomes** — category, name, amount. Total row = `SUM` of amount cells.
+3. **Actuals** — category, name, notes (`observations`, blank when null), amount. Total row = `SUM` of amount cells.
+4. **Committed** — category, name, notes, remaining, original. **No Origin column.** Total row = `SUM` of remaining cells.
+5. **Estimated** — same columns as Committed. Total row = `SUM` of remaining cells.
 
-Empty sections still render the header and a total of `0.00`.
+Empty sections still render the header and a Total formula (`SUM` of the header cell, which Excel treats as 0).
 
-Then a **Summary** block using the same algebra as UC-11 / PRD §7.1:
-
-| Row | Value |
+| Summary row | Formula |
 | --- | --- |
-| Income | `Σ incomes` |
-| Actuals | `Σ actuals` |
-| Reserved | `Σ remaining` of committed **and** estimated |
-| Total expenses | Actuals + Reserved |
-| Potential savings | Income − Total expenses |
+| Income | Incomes Total cell |
+| Actuals | Actuals Total cell |
+| Reserved | Committed Total + Estimated Total |
+| Total expenses | Summary Actuals + Summary Reserved |
+| Potential savings | Summary Income − Summary Total expenses |
 
-Totals are **precomputed in integer cents** in the service, then written once at the Excel boundary. Do **not** use Excel `=SUM()` formulas for these totals (ADR-5: the app’s number is the source of truth).
+The service still computes integer-cents totals for the cached formula `result` (so values show before Excel recalculates). The **workbook** is the calculator: section Totals and every Summary amount are formulas, not baked-in numbers (D6).
 
 Row order inside a section:
 
@@ -128,7 +127,7 @@ Inactive categories still **label** historical rows (PRD §6.2). No extra “ina
 
 ### 4.5 Money in Excel
 
-Domain code stays integer cents. The workbook builder converts with `Number(formatCents(cents))` **once per cell** and applies Excel number format `#,##0.00` (dot decimal, comma thousands — same display convention as `formatMoney`, without the currency suffix; the currency lives in the title block). Never `number`/`float` arithmetic on amounts in the service.
+Domain code stays integer cents. The workbook builder converts with `Number(formatCents(cents))` **once per line-item cell** (and as the cached formula `result`). Amount cells — including section Totals and every Summary amount — use Excel currency format from `excelCurrencyNumFmt(profile_settings.currency)`: comma thousands, dot decimal, two places, symbol **after** the amount (same convention as `formatMoney`). Never `number`/`float` arithmetic on amounts in the service.
 
 ### 4.6 Tenancy (P0)
 
@@ -323,7 +322,7 @@ Use STYLE-GUIDE hex as ARGB fills. One accent language, no charts.
 | Summary header | navy `#1B3A6B` | white, bold |
 | Potential savings row | green-tint `#EFF7E3` | green-deep, bold |
 
-Freeze the title row. Landscape print, fit to width 1. Column widths sized for category/name/notes. No gridlines extra styling beyond header fills.
+Freeze through the Summary block (row 9). Landscape print, fit to width 1. Column widths sized for category/name/notes. No gridlines extra styling beyond header fills.
 
 ---
 
@@ -342,14 +341,14 @@ Mapped PRD §15 scenarios: **#32, #33, #34**. Plus the slice tests below.
 1. `sortPeriodsDescending` orders `(2025,12)` after `(2026,8)` after `(2026,9)`.
 2. `uniqueYearsDescending` from mixed months → `[2026, 2025]`.
 3. `exportFilename` matches §4.3.
-4. `sanitizeSheetName` strips `[]?*\/` and caps at 31 characters while keeping the `YYYY-MM` prefix.
-5. Workbook: two months → two sheets, newest first; Incomes/Actuals/Committed/Estimated/Summary present; total cells equal the integer-cents summary (parse back via ExcelJS). Empty section still has a `0` total. No chart objects.
+4. `sanitizeSheetName` is `{month} {year}`, strips `[]?*\/`, caps at 31 characters, and keeps the year suffix.
+5. Workbook: two months → two sheets named `September 2026` / `August 2026`, newest first; Summary is the first section; no Origin column; section Totals and Summary amounts are formulas with cached integer-cents `result`; amount cells use the profile currency format. Empty section Total is still a `SUM` formula (cached `0`). No chart objects.
 
 ### 9.2 Integration (real Postgres)
 
-6. **#32 All:** Alice has Aug 2026 (income 2000, actual 50, committed remaining 800, estimated remaining 400) and Sep 2026 (empty). Export `all` → 2 sheets, Sep then Aug. Aug summary savings `750.00` (PRD §7.1). Bob’s October is absent.
-7. **#33 Year:** Alice has 2026-08 and 2025-12. Export `{ mode: "year", years: [2026] }` → one sheet `2026-08`. Export `{ mode: "year", years: [2026, 2025] }` → two sheets, 2026-08 then 2025-12. Year `[2024]` (no rows) → `NothingToExportError`. Year list helper returns `[2026, 2025]`.
-8. **#34 Months:** Export `{ mode: "months", periods: [{2025,12},{2026,8}] }` → two sheets, 2026-08 then 2025-12. A period Bob owns is skipped when Alice requests it. Crafted missing period does not create a month (C6).
+6. **#32 All:** Alice has Aug 2026 (income 2000, actual 50, committed remaining 800, estimated remaining 400) and Sep 2026 (empty). Export `all` → 2 sheets (`September 2026` then `August 2026`). Aug summary savings `750.00` (PRD §7.1). Bob’s October is absent.
+7. **#33 Year:** Alice has 2026-08 and 2025-12. Export `{ mode: "year", years: [2026] }` → one sheet `August 2026`. Export `{ mode: "year", years: [2026, 2025] }` → two sheets, `August 2026` then `December 2025`. Year `[2024]` (no rows) → `NothingToExportError`. Year list helper returns `[2026, 2025]`.
+8. **#34 Months:** Export `{ mode: "months", periods: [{2025,12},{2026,8}] }` → two sheets, `August 2026` then `December 2025`. A period Bob owns is skipped when Alice requests it. Crafted missing period does not create a month (C6).
 9. Cross-tenant: Alice calling with Bob’s year still only returns Alice’s months. Repository queries include `month.user_id`.
 10. Inactive category still labels an historical actual on the sheet (PRD §6.2).
 11. Negative actual is first-class in the Actuals total and savings (PRD §7.6).
@@ -399,7 +398,7 @@ Mapped PRD §15 scenarios: **#32, #33, #34**. Plus the slice tests below.
 | D3 | Catalog tables in the file | **Off** (months only) |
 | D4 | Default mode when opening the picker | **All** |
 | D5 | Download transport | Server Action + base64 blob (not a Route Handler) |
-| D6 | Excel totals | Precomputed cents, not `=SUM()` |
+| D6 | Excel totals | Formulas (`SUM` / `+` / `-` cell refs). Cached integer-cents `result` for viewers that do not recalc on open. |
 
 ---
 

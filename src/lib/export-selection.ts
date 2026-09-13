@@ -79,17 +79,16 @@ export function exportFilename(selection: ExportSelection): string {
 
 const FORBIDDEN_SHEET_CHARS = /[\\/?*[\]:]/g;
 
-export function sanitizeSheetName(
-  year: number,
-  month: number,
-  monthLabel: string,
-): string {
-  const prefix = `${year}-${padMonth(month)}`;
+export function sanitizeSheetName(year: number, monthLabel: string): string {
   const cleaned = monthLabel
     .replace(FORBIDDEN_SHEET_CHARS, " ")
     .replace(/\s+/g, " ")
     .trim();
-  const raw = cleaned.length > 0 ? `${prefix} ${cleaned}` : prefix;
-  if (raw.length <= 31) return raw;
-  return raw.slice(0, 31).trimEnd();
+  const suffix = ` ${year}`;
+  if (cleaned.length === 0) {
+    return String(year).slice(0, 31);
+  }
+  const maxMonthChars = 31 - suffix.length;
+  const monthPart = cleaned.slice(0, maxMonthChars).trimEnd();
+  return `${monthPart}${suffix}`;
 }

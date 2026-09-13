@@ -1,14 +1,16 @@
 import "server-only";
 import ExcelJS from "exceljs";
-import { formatCents, sumCents } from "@/server/money";
+import { formatCents } from "@/server/money";
+import { excelCurrencyNumFmt } from "@/i18n/format";
 import type { ExportCopy } from "@/server/export/copy";
 
 // ============================================================================
 // Excel workbook builder (UC-19, ADR-11).
 //
-// Integer cents until this file. Each cell converts once via
-// `Number(formatCents(cents))` (ARCH §8). Totals are precomputed by the
-// service — this module never sums amounts and never writes `=SUM()`.
+// Line amounts convert once via `Number(formatCents(cents))` (ARCH §8).
+// Section totals and the Summary block are Excel formulas so the workbook
+// recalculates when a cell is edited. Cached `result` is the integer-cents
+// value for viewers that do not recalc on open.
 // ============================================================================
 
 const NAVY = "FF1B3A6B";
@@ -21,7 +23,11 @@ const OFFWHITE = "FFF6F8FB";
 const GREEN_TINT = "FFEFF7E3";
 const BORDER = "FFE2E8F0";
 
-const AMOUNT_NUM_FMT = "#,##0.00";
+const SUMMARY_VALUE_COL = 2;
+const INCOMES_AMOUNT_COL = 3;
+const ACTUALS_AMOUNT_COL = 4;
+const RESERVED_REMAINING_COL = 4;
+const RESERVED_ORIGINAL_COL = 5;
 
 export type ExportIncomeRow = {
   categoryName: string;
@@ -67,6 +73,14 @@ export type ExportWorkbookInput = {
   months: ExportMonthSheet[];
 };
 
+type SectionPlan = {
+  titleRow: number;
+  headerRow: number;
+  firstDataRow: number;
+  totalRow: number;
+  dataCount: number;
+};
+
 export function centsToExcelNumber(cents: number): number {
   return Number(formatCents(cents));
 }
@@ -94,8 +108,9 @@ function writeMonthSheet(
   copy: ExportCopy,
   data: ExportMonthSheet,
 ): void {
+  const currencyFmt = excelCurrencyNumFmt(data.currency);
   const sheet = workbook.addWorksheet(data.sheetName, {
-    views: [{ state: "frozen", ySplit: 1 }],
+    views: [{ state: "frozen", ySplit: 9 }],
     pageSetup: {
       orientation: "landscape",
       fitToPage: true,
@@ -109,28 +124,73 @@ function writeMonthSheet(
     { width: 22 },
     { width: 28 },
     { width: 32 },
-    { width: 14 },
-    { width: 14 },
-    { width: 14 },
+    { width: 16 },
+    { width: 16 },
   ];
 
-  let row = 1;
-  sheet.mergeCells(row, 1, row, 6);
-  const titleCell = sheet.getCell(row, 1);
+  sheet.mergeCells(1, 1, 1, 5);
+  const titleCell = sheet.getCell(1, 1);
   titleCell.value = `${copy.appName} — ${data.title}`;
   applyHeaderFill(titleCell, NAVY);
   titleCell.font = { ...titleCell.font, size: 14 };
-  sheet.getRow(row).height = 22;
-  row += 1;
+  sheet.getRow(1).height = 22;
 
-  sheet.getCell(row, 1).value = copy.currency;
-  sheet.getCell(row, 1).font = { color: { argb: INK }, bold: true, name: "Calibri" };
-  sheet.getCell(row, 2).value = data.currency;
-  row += 2;
+  sheet.getCell(2, 1).value = copy.currency;
+  sheet.getCell(2, 1).font = { color: { argb: INK }, bold: true, name: "Calibri" };
+  sheet.getCell(2, 2).value = data.currency;
 
-  row = writeSimpleSection({
+  const summaryTitleRow = 4;
+  const incomeRow = 5;
+  const actualsRow = 6;
+  const reservedRow = 7;
+  const totalExpRow = 8;
+  const savingsRow = 9;
+
+  const incomesPlan = planSection(11, data.incomes.length);
+  const actualsPlan = planSection(incomesPlan.totalRow + 2, data.actuals.length);
+  const committedPlan = planSection(actualsPlan.totalRow + 2, data.committed.length);
+  const estimatedPlan = planSection(committedPlan.totalRow + 2, data.estimated.length);
+
+  const incomesTotalRef = cellRef(INCOMES_AMOUNT_COL, incomesPlan.totalRow);
+  const actualsTotalRef = cellRef(ACTUALS_AMOUNT_COL, actualsPlan.totalRow);
+  const committedTotalRef = cellRef(RESERVED_REMAINING_COL, committedPlan.totalRow);
+  const estimatedTotalRef = cellRef(RESERVED_REMAINING_COL, estimatedPlan.totalRow);
+  const summaryIncomeRef = cellRef(SUMMARY_VALUE_COL, incomeRow);
+  const summaryActualsRef = cellRef(SUMMARY_VALUE_COL, actualsRow);
+  const summaryReservedRef = cellRef(SUMMARY_VALUE_COL, reservedRow);
+  const summaryTotalExpRef = cellRef(SUMMARY_VALUE_COL, totalExpRow);
+
+  writeSummaryHeader(sheet, copy, summaryTitleRow);
+  writeSummaryLine(sheet, incomeRow, copy.income, {
+    formula: incomesTotalRef,
+    result: centsToExcelNumber(data.summary.incomesTotal),
+    currencyFmt,
+  });
+  writeSummaryLine(sheet, actualsRow, copy.actuals, {
+    formula: actualsTotalRef,
+    result: centsToExcelNumber(data.summary.actualsTotal),
+    currencyFmt,
+  });
+  writeSummaryLine(sheet, reservedRow, copy.reserved, {
+    formula: `${committedTotalRef}+${estimatedTotalRef}`,
+    result: centsToExcelNumber(data.summary.reservedRemainingTotal),
+    currencyFmt,
+  });
+  writeSummaryLine(sheet, totalExpRow, copy.totalExpenses, {
+    formula: `${summaryActualsRef}+${summaryReservedRef}`,
+    result: centsToExcelNumber(data.summary.totalExpenses),
+    currencyFmt,
+  });
+  writeSummaryLine(sheet, savingsRow, copy.savings, {
+    formula: `${summaryIncomeRef}-${summaryTotalExpRef}`,
+    result: centsToExcelNumber(data.summary.potentialSavings),
+    currencyFmt,
+    savings: true,
+  });
+
+  writeSimpleSection({
     sheet,
-    startRow: row,
+    plan: incomesPlan,
     title: copy.incomes,
     headerFill: GREEN_DEEP,
     headers: [copy.category, copy.name, copy.amount],
@@ -139,16 +199,17 @@ function writeMonthSheet(
       item.name,
       centsToExcelNumber(item.amountCents),
     ]),
-    amountCol: 3,
+    amountCols: [INCOMES_AMOUNT_COL],
+    totalAmountCol: INCOMES_AMOUNT_COL,
     totalLabel: copy.total,
-    totalCents: data.summary.incomesTotal,
+    totalResultCents: data.summary.incomesTotal,
     columnCount: 3,
+    currencyFmt,
   });
-  row += 1;
 
-  row = writeSimpleSection({
+  writeSimpleSection({
     sheet,
-    startRow: row,
+    plan: actualsPlan,
     title: copy.actuals,
     headerFill: BLUE,
     headers: [copy.category, copy.name, copy.notes, copy.amount],
@@ -158,119 +219,109 @@ function writeMonthSheet(
       item.notes,
       centsToExcelNumber(item.amountCents),
     ]),
-    amountCol: 4,
+    amountCols: [ACTUALS_AMOUNT_COL],
+    totalAmountCol: ACTUALS_AMOUNT_COL,
     totalLabel: copy.total,
-    totalCents: data.summary.actualsTotal,
+    totalResultCents: data.summary.actualsTotal,
     columnCount: 4,
+    currencyFmt,
   });
-  row += 1;
 
-  row = writeReservedSection({
+  writeSimpleSection({
     sheet,
-    startRow: row,
+    plan: committedPlan,
     title: copy.committed,
     headerFill: NAVY,
-    copy,
-    rows: data.committed,
-    totalCents: sumRemaining(data.committed),
-  });
-  row += 1;
-
-  row = writeReservedSection({
-    sheet,
-    startRow: row,
-    title: copy.estimated,
-    headerFill: TEAL,
-    copy,
-    rows: data.estimated,
-    totalCents: sumRemaining(data.estimated),
-  });
-  row += 1;
-
-  writeSummary(sheet, row, copy, data);
-}
-
-function sumRemaining(rows: ExportReservedRow[]): number {
-  return sumCents(rows.map((row) => row.remainingCents));
-}
-
-function writeReservedSection({
-  sheet,
-  startRow,
-  title,
-  headerFill,
-  copy,
-  rows,
-  totalCents,
-}: {
-  sheet: ExcelJS.Worksheet;
-  startRow: number;
-  title: string;
-  headerFill: string;
-  copy: ExportCopy;
-  rows: ExportReservedRow[];
-  totalCents: number;
-}): number {
-  return writeSimpleSection({
-    sheet,
-    startRow,
-    title,
-    headerFill,
-    headers: [
-      copy.category,
-      copy.name,
-      copy.notes,
-      copy.origin,
-      copy.remaining,
-      copy.original,
-    ],
-    rows: rows.map((item) => [
+    headers: [copy.category, copy.name, copy.notes, copy.remaining, copy.original],
+    rows: data.committed.map((item) => [
       item.categoryName,
       item.name,
       item.notes,
-      item.origin === "cloned" ? copy.originCloned : copy.originMonthOnly,
       centsToExcelNumber(item.remainingCents),
       centsToExcelNumber(item.originalCents),
     ]),
-    amountCol: 5,
+    amountCols: [RESERVED_REMAINING_COL, RESERVED_ORIGINAL_COL],
+    totalAmountCol: RESERVED_REMAINING_COL,
     totalLabel: copy.total,
-    totalCents,
-    columnCount: 6,
+    totalResultCents: sumRemaining(data.committed),
+    columnCount: 5,
+    currencyFmt,
   });
+
+  writeSimpleSection({
+    sheet,
+    plan: estimatedPlan,
+    title: copy.estimated,
+    headerFill: TEAL,
+    headers: [copy.category, copy.name, copy.notes, copy.remaining, copy.original],
+    rows: data.estimated.map((item) => [
+      item.categoryName,
+      item.name,
+      item.notes,
+      centsToExcelNumber(item.remainingCents),
+      centsToExcelNumber(item.originalCents),
+    ]),
+    amountCols: [RESERVED_REMAINING_COL, RESERVED_ORIGINAL_COL],
+    totalAmountCol: RESERVED_REMAINING_COL,
+    totalLabel: copy.total,
+    totalResultCents: sumRemaining(data.estimated),
+    columnCount: 5,
+    currencyFmt,
+  });
+}
+
+function sumRemaining(rows: ExportReservedRow[]): number {
+  let total = 0;
+  for (const row of rows) {
+    total += row.remainingCents;
+  }
+  return total;
+}
+
+function planSection(startRow: number, dataCount: number): SectionPlan {
+  return {
+    titleRow: startRow,
+    headerRow: startRow + 1,
+    firstDataRow: startRow + 2,
+    totalRow: startRow + 2 + dataCount,
+    dataCount,
+  };
 }
 
 function writeSimpleSection({
   sheet,
-  startRow,
+  plan,
   title,
   headerFill,
   headers,
   rows,
-  amountCol,
+  amountCols,
+  totalAmountCol,
   totalLabel,
-  totalCents,
+  totalResultCents,
   columnCount,
+  currencyFmt,
 }: {
   sheet: ExcelJS.Worksheet;
-  startRow: number;
+  plan: SectionPlan;
   title: string;
   headerFill: string;
   headers: string[];
   rows: Array<Array<string | number>>;
-  amountCol: number;
+  amountCols: number[];
+  totalAmountCol: number;
   totalLabel: string;
-  totalCents: number;
+  totalResultCents: number;
   columnCount: number;
-}): number {
-  let row = startRow;
-  sheet.mergeCells(row, 1, row, columnCount);
-  const titleCell = sheet.getCell(row, 1);
+  currencyFmt: string;
+}): void {
+  sheet.mergeCells(plan.titleRow, 1, plan.titleRow, columnCount);
+  const titleCell = sheet.getCell(plan.titleRow, 1);
   titleCell.value = title;
   applyHeaderFill(titleCell, headerFill);
-  row += 1;
 
   for (let i = 0; i < headers.length; i++) {
-    const cell = sheet.getCell(row, i + 1);
+    const cell = sheet.getCell(plan.headerRow, i + 1);
     cell.value = headers[i];
     cell.font = { bold: true, color: { argb: INK }, name: "Calibri" };
     cell.fill = solid(OFFWHITE);
@@ -278,84 +329,97 @@ function writeSimpleSection({
       bottom: { style: "thin", color: { argb: BORDER } },
     };
   }
-  row += 1;
 
-  for (const values of rows) {
+  rows.forEach((values, index) => {
+    const rowNumber = plan.firstDataRow + index;
     for (let i = 0; i < values.length; i++) {
-      const cell = sheet.getCell(row, i + 1);
+      const cell = sheet.getCell(rowNumber, i + 1);
       cell.value = values[i];
       cell.font = { color: { argb: INK }, name: "Calibri" };
-      if (typeof values[i] === "number") {
-        cell.numFmt = AMOUNT_NUM_FMT;
+      if (amountCols.includes(i + 1) && typeof values[i] === "number") {
+        cell.numFmt = currencyFmt;
         cell.alignment = { horizontal: "right" };
       }
     }
-    row += 1;
-  }
+  });
 
-  const totalRow = sheet.getRow(row);
-  const totalLabelCell = sheet.getCell(row, 1);
+  const totalLabelCell = sheet.getCell(plan.totalRow, 1);
   totalLabelCell.value = totalLabel;
-  const totalValueCell = sheet.getCell(row, amountCol);
-  totalValueCell.value = centsToExcelNumber(totalCents);
-  totalValueCell.numFmt = AMOUNT_NUM_FMT;
+  const totalValueCell = sheet.getCell(plan.totalRow, totalAmountCol);
+  totalValueCell.value = {
+    formula: sumFormula(totalAmountCol, plan),
+    result: centsToExcelNumber(totalResultCents),
+  };
+  totalValueCell.numFmt = currencyFmt;
   totalValueCell.alignment = { horizontal: "right" };
   for (let col = 1; col <= columnCount; col++) {
-    const cell = sheet.getCell(row, col);
+    const cell = sheet.getCell(plan.totalRow, col);
     cell.font = { bold: true, color: { argb: INK }, name: "Calibri" };
     cell.fill = solid(OFFWHITE);
     cell.border = {
       top: { style: "thin", color: { argb: BORDER } },
     };
   }
-  totalRow.commit();
-  return row + 1;
 }
 
-function writeSummary(
+function sumFormula(col: number, plan: SectionPlan): string {
+  const letter = colLetter(col);
+  if (plan.dataCount > 0) {
+    return `SUM(${letter}${plan.firstDataRow}:${letter}${plan.totalRow - 1})`;
+  }
+  return `SUM(${letter}${plan.headerRow}:${letter}${plan.headerRow})`;
+}
+
+function writeSummaryHeader(
   sheet: ExcelJS.Worksheet,
-  startRow: number,
   copy: ExportCopy,
-  data: ExportMonthSheet,
+  row: number,
 ): void {
-  let row = startRow;
   sheet.mergeCells(row, 1, row, 2);
   const titleCell = sheet.getCell(row, 1);
   titleCell.value = copy.summary;
   applyHeaderFill(titleCell, NAVY);
-  row += 1;
+}
 
-  const lines: Array<{ label: string; cents: number; savings?: boolean }> = [
-    { label: copy.income, cents: data.summary.incomesTotal },
-    { label: copy.actuals, cents: data.summary.actualsTotal },
-    { label: copy.reserved, cents: data.summary.reservedRemainingTotal },
-    { label: copy.totalExpenses, cents: data.summary.totalExpenses },
-    { label: copy.savings, cents: data.summary.potentialSavings, savings: true },
-  ];
-
-  for (const line of lines) {
-    const labelCell = sheet.getCell(row, 1);
-    const valueCell = sheet.getCell(row, 2);
-    labelCell.value = line.label;
-    valueCell.value = centsToExcelNumber(line.cents);
-    valueCell.numFmt = AMOUNT_NUM_FMT;
-    valueCell.alignment = { horizontal: "right" };
-    labelCell.font = {
-      bold: true,
-      color: { argb: line.savings ? GREEN_DEEP : INK },
-      name: "Calibri",
-    };
-    valueCell.font = {
-      bold: true,
-      color: { argb: line.savings ? GREEN_DEEP : INK },
-      name: "Calibri",
-    };
-    if (line.savings) {
-      labelCell.fill = solid(GREEN_TINT);
-      valueCell.fill = solid(GREEN_TINT);
-    }
-    row += 1;
+function writeSummaryLine(
+  sheet: ExcelJS.Worksheet,
+  row: number,
+  label: string,
+  opts: {
+    formula: string;
+    result: number;
+    currencyFmt: string;
+    savings?: boolean;
+  },
+): void {
+  const labelCell = sheet.getCell(row, 1);
+  const valueCell = sheet.getCell(row, SUMMARY_VALUE_COL);
+  labelCell.value = label;
+  valueCell.value = { formula: opts.formula, result: opts.result };
+  valueCell.numFmt = opts.currencyFmt;
+  valueCell.alignment = { horizontal: "right" };
+  const color = opts.savings ? GREEN_DEEP : INK;
+  labelCell.font = { bold: true, color: { argb: color }, name: "Calibri" };
+  valueCell.font = { bold: true, color: { argb: color }, name: "Calibri" };
+  if (opts.savings) {
+    labelCell.fill = solid(GREEN_TINT);
+    valueCell.fill = solid(GREEN_TINT);
   }
+}
+
+function cellRef(col: number, row: number): string {
+  return `${colLetter(col)}${row}`;
+}
+
+function colLetter(col: number): string {
+  let n = col;
+  let out = "";
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    out = String.fromCharCode(65 + rem) + out;
+    n = Math.floor((n - 1) / 26);
+  }
+  return out;
 }
 
 function applyHeaderFill(cell: ExcelJS.Cell, argb: string): void {

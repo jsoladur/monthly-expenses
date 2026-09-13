@@ -183,6 +183,20 @@ export function formatMoney(cents: number, currency: string): string {
 }
 
 /**
+ * Excel number format matching `formatMoney` (comma thousands, dot decimal,
+ * symbol after the amount, two places). Used by UC-19 workbook cells.
+ */
+export function excelCurrencyNumFmt(currency: string): string {
+  if (typeof currency !== "string" || !CURRENCY_LABEL_RE.test(currency)) {
+    throw new TypeError(
+      `excelCurrencyNumFmt requires a 3-letter ISO 4217 currency code; received ${JSON.stringify(currency)}`,
+    );
+  }
+  const symbol = getCurrencySymbol(currency).replaceAll('"', '""');
+  return `#,##0.00 "${symbol}";-#,##0.00 "${symbol}"`;
+}
+
+/**
  * Compact Y-axis labels from integer cents. Display-only: truncates to whole
  * currency units, never used in domain sums. Same comma grouping as formatMoney.
  */
