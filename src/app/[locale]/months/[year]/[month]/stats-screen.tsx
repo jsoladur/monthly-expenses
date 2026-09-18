@@ -9,6 +9,8 @@ import {
   CHART_TOOLTIP_PROPS,
 } from "@/components/chart-tooltip";
 import { StatsGlossary } from "@/components/stats-glossary";
+import { Collapsible } from "@/components/ui/collapsible";
+import { StatsDataTable } from "@/app/[locale]/stats/stats-chart-block";
 
 interface CategoryExpense {
   categoryName: string;
@@ -89,61 +91,69 @@ export function StatsScreen({
           {t("expensesByCategory")}
         </h3>
         {hasCategoryData ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("percent")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryPercentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="percent"
-                      nameKey="name"
-                    >
-                      {categoryPercentData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {percentTip}
-                  </PieChart>
-                </ResponsiveContainer>
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("percent")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryPercentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="percent"
+                        nameKey="name"
+                      >
+                        {categoryPercentData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {percentTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("absolute")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {categoryData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {moneyTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("absolute")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {categoryData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {moneyTip}
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <Collapsible title={t("tableToggle")}>
+              <StatsDataTable
+                headers={[t("categoryName"), t("amount")]}
+                rows={categoryData.map((r) => [r.name, formatMoney(r.value, currency)])}
+              />
+            </Collapsible>
           </div>
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">
@@ -157,61 +167,69 @@ export function StatsScreen({
           {t("distribution")}
         </h3>
         {hasDistributionData ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("percent")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionPercentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="percent"
-                      nameKey="name"
-                    >
-                      {distributionPercentData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {percentTip}
-                  </PieChart>
-                </ResponsiveContainer>
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("percent")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distributionPercentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="percent"
+                        nameKey="name"
+                      >
+                        {distributionPercentData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {percentTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("absolute")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distributionData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {distributionData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {moneyTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("absolute")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {distributionData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {moneyTip}
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <Collapsible title={t("tableToggle")}>
+              <StatsDataTable
+                headers={[t("expensesType"), t("amount")]}
+                rows={distributionData.map((r) => [r.name, formatMoney(r.value, currency)])}
+              />
+            </Collapsible>
           </div>
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">

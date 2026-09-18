@@ -152,6 +152,10 @@
       "noData": "No hay datos para mostrar",
       "percent": "Porcentaje",
       "absolute": "Absoluto",
+      "tableToggle": "Mostrar tabla de datos",
+      "categoryName": "Nombre de categoría",
+      "expensesType": "Tipo de gasto",
+      "amount": "Importe",
       "glossary": {
         "title": "Qué significan estos trozos",
         "actuals": {

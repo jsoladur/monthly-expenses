@@ -161,6 +161,49 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await page.waitForURL(/\/en\/history\/2025$/);
     await expect(page.getByRole("heading", { name: "2025" })).toBeVisible();
   });
+
+  test("stats tab pie charts expose Show data table accordions", async ({
+    context,
+    page,
+  }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc06-stats-${Date.now()}@example.com`,
+      googleSub: `e2e-uc06-stats-sub-${Date.now()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetMonthState(DB_URL, user.id);
+    await seedCategory(DB_URL, user.id, "Groceries", "expense");
+    await seedTemplate(DB_URL, user.id, "Mortgage", "committed", "800.00");
+    await seedTemplate(DB_URL, user.id, "Groceries", "estimated", "400.00");
+
+    await page.goto(`${BASE_URL}/en`);
+    await page.locator('input[name="year"]').fill("2026");
+    await page.locator('select[name="month"]').selectOption("8");
+    await page.getByRole("button", { name: "Create" }).click();
+    await page.waitForURL(/\/en\/months\/2026\/8$/);
+
+    await page.getByRole("tab", { name: "Stats" }).click();
+    const toggles = page.getByRole("button", { name: "Show data table" });
+    await expect(toggles).toHaveCount(2);
+
+    await toggles.nth(0).click();
+    const categoryTable = page.getByRole("table").nth(0);
+    await expect(categoryTable.getByRole("columnheader", { name: "Category name" })).toBeVisible();
+    await expect(categoryTable.getByRole("columnheader", { name: "Amount" })).toBeVisible();
+    await expect(categoryTable.getByRole("cell", { name: "Groceries", exact: true })).toBeVisible();
+    await expect(categoryTable.getByRole("cell", { name: "1,200.00 €", exact: true })).toBeVisible();
+
+    await toggles.nth(1).click();
+    const distributionTable = page.getByRole("table").nth(1);
+    await expect(distributionTable.getByRole("columnheader", { name: "Expenses type" })).toBeVisible();
+    await expect(distributionTable.getByRole("columnheader", { name: "Amount" })).toBeVisible();
+    await expect(distributionTable.getByRole("cell", { name: "Actuals", exact: true })).toBeVisible();
+    await expect(distributionTable.getByRole("cell", { name: "0.00 €", exact: true })).toBeVisible();
+    await expect(distributionTable.getByRole("cell", { name: "Reserved", exact: true })).toBeVisible();
+    await expect(distributionTable.getByRole("cell", { name: "1,200.00 €", exact: true })).toBeVisible();
+    await expect(distributionTable.getByRole("cell", { name: "Committed", exact: true })).toBeVisible();
+    await expect(distributionTable.getByRole("cell", { name: "800.00 €", exact: true })).toBeVisible();
+  });
 });
 
 // ----------------------------------------------------------------------------
