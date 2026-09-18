@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { List } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { formatMoney } from "@/i18n/format";
 import {
@@ -9,20 +11,20 @@ import {
   CHART_TOOLTIP_PROPS,
 } from "@/components/chart-tooltip";
 import { StatsGlossary } from "@/components/stats-glossary";
-
-interface CategoryExpense {
-  categoryName: string;
-  amountCents: number;
-}
-
-interface ReservedLineCategoryExpense {
-  categoryName: string;
-  remainingCents: number;
-}
+import { Collapsible } from "@/components/ui/collapsible";
+import { IconButton } from "@/components/ui/icon-button";
+import { StatsDataTable } from "@/app/[locale]/stats/stats-chart-block";
+import { CategoryExpenseDetailsDialog } from "@/app/[locale]/months/[year]/[month]/category-expense-details";
+import {
+  buildCategoryBreakdowns,
+  type CategoryBreakdown,
+  type StatsActualLine,
+  type StatsReservedLine,
+} from "@/app/[locale]/months/[year]/[month]/stats-category-types";
 
 interface StatsScreenProps {
-  actuals: CategoryExpense[];
-  reservedLines: ReservedLineCategoryExpense[];
+  actuals: StatsActualLine[];
+  reservedLines: StatsReservedLine[];
   actualsTotalCents: number;
   reservedRemainingTotalCents: number;
   committedTotalCents: number;
@@ -55,9 +57,12 @@ export function StatsScreen({
   currency,
 }: StatsScreenProps) {
   const t = useTranslations("months.stats");
+  const [detailsCategoryId, setDetailsCategoryId] = useState<string | null>(null);
 
-  const categoryData = aggregateByCategory(actuals, reservedLines);
+  const categories = buildCategoryBreakdowns(actuals, reservedLines);
+  const categoryData = categories.map((c) => ({ name: c.name, value: c.value }));
   const categoryPercentData = toPercentages(categoryData);
+  const detailsCategory = categories.find((c) => c.categoryId === detailsCategoryId) ?? null;
   const distributionData = buildDistributionData(
     actualsTotalCents,
     reservedRemainingTotalCents,
@@ -89,61 +94,75 @@ export function StatsScreen({
           {t("expensesByCategory")}
         </h3>
         {hasCategoryData ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("percent")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryPercentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="percent"
-                      nameKey="name"
-                    >
-                      {categoryPercentData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {percentTip}
-                  </PieChart>
-                </ResponsiveContainer>
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("percent")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryPercentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="percent"
+                        nameKey="name"
+                      >
+                        {categoryPercentData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {percentTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("absolute")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {categoryData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {moneyTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("absolute")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {categoryData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {moneyTip}
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <Collapsible title={t("tableToggle")}>
+              <CategoryStatsTable
+                categories={categories}
+                currency={currency}
+                onShowDetails={setDetailsCategoryId}
+              />
+            </Collapsible>
+            <CategoryExpenseDetailsDialog
+              category={detailsCategory}
+              currency={currency}
+              onClose={() => setDetailsCategoryId(null)}
+            />
           </div>
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">
@@ -157,61 +176,69 @@ export function StatsScreen({
           {t("distribution")}
         </h3>
         {hasDistributionData ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("percent")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionPercentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="percent"
-                      nameKey="name"
-                    >
-                      {distributionPercentData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {percentTip}
-                  </PieChart>
-                </ResponsiveContainer>
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("percent")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distributionPercentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="percent"
+                        nameKey="name"
+                      >
+                        {distributionPercentData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {percentTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-2 text-center text-xs">
+                  {t("absolute")}
+                </p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={distributionData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                      >
+                        {distributionData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
+                      {moneyTip}
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
-            <div>
-              <p className="text-muted-foreground mb-2 text-center text-xs">
-                {t("absolute")}
-              </p>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distributionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {distributionData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend wrapperStyle={CHART_LEGEND_WRAPPER} />
-                    {moneyTip}
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <Collapsible title={t("tableToggle")}>
+              <StatsDataTable
+                headers={[t("expensesType"), t("amount")]}
+                rows={distributionData.map((r) => [r.name, formatMoney(r.value, currency)])}
+              />
+            </Collapsible>
           </div>
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">
@@ -241,22 +268,51 @@ export function MonthStatsHelp() {
   );
 }
 
-function aggregateByCategory(
-  actuals: CategoryExpense[],
-  reservedLines: ReservedLineCategoryExpense[],
-) {
-  const map = new Map<string, number>();
-  for (const actual of actuals) {
-    const current = map.get(actual.categoryName) ?? 0;
-    map.set(actual.categoryName, current + actual.amountCents);
-  }
-  for (const line of reservedLines) {
-    const current = map.get(line.categoryName) ?? 0;
-    map.set(line.categoryName, current + line.remainingCents);
-  }
-  return Array.from(map.entries())
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
+function CategoryStatsTable({
+  categories,
+  currency,
+  onShowDetails,
+}: {
+  categories: CategoryBreakdown[];
+  currency: string;
+  onShowDetails: (categoryId: string) => void;
+}) {
+  const t = useTranslations("months.stats");
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr>
+            <th className="text-muted-foreground pb-2 pr-3 font-medium">{t("categoryName")}</th>
+            <th className="text-muted-foreground pb-2 pr-3 font-medium">{t("amount")}</th>
+            <th className="text-muted-foreground pb-2 font-medium">
+              <span className="sr-only">{t("actions")}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map((category) => (
+            <tr key={category.categoryId} className="border-border border-t">
+              <td className="py-1.5 pr-3">{category.name}</td>
+              <td className="amount py-1.5 pr-3 tabular-nums">
+                {formatMoney(category.value, currency)}
+              </td>
+              <td className="py-1.5 text-right">
+                {category.value >= 0 && (
+                  <IconButton
+                    icon={<List />}
+                    label={t("showDetails")}
+                    className="size-11"
+                    onClick={() => onShowDetails(category.categoryId)}
+                  />
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function toPercentages(data: { name: string; value: number }[]) {

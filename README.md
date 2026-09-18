@@ -243,7 +243,7 @@ pnpm lint
 The image is self-contained — no Compose, no bundled Postgres. It runs `scripts/migrate.mjs` on every start.
 
 ```sh
-docker build -t jsoladur/monthly-expenses:0.8.0 .
+docker build -t jsoladur/monthly-expenses:0.9.0 .
 docker run -d --name expenses -p 3000:3000 \
   -e DATABASE_URL=postgres://user:pass@db.example.com:5432/expenses \
   -e AUTH_SECRET="$(openssl rand -base64 32)" \
@@ -252,13 +252,13 @@ docker run -d --name expenses -p 3000:3000 \
   -e ALLOWED_EMAILS=you@example.com \
   -e AUTH_URL=https://expenses.example.com \
   -e NEXT_PUBLIC_APP_URL=https://expenses.example.com \
-  jsoladur/monthly-expenses:0.8.0
+  jsoladur/monthly-expenses:0.9.0
 ```
 
 To run migrations only:
 
 ```sh
-docker run --rm jsoladur/monthly-expenses:0.8.0 node scripts/migrate.mjs
+docker run --rm jsoladur/monthly-expenses:0.9.0 node scripts/migrate.mjs
 ```
 
 ---
