@@ -46,7 +46,8 @@
     "error": "Algo salió mal.",
     "yes": "Sí",
     "no": "No",
-    "optional": "Opcional"
+    "optional": "Opcional",
+    "close": "Cerrar"
   },
   "nav": {
     "home": "Inicio",
@@ -156,6 +157,11 @@
       "categoryName": "Nombre de categoría",
       "expensesType": "Tipo de gasto",
       "amount": "Importe",
+      "actions": "Acciones",
+      "showDetails": "Ver detalle",
+      "detailsDescription": "Líneas de este mes para esta categoría.",
+      "estimated": "Estimado",
+      "noLines": "No hay líneas en este grupo.",
       "glossary": {
         "title": "Qué significan estos trozos",
         "actuals": {

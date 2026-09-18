@@ -46,7 +46,8 @@
     "error": "Something went wrong.",
     "yes": "Yes",
     "no": "No",
-    "optional": "Optional"
+    "optional": "Optional",
+    "close": "Close"
   },
   "nav": {
     "home": "Home",
@@ -156,6 +157,11 @@
       "categoryName": "Category name",
       "expensesType": "Expenses type",
       "amount": "Amount",
+      "actions": "Actions",
+      "showDetails": "Show details",
+      "detailsDescription": "Lines in this month for this category.",
+      "estimated": "Estimated",
+      "noLines": "No lines in this group.",
       "glossary": {
         "title": "What these slices mean",
         "actuals": {

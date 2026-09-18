@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-18
+
 ### Added
 - Month Stats tab pie charts include a "Show data table" accordion with category names and expense-type amounts.
+- Month Stats “Expenses by category” table opens a details popup of Actuals, Estimated, and Committed lines for that category.
 
 ## [0.8.0] - 2026-09-13
 

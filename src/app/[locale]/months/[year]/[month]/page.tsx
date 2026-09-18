@@ -280,12 +280,21 @@ export default async function MonthWorkspacePage({
           statsTab={
             <StatsScreen
               actuals={actualRows.map((r) => ({
+                id: r.id,
+                categoryId: r.categoryId,
                 categoryName: r.categoryName,
+                name: r.name,
                 amountCents: r.amountCents,
+                observations: r.observations,
               }))}
               reservedLines={reservedLineRows.map((r) => ({
+                id: r.id,
+                categoryId: r.categoryId,
                 categoryName: r.categoryName,
+                name: r.name,
                 remainingCents: r.remainingCents,
+                kind: r.kind,
+                observations: r.observations,
               }))}
               actualsTotalCents={summary.actualsTotal}
               reservedRemainingTotalCents={summary.reservedRemainingTotal}

@@ -192,6 +192,17 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await expect(categoryTable.getByRole("columnheader", { name: "Amount" })).toBeVisible();
     await expect(categoryTable.getByRole("cell", { name: "Groceries", exact: true })).toBeVisible();
     await expect(categoryTable.getByRole("cell", { name: "1,200.00 €", exact: true })).toBeVisible();
+    await categoryTable.getByRole("button", { name: "Show details" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Groceries" })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Actuals" })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Estimated" })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Committed" })).toBeVisible();
+    await expect(dialog.getByText("No lines in this group.")).toBeVisible();
+    await expect(dialog.getByRole("listitem").filter({ hasText: "Mortgage" })).toContainText("800.00 €");
+    await expect(dialog.getByRole("listitem").filter({ hasText: "Groceries" })).toContainText("400.00 €");
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
 
     await toggles.nth(1).click();
     const distributionTable = page.getByRole("table").nth(1);
