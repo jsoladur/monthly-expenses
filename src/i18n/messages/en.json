@@ -162,6 +162,7 @@
       "detailsDescription": "Lines in this month for this category.",
       "estimated": "Estimated",
       "noLines": "No lines in this group.",
+      "total": "Total",
       "glossary": {
         "title": "What these slices mean",
         "actuals": {

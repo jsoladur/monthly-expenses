@@ -201,6 +201,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await expect(dialog.getByText("No lines in this group.")).toBeVisible();
     await expect(dialog.getByRole("listitem").filter({ hasText: "Mortgage" })).toContainText("800.00 €");
     await expect(dialog.getByRole("listitem").filter({ hasText: "Groceries" })).toContainText("400.00 €");
+    await expect(dialog.locator("footer")).toContainText("Total");
+    await expect(dialog.locator("footer")).toContainText("1,200.00 €");
     await dialog.getByRole("button", { name: "Close" }).click();
     await expect(dialog).toBeHidden();
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-18
+
+### Added
+- Category details popup shows a total amount line at the bottom.
+
 ## [0.9.0] - 2026-09-18
 
 ### Added

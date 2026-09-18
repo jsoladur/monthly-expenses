@@ -66,30 +66,38 @@ export function CategoryExpenseDetailsDialog({
               <IconButton icon={<X />} label={tCommon("close")} onClick={onClose} />
             </div>
           </div>
-          <div className="flex flex-col gap-4 overflow-y-auto px-4 py-4">
-            <LineGroup
-              title={t("actuals")}
-              empty={t("noLines")}
-              currency={currency}
-              lines={category.actuals}
-              railClass="border-l-primary"
-            />
-            <LineGroup
-              title={t("estimated")}
-              empty={t("noLines")}
-              currency={currency}
-              lines={category.estimated}
-              railClass="border-l-estimated"
-              badgeClass="bg-estimated/15 text-estimated"
-            />
-            <LineGroup
-              title={t("committed")}
-              empty={t("noLines")}
-              currency={currency}
-              lines={category.committed}
-              railClass="border-l-committed"
-              badgeClass="bg-committed text-primary-foreground"
-            />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex flex-col gap-4 overflow-y-auto px-4 py-4">
+              <LineGroup
+                title={t("actuals")}
+                empty={t("noLines")}
+                currency={currency}
+                lines={category.actuals}
+                railClass="border-l-primary"
+              />
+              <LineGroup
+                title={t("estimated")}
+                empty={t("noLines")}
+                currency={currency}
+                lines={category.estimated}
+                railClass="border-l-estimated"
+                badgeClass="bg-estimated/15 text-estimated"
+              />
+              <LineGroup
+                title={t("committed")}
+                empty={t("noLines")}
+                currency={currency}
+                lines={category.committed}
+                railClass="border-l-committed"
+                badgeClass="bg-committed text-primary-foreground"
+              />
+            </div>
+            <footer className="border-border flex items-baseline justify-between gap-3 border-t px-4 py-3">
+              <p className="text-sm font-medium">{t("total")}</p>
+              <p className="amount text-sm font-medium tabular-nums">
+                {formatMoney(category.value, currency)}
+              </p>
+            </footer>
           </div>
         </>
       )}
