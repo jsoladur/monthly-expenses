@@ -43,6 +43,13 @@
       "when": 1793691656924,
       "tag": "0005_template_months",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793719945655,
+      "tag": "0006_savings_categories",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ export interface CategoryRowData {
   id: string;
   name: string;
   active: boolean;
+  countsAsSavings: boolean;
 }
 
 export function CategoriesScreen({
@@ -57,6 +58,12 @@ export function CategoriesScreen({
 
       <AddCategoryForm kind={kind} />
 
+      {kind === "expense" && (
+        <p id="savings-help" className="text-muted-foreground px-1 text-xs leading-relaxed">
+          {t("savings.help")}
+        </p>
+      )}
+
       {rows.length === 0 ? (
         <p className="text-muted-foreground px-1 py-6 text-center text-sm">
           {t(emptyKey)}
@@ -64,7 +71,7 @@ export function CategoriesScreen({
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (
-            <CategoryRow key={row.id} category={row} />
+            <CategoryRow key={row.id} category={row} kind={kind} />
           ))}
         </ul>
       )}

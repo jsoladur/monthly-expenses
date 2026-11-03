@@ -11,10 +11,12 @@ import {
   CategoryAlreadyInactiveError,
   CategoryNotFoundError,
   DuplicateCategoryNameError,
+  SavingsOnIncomeCategoryError,
   createCategory as serviceCreate,
   deactivateCategory as serviceDeactivate,
   reactivateCategory as serviceReactivate,
   renameCategory as serviceRename,
+  setCategorySavings as serviceSetSavings,
 } from "@/server/services/categories";
 
 // ============================================================================
@@ -44,6 +46,12 @@ const nameSchema = nonEmptyStringSchema.max(80);
 const createSchema = z.object({
   kind: kindSchema,
   name: nameSchema,
+  countsAsSavings: z.boolean().optional(),
+});
+
+const savingsSchema = z.object({
+  id: uuidSchema,
+  countsAsSavings: z.boolean(),
 });
 
 const renameSchema = z.object({
@@ -62,6 +70,7 @@ export type CategoryActionError =
   | "notFound"
   | "alreadyInactive"
   | "alreadyActive"
+  | "savingsOnIncomeCategory"
   | "validation";
 
 export type CategoryActionResult =
@@ -69,7 +78,7 @@ export type CategoryActionResult =
   | { ok: false; error: CategoryActionError };
 
 export async function createCategoryAction(
-  input: { kind: "expense" | "income"; name: string },
+  input: { kind: "expense" | "income"; name: string; countsAsSavings?: boolean },
 ): Promise<CategoryActionResult> {
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
@@ -81,6 +90,9 @@ export async function createCategoryAction(
   } catch (err) {
     if (err instanceof DuplicateCategoryNameError) {
       return { ok: false, error: "duplicate" };
+    }
+    if (err instanceof SavingsOnIncomeCategoryError) {
+      return { ok: false, error: "savingsOnIncomeCategory" };
     }
     throw err;
   }
@@ -157,6 +169,31 @@ export async function reactivateCategoryAction(
     throw err;
   }
   revalidatePath("/[locale]/categories", "page");
+  return { ok: true };
+}
+
+// UC-24: the flag reclassifies summaries, overspend, month stats and Global
+// Stats, so the whole locale layout is revalidated, not only this page.
+export async function setCategorySavingsAction(
+  input: { id: string; countsAsSavings: boolean },
+): Promise<CategoryActionResult> {
+  const parsed = savingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "validation" };
+  }
+  const userId = await requireUserId(await getLocaleFromHeaders());
+  try {
+    await serviceSetSavings(userId, parsed.data);
+  } catch (err) {
+    if (err instanceof CategoryNotFoundError) {
+      return { ok: false, error: "notFound" };
+    }
+    if (err instanceof SavingsOnIncomeCategoryError) {
+      return { ok: false, error: "savingsOnIncomeCategory" };
+    }
+    throw err;
+  }
+  revalidatePath("/[locale]", "layout");
   return { ok: true };
 }
 

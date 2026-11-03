@@ -91,6 +91,20 @@ export async function updateCategoryName(
   return updated ?? null;
 }
 
+export async function updateCategorySavings(
+  userId: string,
+  id: string,
+  countsAsSavings: boolean,
+  tx: Tx | typeof db = db,
+): Promise<Category | null> {
+  const [updated] = await tx
+    .update(category)
+    .set({ countsAsSavings, updatedAt: sql`now()` })
+    .where(and(eq(category.userId, userId), eq(category.id, id)))
+    .returning();
+  return updated ?? null;
+}
+
 export async function deactivateCategory(
   userId: string,
   id: string,

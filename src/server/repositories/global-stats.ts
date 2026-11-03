@@ -19,6 +19,11 @@ import type {
 // Global Stats repository (UC-15). Aggregated series only — SQL SUM / GROUP BY.
 // Every function takes `userId` first and filters `month.user_id` (PRD §5.1).
 // Drizzle `sum()` on numeric comes back as a string; parse via integer cents.
+//
+// UC-24 (C24): spend and remaining series cover NON-savings categories only;
+// the invested series cover savings categories. Per-category spend keeps
+// every expense category and carries the flag so a savings category can
+// still be charted when the user selects it.
 // ============================================================================
 
 export type GlobalStatsAggregates = {
@@ -26,6 +31,8 @@ export type GlobalStatsAggregates = {
   incomeByMonth: MonthCents[];
   spendByMonth: MonthCents[];
   remainingByMonth: MonthCents[];
+  investedByMonth: MonthCents[];
+  investedRemainingByMonth: MonthCents[];
   incomeByCategoryMonth: MonthCategoryCents[];
   spendByCategoryMonth: MonthCategoryCents[];
 };
@@ -38,6 +45,8 @@ export async function loadGlobalStatsAggregates(
     incomeByMonth,
     spendByMonth,
     remainingByMonth,
+    investedByMonth,
+    investedRemainingByMonth,
     incomeByCategoryMonth,
     spendByCategoryMonth,
   ] = await Promise.all([
@@ -45,6 +54,8 @@ export async function loadGlobalStatsAggregates(
     sumIncomeByMonth(userId),
     sumSpendByMonth(userId),
     sumRemainingByMonth(userId),
+    sumInvestedByMonth(userId),
+    sumInvestedRemainingByMonth(userId),
     sumIncomeByCategoryMonth(userId),
     sumSpendByCategoryMonth(userId),
   ]);
@@ -53,6 +64,8 @@ export async function loadGlobalStatsAggregates(
     incomeByMonth,
     spendByMonth,
     remainingByMonth,
+    investedByMonth,
+    investedRemainingByMonth,
     incomeByCategoryMonth,
     spendByCategoryMonth,
   };
@@ -82,6 +95,22 @@ export async function sumIncomeByMonth(userId: string): Promise<MonthCents[]> {
 }
 
 export async function sumSpendByMonth(userId: string): Promise<MonthCents[]> {
+  return sumActualsByMonth(userId, false);
+}
+
+export async function sumInvestedByMonth(userId: string): Promise<MonthCents[]> {
+  return sumActualsByMonth(userId, true);
+}
+
+export async function sumRemainingByMonth(userId: string): Promise<MonthCents[]> {
+  return sumLineRemainingByMonth(userId, false);
+}
+
+export async function sumInvestedRemainingByMonth(userId: string): Promise<MonthCents[]> {
+  return sumLineRemainingByMonth(userId, true);
+}
+
+async function sumActualsByMonth(userId: string, savings: boolean): Promise<MonthCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -90,13 +119,20 @@ export async function sumSpendByMonth(userId: string): Promise<MonthCents[]> {
     })
     .from(monthActualExpense)
     .innerJoin(month, eq(monthActualExpense.monthId, month.id))
-    .where(eq(month.userId, userId))
+    .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
+    .where(
+      and(
+        eq(month.userId, userId),
+        eq(category.userId, userId),
+        eq(category.countsAsSavings, savings),
+      ),
+    )
     .groupBy(month.year, month.month)
     .orderBy(asc(month.year), asc(month.month));
   return rows.map((r) => ({ year: r.year, month: r.month, cents: numericSumToCents(r.total) }));
 }
 
-export async function sumRemainingByMonth(userId: string): Promise<MonthCents[]> {
+async function sumLineRemainingByMonth(userId: string, savings: boolean): Promise<MonthCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -105,7 +141,14 @@ export async function sumRemainingByMonth(userId: string): Promise<MonthCents[]>
     })
     .from(monthFixedLine)
     .innerJoin(month, eq(monthFixedLine.monthId, month.id))
-    .where(eq(month.userId, userId))
+    .innerJoin(category, eq(monthFixedLine.categoryId, category.id))
+    .where(
+      and(
+        eq(month.userId, userId),
+        eq(category.userId, userId),
+        eq(category.countsAsSavings, savings),
+      ),
+    )
     .groupBy(month.year, month.month)
     .orderBy(asc(month.year), asc(month.month));
   return rows.map((r) => ({ year: r.year, month: r.month, cents: numericSumToCents(r.total) }));
@@ -147,6 +190,7 @@ export async function sumSpendByCategoryMonth(userId: string): Promise<MonthCate
       categoryName: category.name,
       categoryKind: category.kind,
       categoryActive: category.active,
+      countsAsSavings: category.countsAsSavings,
       total: sum(monthActualExpense.amount).as("total"),
     })
     .from(monthActualExpense)
@@ -160,6 +204,7 @@ export async function sumSpendByCategoryMonth(userId: string): Promise<MonthCate
       category.name,
       category.kind,
       category.active,
+      category.countsAsSavings,
     )
     .orderBy(asc(month.year), asc(month.month));
   return rows.map(toCategoryCents);
@@ -172,6 +217,7 @@ function toCategoryCents(row: {
   categoryName: string;
   categoryKind: "income" | "expense";
   categoryActive: boolean;
+  countsAsSavings?: boolean;
   total: string | null;
 }): MonthCategoryCents {
   return {
@@ -181,6 +227,7 @@ function toCategoryCents(row: {
     categoryName: row.categoryName,
     categoryKind: row.categoryKind,
     categoryActive: row.categoryActive,
+    countsAsSavings: row.countsAsSavings ?? false,
     cents: numericSumToCents(row.total),
   };
 }

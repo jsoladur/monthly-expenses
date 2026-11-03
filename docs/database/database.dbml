@@ -64,6 +64,7 @@ Table category {
   user_id uuid [not null, ref: > app_user.id]
   name text [not null]
   kind category_kind [not null, note: 'Single table for expense + income categories (PRD §6.2)']
+  counts_as_savings boolean [not null, default: false, note: 'Savings category (PRD C24, UC-24, migration 0006). Reporting-only: splits invested money from spending. Check category_savings_kind_ck: false OR kind = expense.']
   active boolean [not null, default: true, note: 'false = soft-deleted: hidden from NEW pickers; existing rows keep the id and still display the name (PRD C10 / §6.2)']
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]

@@ -67,12 +67,19 @@ export const category = pgTable(
       .references(() => appUser.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     kind: categoryKindEnum("kind").notNull(),
+    // Savings category (PRD C24, UC-24). Money still leaves "available"; only
+    // reporting splits it from spending. Expense categories only.
+    countsAsSavings: boolean("counts_as_savings").notNull().default(false),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    check(
+      "category_savings_kind_ck",
+      sql`${table.countsAsSavings} = false OR ${table.kind} = 'expense'`,
+    ),
     // Partial unique: names are unique per (user, kind) only among ACTIVE rows
     // (PRD §6.2). Soft-deleted rows free the name for re-use.
     uniqueIndex("category_active_name_uk")

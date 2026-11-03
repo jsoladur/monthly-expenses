@@ -296,6 +296,10 @@ export default async function MonthWorkspacePage({
                 kind: r.kind,
                 observations: r.observations,
               }))}
+              savingsCategoryIds={allExpenseCategories
+                .filter((c) => c.countsAsSavings)
+                .map((c) => c.id)}
+              investedTotalCents={summary.hasSavingsRows ? summary.investedTotal : null}
               actualsTotalCents={summary.actualsTotal}
               reservedRemainingTotalCents={summary.reservedRemainingTotal}
               committedTotalCents={committedTotalCents}

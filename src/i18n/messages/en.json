@@ -87,7 +87,8 @@
     "notCurrentYear": "This move is only available in the current year.",
     "nothingToExport": "Nothing to export for that selection.",
     "emptySchedule": "Pick at least one month, or turn off “Only in some months”.",
-    "invalidSchedule": "Months must be between January and December."
+    "invalidSchedule": "Months must be between January and December.",
+    "savingsOnIncomeCategory": "Only expense categories can count as savings."
   },
   "warnings": {
     "title": "Warnings",
@@ -124,10 +125,15 @@
       "actuals": "Actuals",
       "reserved": "Reserved",
       "totalExpenses": "Total Expenses",
-      "savings": "Potential savings",
-      "savingsHelp": "Income minus actual spend minus money still reserved in fixed/estimated lines.",
+      "savings": "Left over",
+      "savingsHelp": "Income minus everything recorded or still reserved this month.",
       "negativeNote": "Negative amounts count (refunds, payouts).",
-      "pastMonthBanner": "ATTENTION: This month is not the current calendar month."
+      "pastMonthBanner": "ATTENTION: This month is not the current calendar month.",
+      "spending": "Spending (excl. invested)",
+      "invested": "Invested",
+      "totalSaved": "Total saved",
+      "totalSavedHelp": "Left over plus the money you invested this month.",
+      "totalExpensesInclInvested": "Total Expenses (incl. invested)"
     },
     "estimateHelp": "Tickets do not reduce this number. Decrease it yourself when you want the reserve to drop.",
     "passToActual": "Move this commitment to actual spend. Estimates cannot be moved.",
@@ -179,7 +185,9 @@
           "term": "Committed",
           "def": "Fixed lines (rent, loan). Remaining is what is still unpaid on that line this month."
         }
-      }
+      },
+      "invested": "Invested this month",
+      "investedHelp": "Savings categories are not in this chart."
     },
     "home": {
       "noMonths": "You have not created a month yet."
@@ -349,7 +357,14 @@
       "placeholder": "e.g. Groceries",
       "editing": "Editing"
     },
-    "help": "Categories are global across every month. Deactivating a category keeps it visible on past months but hides it from new entries."
+    "help": "Categories are global across every month. Deactivating a category keeps it visible on past months but hides it from new entries.",
+    "savings": {
+      "toggle": "Counts as savings",
+      "help": "Money set aside (pension, index funds). It still leaves your available money, but it is not spending.",
+      "badge": "Savings",
+      "mark": "Mark as savings",
+      "unmark": "Stop counting as savings"
+    }
   },
   "templates": {
     "title": "Fixed expenses",
@@ -476,13 +491,19 @@
       "savings": "Realized savings",
       "savingsRate": "Savings rate",
       "vsPrior": "vs previous period",
-      "rateHidden": "Hidden when income is 0"
+      "rateHidden": "Hidden when income is 0",
+      "invested": "Invested",
+      "investedCaption": "Included in realized savings"
     },
     "overview": {
       "snapshotRange": "From {from} to {to}",
       "snapshotSpend": "Spend went from {spendFrom} to {spendTo} ({spendPct}).",
       "snapshotIncome": "Income went from {incFrom} to {incTo} ({incPct}).",
-      "snapshotRate": "Savings rate went from {rateFrom} to {rateTo}."
+      "snapshotRate": "Savings rate went from {rateFrom} to {rateTo}.",
+      "invested": {
+        "title": "Invested by year",
+        "help": "Money in savings categories. It counts as saved, not spent."
+      }
     },
     "incomes": {
       "netNote": "Amounts are net income as recorded — take-home pay (salario neto), not gross."
@@ -638,7 +659,15 @@
     },
     "help": {
       "title": "Glossary",
-      "intro": "What the labels and checkboxes on Stats mean. Open a chart’s data table when you want the numbers."
+      "intro": "What the labels and checkboxes on Stats mean. Open a chart’s data table when you want the numbers.",
+      "savingsCategory": {
+        "term": "Savings category",
+        "def": "An expense category marked “Counts as savings” on the Categories screen, such as a pension or index fund. Its money leaves your available money, but it is left out of spend, household cost change and category trends."
+      },
+      "invested": {
+        "term": "Invested",
+        "def": "Money recorded in savings categories. Realized savings already include it."
+      }
     },
     "glossary": {
       "groups": {
@@ -709,7 +738,8 @@
       "amount": "Amount",
       "category": "Category",
       "yoy": "YoY"
-    }
+    },
+    "savingsTag": "savings"
   },
   "pwa": {
     "install": {

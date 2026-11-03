@@ -87,7 +87,8 @@
     "notCurrentYear": "Este movimiento solo está disponible en el año actual.",
     "nothingToExport": "No hay nada que exportar para esa selección.",
     "emptySchedule": "Elige al menos un mes o desactiva «Solo en algunos meses».",
-    "invalidSchedule": "Los meses deben estar entre enero y diciembre."
+    "invalidSchedule": "Los meses deben estar entre enero y diciembre.",
+    "savingsOnIncomeCategory": "Solo las categorías de gasto pueden contar como ahorro."
   },
   "warnings": {
     "title": "Avisos",
@@ -124,10 +125,15 @@
       "actuals": "Gastos reales",
       "reserved": "Reservado",
       "totalExpenses": "Total gastos",
-      "savings": "Ahorro potencial",
-      "savingsHelp": "Ingresos menos gastos reales menos dinero aún reservado en líneas fijas/estimadas.",
+      "savings": "Sobrante",
+      "savingsHelp": "Ingresos menos todo lo registrado o aún reservado este mes.",
       "negativeNote": "Los importes negativos cuentan (reembolsos, devoluciones).",
-      "pastMonthBanner": "ATENCIÓN: Este mes no es el mes natural actual."
+      "pastMonthBanner": "ATENCIÓN: Este mes no es el mes natural actual.",
+      "spending": "Gasto (excl. invertido)",
+      "invested": "Invertido",
+      "totalSaved": "Ahorro total",
+      "totalSavedHelp": "El sobrante más lo que has invertido este mes.",
+      "totalExpensesInclInvested": "Total gastos (incl. invertido)"
     },
     "estimateHelp": "Los tickets no reducen este número. Redúcelo tú mismo cuando quieras que baje la reserva.",
     "passToActual": "Mueve este compromiso a gasto real. Las estimaciones no se pueden mover.",
@@ -179,7 +185,9 @@
           "term": "Comprometido",
           "def": "Líneas fijas (alquiler, préstamo). El restante es lo que aún no se ha pagado de esa línea este mes."
         }
-      }
+      },
+      "invested": "Invertido este mes",
+      "investedHelp": "Las categorías de ahorro no aparecen en este gráfico."
     },
     "home": {
       "noMonths": "Todavía no has creado ningún mes."
@@ -349,7 +357,14 @@
       "placeholder": "p. ej. Supermercado",
       "editing": "Editando"
     },
-    "help": "Las categorías son globales en todos los meses. Desactivar una categoría la mantiene visible en meses pasados pero la oculta para nuevas entradas."
+    "help": "Las categorías son globales en todos los meses. Desactivar una categoría la mantiene visible en meses pasados pero la oculta para nuevas entradas.",
+    "savings": {
+      "toggle": "Cuenta como ahorro",
+      "help": "Dinero apartado (plan de pensiones, fondos indexados). Sigue saliendo de tu dinero disponible, pero no es gasto.",
+      "badge": "Ahorro",
+      "mark": "Marcar como ahorro",
+      "unmark": "Dejar de contar como ahorro"
+    }
   },
   "templates": {
     "title": "Gastos fijos",
@@ -476,13 +491,19 @@
       "savings": "Ahorro realizado",
       "savingsRate": "Tasa de ahorro",
       "vsPrior": "frente al periodo anterior",
-      "rateHidden": "Oculto cuando el ingreso es 0"
+      "rateHidden": "Oculto cuando el ingreso es 0",
+      "invested": "Invertido",
+      "investedCaption": "Incluido en el ahorro realizado"
     },
     "overview": {
       "snapshotRange": "De {from} a {to}",
       "snapshotSpend": "El gasto pasó de {spendFrom} a {spendTo} ({spendPct}).",
       "snapshotIncome": "Los ingresos pasaron de {incFrom} a {incTo} ({incPct}).",
-      "snapshotRate": "La tasa de ahorro pasó de {rateFrom} a {rateTo}."
+      "snapshotRate": "La tasa de ahorro pasó de {rateFrom} a {rateTo}.",
+      "invested": {
+        "title": "Invertido por año",
+        "help": "Dinero en categorías de ahorro. Cuenta como ahorrado, no como gastado."
+      }
     },
     "incomes": {
       "netNote": "Las cifras son ingresos netos tal como los registraste — salario neto / neto cobrado, no bruto."
@@ -638,7 +659,15 @@
     },
     "help": {
       "title": "Glosario",
-      "intro": "Qué significan las etiquetas y las casillas de Estadísticas. Abre la tabla de un gráfico si quieres los números."
+      "intro": "Qué significan las etiquetas y las casillas de Estadísticas. Abre la tabla de un gráfico si quieres los números.",
+      "savingsCategory": {
+        "term": "Categoría de ahorro",
+        "def": "Una categoría de gasto marcada como «Cuenta como ahorro» en la pantalla de Categorías, como un plan de pensiones o un fondo indexado. Su dinero sale de tu dinero disponible, pero queda fuera del gasto, del cambio del coste del hogar y de las tendencias por categoría."
+      },
+      "invested": {
+        "term": "Invertido",
+        "def": "Dinero registrado en categorías de ahorro. El ahorro realizado ya lo incluye."
+      }
     },
     "glossary": {
       "groups": {
@@ -709,7 +738,8 @@
       "amount": "Importe",
       "category": "Categoría",
       "yoy": "Interanual"
-    }
+    },
+    "savingsTag": "ahorro"
   },
   "pwa": {
     "install": {

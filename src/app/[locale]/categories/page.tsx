@@ -56,12 +56,19 @@ interface SerializedCategory {
   id: string;
   name: string;
   active: boolean;
+  countsAsSavings: boolean;
 }
 
 function serializeCategory(row: {
   id: string;
   name: string;
   active: boolean;
+  countsAsSavings: boolean;
 }): SerializedCategory {
-  return { id: row.id, name: row.name, active: row.active };
+  return {
+    id: row.id,
+    name: row.name,
+    active: row.active,
+    countsAsSavings: row.countsAsSavings,
+  };
 }

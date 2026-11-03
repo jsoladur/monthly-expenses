@@ -19,6 +19,8 @@ export type MonthCategoryCents = MonthKey & {
   categoryName: string;
   categoryKind: "income" | "expense";
   categoryActive: boolean;
+  /** UC-24: savings category — excluded from spend unless explicitly selected. */
+  countsAsSavings?: boolean;
   cents: number;
 };
 

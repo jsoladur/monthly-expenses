@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { List } from "lucide-react";
+import { List, PiggyBank } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { formatMoney } from "@/i18n/format";
 import {
@@ -25,6 +25,10 @@ import {
 interface StatsScreenProps {
   actuals: StatsActualLine[];
   reservedLines: StatsReservedLine[];
+  /** UC-24: these categories are left out of the category pie. */
+  savingsCategoryIds: string[];
+  /** UC-24: null when the month has no savings-category rows. */
+  investedTotalCents: number | null;
   actualsTotalCents: number;
   reservedRemainingTotalCents: number;
   committedTotalCents: number;
@@ -51,6 +55,8 @@ const DISTRIBUTION_COLORS = [
 export function StatsScreen({
   actuals,
   reservedLines,
+  savingsCategoryIds,
+  investedTotalCents,
   actualsTotalCents,
   reservedRemainingTotalCents,
   committedTotalCents,
@@ -59,7 +65,11 @@ export function StatsScreen({
   const t = useTranslations("months.stats");
   const [detailsCategoryId, setDetailsCategoryId] = useState<string | null>(null);
 
-  const categories = buildCategoryBreakdowns(actuals, reservedLines);
+  const savings = new Set(savingsCategoryIds);
+  const categories = buildCategoryBreakdowns(
+    actuals.filter((line) => !savings.has(line.categoryId)),
+    reservedLines.filter((line) => !savings.has(line.categoryId)),
+  );
   const categoryData = categories.map((c) => ({ name: c.name, value: c.value }));
   const categoryPercentData = toPercentages(categoryData);
   const detailsCategory = categories.find((c) => c.categoryId === detailsCategoryId) ?? null;
@@ -167,6 +177,19 @@ export function StatsScreen({
         ) : (
           <p className="text-muted-foreground py-8 text-center text-sm">
             {t("noData")}
+          </p>
+        )}
+        {investedTotalCents !== null && (
+          <p
+            className="border-success/40 bg-success/10 mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2 text-sm"
+            data-testid="stats-invested"
+          >
+            <span className="flex items-center gap-1.5 font-medium">
+              <PiggyBank className="text-success-foreground size-4 self-center" aria-hidden />
+              {t("invested")}
+              <span className="amount">{formatMoney(investedTotalCents, currency)}</span>
+            </span>
+            <span className="text-muted-foreground text-xs">{t("investedHelp")}</span>
           </p>
         )}
       </section>

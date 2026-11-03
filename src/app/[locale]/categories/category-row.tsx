@@ -3,12 +3,16 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { IconButton } from "@/components/ui/icon-button";
-import { Pencil, CircleOff, RotateCcw, Check, X } from "lucide-react";
+import { HoverTooltip } from "@/components/ui/hover-tooltip";
+import { Pencil, CircleOff, RotateCcw, Check, X, PiggyBank } from "lucide-react";
 import {
   deactivateCategoryAction,
   reactivateCategoryAction,
   renameCategoryAction,
+  setCategorySavingsAction,
+  type CategoryActionError,
 } from "@/actions/categories";
+import { cn } from "@/lib/utils";
 import type { CategoryRowData } from "./categories-screen";
 
 // ============================================================================
@@ -18,6 +22,9 @@ import type { CategoryRowData } from "./categories-screen";
 //   - default: shows name + (Deactivate | Reactivate) + Rename button
 //   - editing: shows text input + Save + Cancel
 //   - reacting: while the server action is in flight, the buttons disable
+//
+// Expense rows also carry the savings switch (UC-24). It doubles as the
+// badge: off = dashed piggy bank, on = green-tint "Savings" pill.
 //
 // All mutations go through server actions invoked via `formAction`. We use
 // `useTransition` so the form submits without a hard navigation and the
@@ -30,8 +37,10 @@ import type { CategoryRowData } from "./categories-screen";
 
 export function CategoryRow({
   category,
+  kind,
 }: {
   category: CategoryRowData;
+  kind: "expense" | "income";
 }) {
   const t = useTranslations("categories");
   const tv = useTranslations("validation");
@@ -53,6 +62,19 @@ export function CategoryRow({
     setError(null);
     startTransition(async () => {
       const result = await reactivateCategoryAction({ id: category.id });
+      if (!result.ok) {
+        setError(mapError(result.error, tv));
+      }
+    });
+  };
+
+  const handleSavings = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await setCategorySavingsAction({
+        id: category.id,
+        countsAsSavings: !category.countsAsSavings,
+      });
       if (!result.ok) {
         setError(mapError(result.error, tv));
       }
@@ -128,6 +150,31 @@ export function CategoryRow({
           {t("expense.inactive")}
         </span>
       )}
+      {kind === "expense" && (
+        <HoverTooltip
+          label={t(category.countsAsSavings ? "savings.unmark" : "savings.mark")}
+        >
+          <button
+            type="button"
+            role="switch"
+            aria-checked={category.countsAsSavings}
+            aria-label={t("savings.toggle")}
+            aria-describedby="savings-help"
+            disabled={pending}
+            onClick={handleSavings}
+            data-testid="category-savings-switch"
+            className={cn(
+              "focus-visible:ring-ring/50 inline-flex h-8 min-w-8 cursor-pointer items-center justify-center gap-1 rounded-full border px-2 text-xs font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+              category.countsAsSavings
+                ? "border-success/40 bg-success/15 text-success-foreground"
+                : "border-border text-muted-foreground hover:text-foreground border-dashed",
+            )}
+          >
+            <PiggyBank className="size-4" aria-hidden />
+            {category.countsAsSavings && <span>{t("savings.badge")}</span>}
+          </button>
+        </HoverTooltip>
+      )}
       <IconButton
         icon={<Pencil className="size-4" />}
         label={t("actions.edit")}
@@ -159,15 +206,12 @@ export function CategoryRow({
 }
 
 function mapError(
-  error:
-    | "duplicate"
-    | "notFound"
-    | "alreadyInactive"
-    | "alreadyActive"
-    | "validation",
+  error: CategoryActionError,
   tv: ReturnType<typeof useTranslations<"validation">>,
 ): string {
   switch (error) {
+    case "savingsOnIncomeCategory":
+      return tv("savingsOnIncomeCategory");
     case "duplicate":
       return tv("duplicateCategoryName");
     case "notFound":

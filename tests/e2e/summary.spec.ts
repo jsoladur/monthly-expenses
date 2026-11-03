@@ -18,7 +18,7 @@ import { insertMonthCloningTemplates } from "./_helpers/month";
 //        are still allowed.
 //   - #19 Food templates 400 + 50, actuals 500 → warning badge appears;
 //        month remaining is IGNORED for the warning baseline.
-//   - Spanish variant renders the Spanish summary copy (Ahorro potencial,
+//   - Spanish variant renders the Spanish summary copy (Sobrante,
 //        Ingresos, Gastos reales, Reservado) and the warning copy.
 // ============================================================================
 
@@ -54,9 +54,9 @@ test.describe("UC-11 summary, savings & warnings", () => {
     await expect(page.getByTestId("summary-savings")).toHaveText("800.00 €");
 
     // Income / actuals / reserved cells render their own values.
-    await expect(page.getByTestId("summary-income")).toHaveText("2000.00 €");
+    await expect(page.getByTestId("summary-income")).toHaveText("2,000.00 €");
     await expect(page.getByTestId("summary-actuals")).toHaveText("0.00 €");
-    await expect(page.getByTestId("summary-reserved")).toHaveText("1200.00 €");
+    await expect(page.getByTestId("summary-reserved")).toHaveText("1,200.00 €");
   });
 
   test("#8 — pass mortgage to actual: savings stays 800.00 €; only the cells change (PRD §7.2)", async ({
@@ -188,7 +188,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
 
     // Spanish summary copy.
     await expect(
-      page.getByRole("heading", { level: 2, name: "Ahorro potencial" }),
+      page.getByRole("heading", { level: 2, name: "Sobrante" }),
     ).toBeVisible();
     await page.getByRole("button", { name: /Avisos/ }).click();
     await expect(page.getByTestId("overspend-badge")).toBeVisible();

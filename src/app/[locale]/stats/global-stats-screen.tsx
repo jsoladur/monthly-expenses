@@ -60,6 +60,7 @@ const STATS_TAB_ICONS: Record<StatsTabId, LucideIcon> = {
 
 const INCOME_COLOR = "hsl(var(--income))";
 const SPEND_COLOR = "hsl(var(--chart-1))";
+const INVESTED_COLOR = "hsl(var(--success))";
 
 type ViewState = {
   tab: StatsTabId;
@@ -449,6 +450,8 @@ function HelpTab() {
             { term: t("glossary.spend.term"), definition: t("glossary.spend.def") },
             { term: t("glossary.savings.term"), definition: t("glossary.savings.def") },
             { term: t("glossary.savingsRate.term"), definition: t("glossary.savingsRate.def") },
+            { term: t("help.invested.term"), definition: t("help.invested.def") },
+            { term: t("help.savingsCategory.term"), definition: t("help.savingsCategory.def") },
           ],
         },
         {
@@ -490,6 +493,7 @@ function OverviewTab({
   const t = useTranslations("stats");
   const o = page.overview!;
   const negative = o.savingsCents < 0;
+  const hasInvested = o.yearlyInvested.some((r) => r.cents !== 0);
   const composed = granularity === "month"
     ? o.monthlySpend.map((row, i) => ({
         label: row.cents === null ? `${row.year}-${row.month}` : `${row.year}-${String(row.month).padStart(2, "0")}`,
@@ -505,7 +509,7 @@ function OverviewTab({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-3 sm:grid-cols-2 ${hasInvested ? "lg:grid-cols-3 2xl:grid-cols-5" : "lg:grid-cols-4"}`}>
         <KpiCard
           testId="stats-kpi-income"
           label={t("kpis.income")}
@@ -526,6 +530,14 @@ function OverviewTab({
           hero
           negative={negative}
         />
+        {hasInvested && (
+          <KpiCard
+            testId="stats-kpi-invested"
+            label={t("kpis.invested")}
+            value={money(o.investedCents)}
+            caption={t("kpis.investedCaption")}
+          />
+        )}
         <KpiCard
           testId="stats-kpi-rate"
           label={t("kpis.savingsRate")}
@@ -653,6 +665,31 @@ function OverviewTab({
         </ResponsiveContainer>
       </StatsChartBlock>
 
+      {hasInvested && (
+        <StatsChartBlock
+          testId="chart-invested"
+          title={t("overview.invested.title")}
+          help={t("overview.invested.help")}
+          tableLabel={tableLabel}
+          table={
+            <StatsDataTable
+              headers={[t("a11y.period"), t("kpis.invested")]}
+              rows={o.yearlyInvested.map((r) => [String(r.year), money(r.cents)])}
+            />
+          }
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={o.yearlyInvested.map((r) => ({ year: r.year, invested: r.cents }))}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} width={52} tickFormatter={moneyTick} />
+              {moneyTooltipEl(money)}
+              <Bar dataKey="invested" name={t("kpis.invested")} fill={INVESTED_COLOR} />
+            </BarChart>
+          </ResponsiveContainer>
+        </StatsChartBlock>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <DonutBlock
           title={t("charts.compositionFirst.title")}
@@ -699,6 +736,9 @@ function SeriesTab({
 }) {
   const t = useTranslations("stats");
   const tInactive = t("inactive");
+  const tSavings = t("savingsTag");
+  const label = (c: { categoryName: string; categoryActive: boolean; countsAsSavings?: boolean }) =>
+    categoryLabel(c, tInactive, tSavings);
   const yearlyData = dto.yearly.map((r) => ({
     label: String(r.year),
     cents: r.cents,
@@ -821,7 +861,7 @@ function SeriesTab({
               <Bar
                 key={c.categoryId}
                 dataKey={c.categoryId}
-                name={c.categoryActive ? c.categoryName : `${c.categoryName} (${tInactive})`}
+                name={label(c)}
                 stackId="a"
                 fill={CHART_COLORS[i % CHART_COLORS.length]}
               />
@@ -898,7 +938,7 @@ function SeriesTab({
                     className="hover:bg-accent flex min-h-11 w-full items-center justify-between rounded-lg px-2 text-sm"
                     onClick={() => onDrill(row.categoryId)}
                   >
-                    <span>{row.categoryActive ? row.categoryName : `${row.categoryName} (${tInactive})`}</span>
+                    <span>{label(row)}</span>
                     <span className="amount tabular-nums">{money(row.cents)}</span>
                   </button>
                 </li>
@@ -908,7 +948,7 @@ function SeriesTab({
               <Collapsible title={tableLabel}>
                 <StatsDataTable
                   headers={[t("a11y.period"), t("a11y.amount")]}
-                  rows={dto.ranking.map((r) => [r.categoryName, money(r.cents)])}
+                  rows={dto.ranking.map((r) => [label(r), money(r.cents)])}
                 />
               </Collapsible>
             </div>
@@ -1367,6 +1407,19 @@ function DonutBlock({
       </ResponsiveContainer>
     </StatsChartBlock>
   );
+}
+
+// UC-24: savings categories only reach these views when explicitly selected.
+function categoryLabel(
+  c: { categoryName: string; categoryActive: boolean; countsAsSavings?: boolean },
+  tInactive: string,
+  tSavings: string,
+): string {
+  const tags = [
+    ...(c.countsAsSavings ? [tSavings] : []),
+    ...(c.categoryActive ? [] : [tInactive]),
+  ];
+  return tags.length > 0 ? `${c.categoryName} (${tags.join(", ")})` : c.categoryName;
 }
 
 function KpiCard({

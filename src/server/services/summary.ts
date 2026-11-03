@@ -48,13 +48,15 @@ import { parseAmount, sumCents } from "@/server/money";
 // ============================================================================
 
 // ---------------------------------------------------------------------------
-// getMonthSummary — PRD §7.1
+// getMonthSummary — PRD §7.1, amended by UC-24 (C24)
 //
-// potential_savings =
-//   Σ month_income.amount
-//   − ( Σ month_actual_expense.amount
-//     + Σ month_fixed_line.remaining_amount )
+// spending          = Σ actuals + Σ remaining   (non-savings categories)
+// invested          = Σ actuals + Σ remaining   (savings categories)
+// potential_savings = Σ incomes − spending − invested   ← "Left over"
+// total_saved       = potential_savings + invested
 //
+// `potential_savings` keeps the exact pre-UC-24 algebra. The savings flag
+// is read live from `category`, so flipping it reclassifies every month.
 // Hard-deleted rows are excluded by virtue of being gone. All sums are
 // algebraic (PRD §7.6 — negatives allowed everywhere).
 // ---------------------------------------------------------------------------
@@ -63,7 +65,11 @@ export interface MonthSummary {
   incomesTotal: number;
   actualsTotal: number;
   reservedRemainingTotal: number;
+  spendingTotal: number;
+  investedTotal: number;
   potentialSavings: number;
+  totalSaved: number;
+  hasSavingsRows: boolean;
 }
 
 export async function getMonthSummary(
@@ -75,30 +81,39 @@ export async function getMonthSummary(
     throw new MonthNotFoundError();
   }
 
-  // Three independent reads against the same month — the schema is
-  // month_id-keyed so we don't need a single SQL with a JOIN. We pull the
-  // columns we actually need (amount / remaining_amount) to keep memory
-  // flat — the `listMonth*` helpers return the full rows.
+  // Three independent reads against the same month. Actuals and lines join
+  // `category` only to read `counts_as_savings`.
   const [incomes, actuals, lines] = await Promise.all([
     db
       .select({ amount: monthIncome.amount })
       .from(monthIncome)
       .where(eq(monthIncome.monthId, monthId)),
     db
-      .select({ amount: monthActualExpense.amount })
+      .select({
+        amount: monthActualExpense.amount,
+        savings: category.countsAsSavings,
+      })
       .from(monthActualExpense)
+      .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
       .where(eq(monthActualExpense.monthId, monthId)),
     db
-      .select({ remaining: monthFixedLine.remainingAmount })
+      .select({
+        amount: monthFixedLine.remainingAmount,
+        savings: category.countsAsSavings,
+      })
       .from(monthFixedLine)
+      .innerJoin(category, eq(monthFixedLine.categoryId, category.id))
       .where(eq(monthFixedLine.monthId, monthId)),
   ]);
 
   const incomesTotal = sumCents(incomes.map((row) => parseAmount(row.amount)));
   const actualsTotal = sumCents(actuals.map((row) => parseAmount(row.amount)));
   const reservedRemainingTotal = sumCents(
-    lines.map((row) => parseAmount(row.remaining)),
+    lines.map((row) => parseAmount(row.amount)),
   );
+  const savingsRows = [...actuals, ...lines].filter((row) => row.savings);
+  const investedTotal = sumCents(savingsRows.map((row) => parseAmount(row.amount)));
+  const spendingTotal = actualsTotal + reservedRemainingTotal - investedTotal;
   const potentialSavings =
     incomesTotal - (actualsTotal + reservedRemainingTotal);
 
@@ -106,7 +121,11 @@ export async function getMonthSummary(
     incomesTotal,
     actualsTotal,
     reservedRemainingTotal,
+    spendingTotal,
+    investedTotal,
     potentialSavings,
+    totalSaved: potentialSavings + investedTotal,
+    hasSavingsRows: savingsRows.length > 0,
   };
 }
 
@@ -120,7 +139,8 @@ export async function getMonthSummary(
 //          unscheduled templates, same total as Fixed Expenses → Distribution.
 //          The MONTH'S remaining is NEVER used for this baseline.
 // Warn only when LEFT > RIGHT. Categories with no active templates get
-// NO warning.
+// NO warning. Savings categories never warn: investing more than the plan
+// is not overspending (PRD C24, UC-24).
 // ---------------------------------------------------------------------------
 
 export interface OverspendWarning {
@@ -152,7 +172,12 @@ export async function getOverspendWarnings(
     })
     .from(monthActualExpense)
     .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
-    .where(eq(monthActualExpense.monthId, monthId))
+    .where(
+      and(
+        eq(monthActualExpense.monthId, monthId),
+        eq(category.countsAsSavings, false),
+      ),
+    )
     .groupBy(monthActualExpense.categoryId, category.name);
 
   if (actualSums.length === 0) {

@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-03
+
 ### Added
 - Use-case specs from the feature review: savings categories so investments stop counting as spending (UC-24), estimate check (UC-25), move an actual expense to a later month or up to 3 months back (UC-26), delete a month (UC-27), and an "already added" state for annual reminders (UC-28).
 - Slice files for already-shipped work that had none: theme preference (UC-21), month Stats data tables and category details (UC-22), and swipe gestures on month rows (UC-23).
+- Mark an expense category as "Counts as savings" (piggy bank switch on Categories, or when adding one). Its money still leaves what is available, but it is reported as invested, not spent (UC-24).
+- Month summary shows "+ Invested = Total saved" under the hero when the month has savings-category rows; the totals then read "Total Expenses (incl. invested)" and "Spending (excl. invested)" (UC-24).
+- The savings switch on each expense category shows a tooltip: "Mark as savings" or "Stop counting as savings" (UC-24).
+- Global Stats: "Invested" KPI and "Invested by year" chart on Overview; Help explains savings categories (UC-24).
+- Excel export adds Invested and Total saved rows to the Summary block of months with savings-category rows (UC-24).
+
+### Changed
+- "Potential savings" is now called "Left over" ("Sobrante") in the month summary and the export; the number is unchanged (UC-24).
+- Savings categories raise no overspend warning, are left out of the month Stats category pie, and no longer count as spend in Global Stats (spend, household cost change, trends, category creep) (UC-24).
 
 ## [0.10.1] - 2026-11-03
 

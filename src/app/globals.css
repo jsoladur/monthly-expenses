@@ -59,6 +59,7 @@
   --color-one-off: hsl(var(--one-off));
   --color-income: hsl(var(--income));
   --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
   --color-warning: hsl(var(--warning));
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

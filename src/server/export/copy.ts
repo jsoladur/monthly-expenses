@@ -23,6 +23,8 @@ export type ExportCopy = {
   reserved: string;
   totalExpenses: string;
   savings: string;
+  invested: string;
+  totalSaved: string;
   originCloned: string;
   originMonthOnly: string;
 };
@@ -46,7 +48,9 @@ export const EN_EXPORT_COPY: ExportCopy = {
   income: "Income",
   reserved: "Reserved",
   totalExpenses: "Total Expenses",
-  savings: "Potential savings",
+  savings: "Left over",
+  invested: "Invested",
+  totalSaved: "Total saved",
   originCloned: "Cloned",
   originMonthOnly: "One-off",
 };

@@ -87,6 +87,16 @@ export async function exportExpenses(
         }),
       );
     const monthLines = lines.filter((item) => item.monthId === row.id);
+    // UC-24: invested = actuals + remaining in savings categories. The two
+    // extra summary rows only appear when the month has such rows.
+    const savingsAmounts = [
+      ...actuals
+        .filter((item) => item.monthId === row.id && item.countsAsSavings)
+        .map((item) => parseAmount(item.amount)),
+      ...monthLines
+        .filter((item) => item.countsAsSavings)
+        .map((item) => parseAmount(item.remainingAmount)),
+    ];
     const committed = orderReserved(
       monthLines
         .filter((item) => item.kind === "committed")
@@ -106,6 +116,8 @@ export async function exportExpenses(
     ]);
     const totalExpenses = sumCents([actualsTotal, reservedRemainingTotal]);
     const potentialSavings = sumCents([incomesTotal, -totalExpenses]);
+    const investedTotal =
+      savingsAmounts.length > 0 ? sumCents(savingsAmounts) : undefined;
 
     const localeMonth = monthName(opts.locale, row.month);
     return {
@@ -122,6 +134,9 @@ export async function exportExpenses(
         reservedRemainingTotal,
         totalExpenses,
         potentialSavings,
+        ...(investedTotal === undefined
+          ? {}
+          : { investedTotal, totalSaved: potentialSavings + investedTotal }),
       },
     };
   });

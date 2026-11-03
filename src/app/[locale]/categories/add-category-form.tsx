@@ -6,6 +6,7 @@ import {
   createCategoryAction,
   type CategoryActionResult,
 } from "@/actions/categories";
+import { PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ============================================================================
@@ -32,7 +33,8 @@ export function AddCategoryForm({
   const [state, formAction, pending] = useActionState<CategoryActionResult | null, FormData>(
     async (_prev, formData) => {
       const name = String(formData.get("name") ?? "").trim();
-      const result = await boundAction({ name });
+      const countsAsSavings = kind === "expense" && formData.get("countsAsSavings") === "on";
+      const result = await boundAction({ name, countsAsSavings });
       if (result.ok) {
         // Bumping state from inside the action callback is the documented
         // way to react to action results in React 19; the lint rule only
@@ -74,6 +76,21 @@ export function AddCategoryForm({
           {t("actions.add")}
         </Button>
       </div>
+      {kind === "expense" && (
+        <label
+          htmlFor="new-expense-savings"
+          className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm"
+        >
+          <input
+            id="new-expense-savings"
+            name="countsAsSavings"
+            type="checkbox"
+            className="accent-primary size-4 cursor-pointer"
+          />
+          <PiggyBank className="text-muted-foreground size-4" aria-hidden />
+          <span>{t("savings.toggle")}</span>
+        </label>
+      )}
       {errorMessage && (
         <p role="alert" className="text-destructive text-xs">
           {errorMessage}
@@ -87,10 +104,14 @@ export function AddCategoryForm({
 // FormData. Server actions accept a single serializable object — we wrap
 // them so the add form stays simple.
 function bindKind(
-  action: (input: { kind: Kind; name: string }) => Promise<CategoryActionResult>,
+  action: (input: {
+    kind: Kind;
+    name: string;
+    countsAsSavings?: boolean;
+  }) => Promise<CategoryActionResult>,
   kind: Kind,
-): (input: { name: string }) => Promise<CategoryActionResult> {
-  return (input) => action({ kind, name: input.name });
+): (input: { name: string; countsAsSavings?: boolean }) => Promise<CategoryActionResult> {
+  return (input) => action({ kind, ...input });
 }
 
 function errorToMessage(
@@ -103,6 +124,8 @@ function errorToMessage(
       return tv("duplicateCategoryName");
     case "notFound":
       return tv("categoryNotFound");
+    case "savingsOnIncomeCategory":
+      return tv("savingsOnIncomeCategory");
     case "validation":
       return tv("required");
     case "alreadyInactive":

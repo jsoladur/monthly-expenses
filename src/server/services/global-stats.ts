@@ -93,6 +93,8 @@ export type KpiDelta = {
 export type OverviewDto = {
   incomeCents: number;
   spendCents: number;
+  /** UC-24: money in savings categories. Included in `savingsCents`. */
+  investedCents: number;
   savingsCents: number;
   savingsRateTenths: number | null;
   savingsRateDeltaTenths: number | null;
@@ -112,6 +114,7 @@ export type OverviewDto = {
   } | null;
   yearlyIncome: Array<{ year: number; cents: number; complete: boolean }>;
   yearlySpend: Array<{ year: number; cents: number; complete: boolean }>;
+  yearlyInvested: Array<{ year: number; cents: number; complete: boolean }>;
   monthlyIncome: Array<{ year: number; month: number; cents: number | null }>;
   monthlySpend: Array<{ year: number; month: number; cents: number | null }>;
   rollingIncome: Array<{ year: number; month: number; cents: number }>;
@@ -137,13 +140,28 @@ export type SeriesTabDto = {
   yearly: Array<{ year: number; cents: number; complete: boolean }>;
   monthly: Array<{ year: number; month: number; cents: number | null }>;
   rolling: Array<{ year: number; month: number; cents: number }>;
-  stacked: Array<{ categoryId: string; categoryName: string; categoryActive: boolean; cents: number; other?: boolean }>;
-  mix: Array<{ categoryId: string; categoryName: string; categoryActive: boolean; cents: number }>;
+  stacked: Array<{
+    categoryId: string;
+    categoryName: string;
+    categoryActive: boolean;
+    countsAsSavings: boolean;
+    cents: number;
+    other?: boolean;
+  }>;
+  mix: CategoryTotal[];
   largestShare: Array<{ year: number; tenths: number | null; categoryName: string | null }>;
   matrix: ReturnType<typeof yearCategoryMatrix>;
-  ranking: Array<{ categoryId: string; categoryName: string; categoryActive: boolean; cents: number }>;
+  ranking: CategoryTotal[];
   seasonality: Array<{ month: number; cents: number }>;
   showAll: boolean;
+};
+
+export type CategoryTotal = {
+  categoryId: string;
+  categoryName: string;
+  categoryActive: boolean;
+  countsAsSavings: boolean;
+  cents: number;
 };
 
 export type InflationDto = {
@@ -270,11 +288,16 @@ export async function getGlobalStatsPage(
     .filter((g) => g.monthCount < 12);
 
   const latestPresence = [...presence].sort((a, b) => a.year - b.year || a.month - b.month).at(-1) ?? null;
-  const remainingLatest = latestPresence
-    ? aggregates.remainingByMonth.find(
-        (r) => r.year === latestPresence.year && r.month === latestPresence.month,
-      )?.cents ?? 0
-    : 0;
+  // Open month = latest month with money still reserved, in ANY category.
+  // Its potential savings ("left over") keeps the PRD §7.1 algebra, so
+  // invested actuals and invested remaining count as outflow (UC-24).
+  const atLatest = (series: MonthCents[]) =>
+    latestPresence
+      ? series.find((r) => r.year === latestPresence.year && r.month === latestPresence.month)
+          ?.cents ?? 0
+      : 0;
+  const remainingLatest =
+    atLatest(aggregates.remainingByMonth) + atLatest(aggregates.investedRemainingByMonth);
   const openMonth =
     latestPresence && remainingLatest > 0
       ? {
@@ -282,12 +305,8 @@ export async function getGlobalStatsPage(
           month: latestPresence.month,
           remainingCents: remainingLatest,
           potentialSavingsCents: potentialSavings(
-            aggregates.incomeByMonth.find(
-              (r) => r.year === latestPresence.year && r.month === latestPresence.month,
-            )?.cents ?? 0,
-            aggregates.spendByMonth.find(
-              (r) => r.year === latestPresence.year && r.month === latestPresence.month,
-            )?.cents ?? 0,
+            atLatest(aggregates.incomeByMonth),
+            atLatest(aggregates.spendByMonth) + atLatest(aggregates.investedByMonth),
             remainingLatest,
           ),
         }
@@ -320,25 +339,34 @@ export async function getGlobalStatsPage(
     return { meta, overview: null, incomes: null, expenses: null, inflation: null, trends: null };
   }
 
-  const spendBase =
-    parsed.tab === "overview" && parsed.projectRemaining && openMonth
-      ? applyRemainingProjection(aggregates.spendByMonth, aggregates.remainingByMonth, {
-          year: openMonth.year,
-          month: openMonth.month,
-        })
-      : aggregates.spendByMonth;
+  const project = parsed.tab === "overview" && parsed.projectRemaining && openMonth;
+  const spendBase = project
+    ? applyRemainingProjection(aggregates.spendByMonth, aggregates.remainingByMonth, {
+        year: openMonth.year,
+        month: openMonth.month,
+      })
+    : aggregates.spendByMonth;
+  const investedBase = project
+    ? applyRemainingProjection(aggregates.investedByMonth, aggregates.investedRemainingByMonth, {
+        year: openMonth.year,
+        month: openMonth.month,
+      })
+    : aggregates.investedByMonth;
 
   const income = clipSeries(aggregates.incomeByMonth, range);
   const spend = clipSeries(spendBase, range);
+  const invested = clipSeries(investedBase, range);
   const remaining = clipSeries(aggregates.remainingByMonth, range);
   const incomeByCat = filterByCategories(
     clipCategory(aggregates.incomeByCategoryMonth, range),
     parsed.categoryIds,
   );
-  const spendByCat = filterByCategories(
-    clipCategory(aggregates.spendByCategoryMonth, range),
-    parsed.categoryIds,
-  );
+  // Savings categories are not spending (UC-24): they leave every
+  // per-category view unless the user explicitly selected them.
+  const spendByCat =
+    parsed.categoryIds.length > 0
+      ? filterByCategories(clipCategory(aggregates.spendByCategoryMonth, range), parsed.categoryIds)
+      : clipCategory(aggregates.spendByCategoryMonth, range).filter((r) => !r.countsAsSavings);
   const presenceInRange = presence.filter((p) => p.year >= range.fromYear && p.year <= range.toYear);
 
   const page: GlobalStatsPage = {
@@ -355,6 +383,7 @@ export async function getGlobalStatsPage(
       presence: presenceInRange,
       income,
       spend,
+      invested,
       spendByCat,
       range,
       years,
@@ -417,14 +446,16 @@ function buildOverview(input: {
   presence: MonthKey[];
   income: MonthCents[];
   spend: MonthCents[];
+  invested: MonthCents[];
   spendByCat: MonthCategoryCents[];
   range: StatsRange;
   years: number[];
   now: Date;
 }): OverviewDto {
-  const { presence, income, spend, spendByCat, range, years, now } = input;
+  const { presence, income, spend, invested, spendByCat, range, years, now } = input;
   const incomeCents = sumCents(income.map((r) => r.cents));
   const spendCents = sumCents(spend.map((r) => r.cents));
+  const investedCents = sumCents(invested.map((r) => r.cents));
   const savingsCents = realizedSavings(incomeCents, spendCents);
   const latest = years[years.length - 1];
   const prior = latest !== undefined && years.includes(latest - 1) ? latest - 1 : undefined;
@@ -481,6 +512,7 @@ function buildOverview(input: {
   return {
     incomeCents,
     spendCents,
+    investedCents,
     savingsCents,
     savingsRateTenths: savingsRateTenths(savingsCents, incomeCents),
     savingsRateDeltaTenths,
@@ -492,6 +524,10 @@ function buildOverview(input: {
       complete: isCompleteYear(presence, r.year),
     })),
     yearlySpend: yearlyTotals(spend, years).map((r) => ({
+      ...r,
+      complete: isCompleteYear(presence, r.year),
+    })),
+    yearlyInvested: yearlyTotals(invested, years).map((r) => ({
       ...r,
       complete: isCompleteYear(presence, r.year),
     })),
@@ -541,7 +577,11 @@ function buildSeriesTab(input: {
     rolling: rolling12Series(presence, series),
     stacked: topCategoriesPlusOther(byCat, 8, showAll).map((r) => {
       const sample = byCat.find((c) => c.categoryId === r.categoryId);
-      return { ...r, categoryActive: sample?.categoryActive ?? true };
+      return {
+        ...r,
+        categoryActive: sample?.categoryActive ?? true,
+        countsAsSavings: sample?.countsAsSavings ?? false,
+      };
     }),
     mix,
     largestShare: largestCategoryShareSeries(byCat, years),
@@ -724,14 +764,13 @@ function buildTrends(input: {
   };
 }
 
-function compositionTotals(
-  byCat: MonthCategoryCents[],
-): Array<{ categoryId: string; categoryName: string; categoryActive: boolean; cents: number }> {
-  const map = new Map<string, { categoryName: string; categoryActive: boolean; cents: number }>();
+function compositionTotals(byCat: MonthCategoryCents[]): CategoryTotal[] {
+  const map = new Map<string, Omit<CategoryTotal, "categoryId">>();
   for (const row of byCat) {
     const prev = map.get(row.categoryId) ?? {
       categoryName: row.categoryName,
       categoryActive: row.categoryActive,
+      countsAsSavings: row.countsAsSavings ?? false,
       cents: 0,
     };
     prev.cents += row.cents;

@@ -65,6 +65,9 @@ export type ExportMonthSheet = {
     reservedRemainingTotal: number;
     totalExpenses: number;
     potentialSavings: number;
+    /** UC-24: set only when the month has savings-category rows. */
+    investedTotal?: number;
+    totalSaved?: number;
   };
 };
 
@@ -109,8 +112,10 @@ function writeMonthSheet(
   data: ExportMonthSheet,
 ): void {
   const currencyFmt = excelCurrencyNumFmt(data.currency);
+  const hasInvested = data.summary.investedTotal !== undefined;
+  const lastSummaryRow = hasInvested ? 11 : 9;
   const sheet = workbook.addWorksheet(data.sheetName, {
-    views: [{ state: "frozen", ySplit: 9 }],
+    views: [{ state: "frozen", ySplit: lastSummaryRow }],
     pageSetup: {
       orientation: "landscape",
       fitToPage: true,
@@ -145,8 +150,10 @@ function writeMonthSheet(
   const reservedRow = 7;
   const totalExpRow = 8;
   const savingsRow = 9;
+  const investedRow = 10;
+  const totalSavedRow = 11;
 
-  const incomesPlan = planSection(11, data.incomes.length);
+  const incomesPlan = planSection(lastSummaryRow + 2, data.incomes.length);
   const actualsPlan = planSection(incomesPlan.totalRow + 2, data.actuals.length);
   const committedPlan = planSection(actualsPlan.totalRow + 2, data.committed.length);
   const estimatedPlan = planSection(committedPlan.totalRow + 2, data.estimated.length);
@@ -187,6 +194,20 @@ function writeMonthSheet(
     currencyFmt,
     savings: true,
   });
+  if (hasInvested) {
+    // Invested has no formula: the savings flag lives on the category, which
+    // the sheet does not carry. Total saved stays a live formula.
+    writeSummaryLine(sheet, investedRow, copy.invested, {
+      value: centsToExcelNumber(data.summary.investedTotal ?? 0),
+      currencyFmt,
+    });
+    writeSummaryLine(sheet, totalSavedRow, copy.totalSaved, {
+      formula: `${cellRef(SUMMARY_VALUE_COL, savingsRow)}+${cellRef(SUMMARY_VALUE_COL, investedRow)}`,
+      result: centsToExcelNumber(data.summary.totalSaved ?? 0),
+      currencyFmt,
+      savings: true,
+    });
+  }
 
   writeSimpleSection({
     sheet,
@@ -385,9 +406,10 @@ function writeSummaryLine(
   sheet: ExcelJS.Worksheet,
   row: number,
   label: string,
-  opts: {
-    formula: string;
-    result: number;
+  opts: (
+    | { formula: string; result: number; value?: never }
+    | { value: number; formula?: never; result?: never }
+  ) & {
     currencyFmt: string;
     savings?: boolean;
   },
@@ -395,7 +417,10 @@ function writeSummaryLine(
   const labelCell = sheet.getCell(row, 1);
   const valueCell = sheet.getCell(row, SUMMARY_VALUE_COL);
   labelCell.value = label;
-  valueCell.value = { formula: opts.formula, result: opts.result };
+  valueCell.value =
+    opts.formula === undefined
+      ? opts.value
+      : { formula: opts.formula, result: opts.result };
   valueCell.numFmt = opts.currencyFmt;
   valueCell.alignment = { horizontal: "right" };
   const color = opts.savings ? GREEN_DEEP : INK;

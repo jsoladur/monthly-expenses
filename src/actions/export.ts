@@ -99,6 +99,8 @@ async function loadExportCopy(locale: string): Promise<ExportCopy> {
     reserved: ts("reserved"),
     totalExpenses: ts("totalExpenses"),
     savings: ts("savings"),
+    invested: ts("invested"),
+    totalSaved: ts("totalSaved"),
     originCloned: t("originCloned"),
     originMonthOnly: t("originMonthOnly"),
   };

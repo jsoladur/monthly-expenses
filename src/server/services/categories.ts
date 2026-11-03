@@ -9,6 +9,7 @@ import {
   listCategories,
   reactivateCategory as repoReactivate,
   updateCategoryName as repoRename,
+  updateCategorySavings as repoUpdateSavings,
 } from "@/server/repositories/category";
 import type { Tx } from "@/server/repositories/user";
 
@@ -54,6 +55,14 @@ export class CategoryAlreadyActiveError extends Error {
   constructor() {
     super("Category is already active");
     this.name = "CategoryAlreadyActiveError";
+  }
+}
+
+export class SavingsOnIncomeCategoryError extends Error {
+  readonly code = "savings_on_income_category" as const;
+  constructor() {
+    super("Only expense categories can count as savings");
+    this.name = "SavingsOnIncomeCategoryError";
   }
 }
 
@@ -123,12 +132,16 @@ export async function listActiveCategoriesForPicker(
 
 export async function createCategory(
   userId: string,
-  input: { kind: CategoryKind; name: string },
+  input: { kind: CategoryKind; name: string; countsAsSavings?: boolean },
   tx: Tx | typeof db = db,
 ): Promise<Category> {
+  const countsAsSavings = input.countsAsSavings ?? false;
+  if (countsAsSavings && input.kind !== "expense") {
+    throw new SavingsOnIncomeCategoryError();
+  }
   try {
     return await insertCategory(
-      { userId, kind: input.kind, name: input.name, active: true },
+      { userId, kind: input.kind, name: input.name, countsAsSavings, active: true },
       tx,
     );
   } catch (err) {
@@ -166,6 +179,30 @@ export async function renameCategory(
     }
     throw err;
   }
+}
+
+// Savings flag (PRD C24, UC-24). Catalog metadata: flipping it reclassifies
+// every month on the next read and never rewrites a money row.
+export async function setCategorySavings(
+  userId: string,
+  input: { id: string; countsAsSavings: boolean },
+  tx: Tx | typeof db = db,
+): Promise<Category> {
+  const existing = await findCategoryById(userId, input.id, tx);
+  if (!existing) {
+    throw new CategoryNotFoundError();
+  }
+  if (input.countsAsSavings && existing.kind !== "expense") {
+    throw new SavingsOnIncomeCategoryError();
+  }
+  if (existing.countsAsSavings === input.countsAsSavings) {
+    return existing;
+  }
+  const updated = await repoUpdateSavings(userId, input.id, input.countsAsSavings, tx);
+  if (!updated) {
+    throw new CategoryNotFoundError();
+  }
+  return updated;
 }
 
 export async function deactivateCategory(

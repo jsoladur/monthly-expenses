@@ -1,0 +1,2 @@
+ALTER TABLE "category" ADD COLUMN "counts_as_savings" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "category" ADD CONSTRAINT "category_savings_kind_ck" CHECK ("category"."counts_as_savings" = false OR "category"."kind" = 'expense');

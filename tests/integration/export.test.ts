@@ -58,7 +58,7 @@ suite("UC-19 Excel export", () => {
     expect(summary["Actuals"]).toBe(50);
     expect(summary["Reserved"]).toBe(1200);
     expect(summary["Total Expenses"]).toBe(1250);
-    expect(summary["Potential savings"]).toBe(750);
+    expect(summary["Left over"]).toBe(750);
 
     const bobExport = await exportExpenses(
       bob,
@@ -184,7 +184,7 @@ suite("UC-19 Excel export", () => {
     const workbook = await loadWorkbook(result.buffer);
     const summary = summaryAmounts(workbook.getWorksheet("August 2026")!);
     expect(summary["Actuals"]).toBe(30);
-    expect(summary["Potential savings"]).toBe(770);
+    expect(summary["Left over"]).toBe(770);
   });
 });
 

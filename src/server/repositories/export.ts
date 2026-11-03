@@ -29,6 +29,7 @@ export type ExportIncomeRecord = {
 export type ExportActualRecord = {
   monthId: string;
   categoryName: string;
+  countsAsSavings: boolean;
   name: string;
   observations: string | null;
   amount: string;
@@ -38,6 +39,7 @@ export type ExportActualRecord = {
 export type ExportLineRecord = {
   monthId: string;
   categoryName: string;
+  countsAsSavings: boolean;
   name: string;
   observations: string | null;
   remainingAmount: string;
@@ -77,6 +79,7 @@ export async function listExportActuals(
     .select({
       monthId: monthActualExpense.monthId,
       categoryName: category.name,
+      countsAsSavings: category.countsAsSavings,
       name: monthActualExpense.name,
       observations: monthActualExpense.observations,
       amount: monthActualExpense.amount,
@@ -101,6 +104,7 @@ export async function listExportLines(
     .select({
       monthId: monthFixedLine.monthId,
       categoryName: category.name,
+      countsAsSavings: category.countsAsSavings,
       name: monthFixedLine.name,
       observations: monthFixedLine.observations,
       remainingAmount: monthFixedLine.remainingAmount,

@@ -65,7 +65,7 @@ describe("export workbook builder (UC-19)", () => {
     expect(summary["Actuals"]).toBe(50);
     expect(summary["Reserved"]).toBe(1200);
     expect(summary["Total Expenses"]).toBe(1250);
-    expect(summary["Potential savings"]).toBe(750);
+    expect(summary["Left over"]).toBe(750);
 
     expect(august!.getCell(5, 2).numFmt).toBe(eurFmt);
     expect(august!.getCell(13, 3).numFmt).toBe(eurFmt);
@@ -82,7 +82,7 @@ describe("export workbook builder (UC-19)", () => {
     expect(formulaOf(september!.getCell(9, 2))).toBe("B5-B8");
     const emptySummary = summaryAmounts(september!);
     expect(emptySummary["Income"]).toBe(0);
-    expect(emptySummary["Potential savings"]).toBe(0);
+    expect(emptySummary["Left over"]).toBe(0);
     expect(september!.getCell(13, 3).numFmt).toBe(eurFmt);
   });
 
@@ -99,6 +99,32 @@ describe("export workbook builder (UC-19)", () => {
     expect(sheet.getCell(5, 2).numFmt).toBe(usdFmt);
     expect(sheet.getCell(13, 3).numFmt).toBe(usdFmt);
     expect(sheet.getCell(14, 3).numFmt).toBe(usdFmt);
+  });
+
+  it("UC-24 adds Invested and Total saved rows only when the month has savings", async () => {
+    const base = augustFilled();
+    const buffer = await buildExportWorkbook({
+      copy: EN_EXPORT_COPY,
+      months: [
+        {
+          ...base,
+          summary: { ...base.summary, investedTotal: 40_000, totalSaved: 115_000 },
+        },
+      ],
+    });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
+    const sheet = workbook.getWorksheet("August 2026")!;
+
+    expect(sheet.getCell(9, 1).value).toBe("Left over");
+    expect(formulaOf(sheet.getCell(9, 2))).toBe("B5-B8");
+    expect(sheet.getCell(10, 1).value).toBe("Invested");
+    expect(sheet.getCell(10, 2).value).toBe(400);
+    expect(sheet.getCell(11, 1).value).toBe("Total saved");
+    expect(formulaOf(sheet.getCell(11, 2))).toBe("B9+B10");
+    expect(numericCell(sheet.getCell(11, 2))).toBe(1150);
+    expect(sheet.getCell(13, 1).value).toBe("Incomes");
+    expect(formulaOf(sheet.getCell(5, 2))).toBe("C16");
   });
 });
 
