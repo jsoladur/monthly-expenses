@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-03
+
+### Fixed
+- Release built from `main`: the 0.10.0 tag pointed at the feature branch before it was merged. Same features as 0.10.0 (UC-20).
+
 ## [0.10.0] - 2026-11-03
 
 ### Added
