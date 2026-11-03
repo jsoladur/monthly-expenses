@@ -3,15 +3,19 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { IconButton } from "@/components/ui/icon-button";
-import { Pencil, CircleOff, RotateCcw, Check, X } from "lucide-react";
+import { Pencil, CircleOff, RotateCcw, Check, X, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AmountInput } from "@/components/amount-input";
 import { formatMoney } from "@/i18n/format";
 import {
   deactivateTemplateAction,
+  deleteTemplateAction,
   reactivateTemplateAction,
   updateTemplateAction,
+  type TemplateActionError,
 } from "@/actions/templates";
 import type { CategoryOption, TemplateRowData } from "./templates-screen";
+import { MonthScheduleField, ScheduleRail } from "./month-schedule";
 
 // ============================================================================
 // Template row (UC-05).
@@ -19,7 +23,9 @@ import type { CategoryOption, TemplateRowData } from "./templates-screen";
 // One row per template. Three modes:
 //   - default: shows name + category + amount + (Deactivate | Reactivate) +
 //     Edit button
-//   - editing: shows the same fields as the add form + Save + Cancel
+//   - editing: shows the same fields as the add form (incl. the UC-20 month
+//     schedule) + Save + Cancel, and Delete (hard delete, UC-20) — Delete
+//     lives in the edit form, never as a row trash icon (STYLE-GUIDE §5)
 //   - reacting: while the server action is in flight, the buttons disable
 //
 // All mutations go through server actions invoked via `formAction`. We use
@@ -46,6 +52,18 @@ export function TemplateRow({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [draftAmount, setDraftAmount] = useState(centsToInputString(template.amountCents));
+  const [draftMonths, setDraftMonths] = useState<number[] | null>(template.months);
+
+  const handleDelete = () => {
+    if (!window.confirm(t("actions.confirmDelete"))) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteTemplateAction({ id: template.id });
+      if (!result.ok) {
+        setError(mapError(result.error, tv));
+      }
+    });
+  };
 
   const handleDeactivate = () => {
     setError(null);
@@ -75,8 +93,13 @@ export function TemplateRow({
       observations: readObservations(formData),
       amount: draftAmount.trim(),
       kind: template.kind,
+      months: draftMonths,
     };
     setError(null);
+    if (draftMonths !== null && draftMonths.length === 0) {
+      setError(mapError("emptySchedule", tv));
+      return;
+    }
     startTransition(async () => {
       const result = await updateTemplateAction(payload);
       if (result.ok) {
@@ -162,8 +185,26 @@ export function TemplateRow({
                 setIsEditing(false);
                 setError(null);
                 setDraftAmount(centsToInputString(template.amountCents));
+                setDraftMonths(template.months);
               }}
             />
+          </div>
+          <MonthScheduleField
+            idPrefix={`edit-${template.id}`}
+            value={draftMonths}
+            onChange={setDraftMonths}
+          />
+          <div className="border-border/60 flex justify-start border-t pt-2">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={pending}
+              onClick={handleDelete}
+            >
+              <Trash2 className="size-4" />
+              {t("actions.delete")}
+            </Button>
           </div>
           {error && (
             <p role="alert" className="text-destructive text-xs">
@@ -192,6 +233,7 @@ export function TemplateRow({
             {template.observations}
           </span>
         )}
+        <ScheduleRail months={template.months} />
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {!template.active && (
@@ -207,6 +249,7 @@ export function TemplateRow({
             setIsEditing(true);
             setError(null);
             setDraftAmount(centsToInputString(template.amountCents));
+            setDraftMonths(template.months);
           }}
         />
         {template.active ? (
@@ -235,14 +278,7 @@ export function TemplateRow({
 }
 
 function mapError(
-  error:
-    | "incomeCategory"
-    | "inactiveCategory"
-    | "notFound"
-    | "alreadyInactive"
-    | "alreadyActive"
-    | "amountFormat"
-    | "validation",
+  error: TemplateActionError,
   tv: ReturnType<typeof useTranslations<"validation">>,
 ): string {
   switch (error) {
@@ -256,6 +292,10 @@ function mapError(
       return tv("amountFormat");
     case "validation":
       return tv("required");
+    case "emptySchedule":
+      return tv("emptySchedule");
+    case "invalidSchedule":
+      return tv("invalidSchedule");
     case "alreadyInactive":
     case "alreadyActive":
       // UI already enforces this; if we hit it, the row state changed

@@ -85,7 +85,9 @@
     "targetMonthNotFound": "Ese mes ya no existe. Recarga la página.",
     "targetNotUpcoming": "Elige un mes posterior de este año que ya exista.",
     "notCurrentYear": "Este movimiento solo está disponible en el año actual.",
-    "nothingToExport": "No hay nada que exportar para esa selección."
+    "nothingToExport": "No hay nada que exportar para esa selección.",
+    "emptySchedule": "Elige al menos un mes o desactiva «Solo en algunos meses».",
+    "invalidSchedule": "Los meses deben estar entre enero y diciembre."
   },
   "warnings": {
     "title": "Avisos",
@@ -376,10 +378,19 @@
       "deactivate": "Desactivar",
       "reactivate": "Reactivar",
       "placeholder": "p. ej. Alquiler",
-      "selectCategory": "Elige una categoría"
+      "selectCategory": "Elige una categoría",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar este gasto fijo para siempre? Los meses que ya creaste conservan su copia."
     },
     "help": "Los gastos fijos se copian en un mes nuevo una sola vez al crearlo. Los gastos fijos inactivos no se clonan.",
-    "cloneCopy": "Los gastos fijos se copian al crear el mes. Este mes es independiente a partir de ahí."
+    "cloneCopy": "Los gastos fijos se copian al crear el mes. Este mes es independiente a partir de ahí.",
+    "schedule": {
+      "toggle": "Solo en algunos meses",
+      "help": "Déjalo desactivado para gastos que se cobran todos los meses.",
+      "legend": "Meses en los que se copia este gasto fijo",
+      "everyMonth": "Todos los meses",
+      "monthsList": "Se copia en: {months}"
+    }
   },
   "annuals": {
     "title": "Anuales",

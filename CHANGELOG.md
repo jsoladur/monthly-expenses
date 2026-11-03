@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Delete a fixed expense permanently from its edit form; months already created keep their copy (UC-20).
+- Limit a fixed expense to specific months ("Only in some months"); new months only copy the fixed expenses that apply to them, and rows show which months apply (UC-20).
+
+### Changed
+- The overspend plan for a month only counts fixed expenses that apply to that month (UC-20).
+
 ## [0.9.1] - 2026-09-18
 
 ### Added

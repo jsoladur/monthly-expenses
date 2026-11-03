@@ -41,12 +41,13 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C14 | Attachments, merchant, payment method = **future**, not MVP. |
 | C15 | **Hard delete** for month-scoped money rows (incomes, actual expenses, month fixed/estimated lines). |
 | C16 | Reports (year view, category totals) = **not V1**, planned later. |
-| C17 | At **create month**, active fixed + estimated **templates are cloned** into that month instance. After that, the month lives on its own. |
-| C18 | Overspend warning: actuals in a category vs **sum of active template amounts** (committed + estimated) in that category. Warn only, never block. |
+| C17 | At **create month**, active fixed + estimated **templates that apply to that month-number** (C23) **are cloned** into that month instance. After that, the month lives on its own. |
+| C18 | Overspend warning: actuals in a category vs **sum of active template amounts** (committed + estimated) **that apply to the open month-number** (C23) in that category. Warn only, never block. |
 | C19 | **Annuals** are a per-user catalog of yearly expenses. They **remind** in the matching calendar month (any year) and **never** auto-create month lines (same philosophy as C6/C12). |
 | C20 | **Search** finds the user’s own `month_actual_expense` rows by **name or observations** across every created month. Read-only. Explicit submit (not the add-actual autocomplete — that is C13 / UC-22). |
 | C21 | **Pass to upcoming month** moves an **estimated** reserved line to a **later month of the same calendar year that already exists**. Current year only. Not History. Never auto-creates the target (C6). Not automatic leftover rollover (C7). |
 | C22 | **Excel export** downloads the signed-in user’s created months as one `.xlsx` workbook, one sheet per month. Scopes: all months, one or more years that already have months, or a checked set of created months. Year and month pickers are descending. Read-only. Never auto-creates a month (C6). |
+| C23 | **Template month schedule + hard delete.** A template may be limited to a set of calendar month-numbers (1–12). No schedule (`NULL`) = every month; a schedule with all 12 months is stored as no schedule; an empty schedule is invalid. A template can also be **hard-deleted** from the catalog (besides deactivate). Neither change rewrites months that already exist. |
 
 ---
 
@@ -138,9 +139,10 @@ Agents may normalize tables as needed if **behavior and fields** stay equivalent
 | observations | Optional |
 | amount | Mandatory, 2 decimals, **may be negative** |
 | kind | `committed` **or** `estimated` |
+| months | Optional schedule: set of month-numbers 1–12. **Absent = every month.** All 12 selected = every month (stored as absent). At least one month when set. Only templates that apply to a month-number are cloned into a new month of that number (C23). |
 | active | Soft-delete; inactive templates are **not** cloned into **new** months |
 
-Clone source only. Never updated from month edits.
+Clone source only. Never updated from month edits. **Delete:** deactivate (soft, reversible) **or** delete (hard, permanent — the row is gone from the catalog; months already created keep their copied lines).
 
 ### 6.4 Month (per user)
 
@@ -239,10 +241,10 @@ Hard-deleted rows are excluded from sums.
 **Do not** compare actuals to the month **remaining** box.
 
 - **Left:** `SUM(actual tickets)` in that expense category for the open month.
-- **Right:** `SUM(active template amounts)` in that same category (committed **and** estimated). Same total as Fixed Expenses → Distribution by category.  
-  Example: templates “Groceries 400” + “Extra 50” in Food → plan = **450**. Actuals 500 → **warning**. Housing “Rent 700 committed” + “Repairs 160 estimated” → plan = **860**.
+- **Right:** `SUM(active template amounts)` in that same category (committed **and** estimated) **whose schedule applies to the open month-number** (C23). For templates without a schedule this is the same total as Fixed Expenses → Distribution by category.  
+  Example: templates “Groceries 400” + “Extra 50” in Food → plan = **450**. Actuals 500 → **warning**. Housing “Rent 700 committed” + “Repairs 160 estimated” → plan = **860**. Utilities “Water 60” scheduled {Jan} + “Power 50” → January plan = **110**, February plan = **50**.
 
-If a category has **no active templates**, **no** overspend warning for that category.
+If a category has **no applicable active templates** for the open month, **no** overspend warning for that category.
 
 **Warn only. Never block.** Remaining on a month line may be zero or negative if the user types it.
 
@@ -280,11 +282,11 @@ Month instance (Aug 2026)     Month instance (Sep 2026)
 Rules:
 
 - Each month is a **separated instance**.
-- Clone happens **once**, at create time, from **active** fixed + estimated templates.
+- Clone happens **once**, at create time, from **active** fixed + estimated templates **whose schedule includes the new month's month-number** (no schedule = every month, C23).
 - After create, August and September never sync to each other or back to templates.
 - User may add **any number of actual expenses** on a month.
 - User may add or hard-delete reserved lines **only on that month** (one-offs). They are not written to the template and will not appear in the next month unless added to the template before that month is created.
-- Changing or soft-deleting a template does **not** rewrite months that already exist.
+- Changing, rescheduling, soft-deleting, or hard-deleting a template does **not** rewrite months that already exist.
 - Unused remaining in August does **not** roll into September automatically (C7). The user may **manually** pass an estimated line to a later created month of the current year (UC-23 / C21).
 
 ### 7.10 Pass estimated line to an upcoming month (confirmed)
@@ -319,7 +321,8 @@ When the open month’s month-number matches an annual’s `charge_month`, show 
 [User creates Month(year, month)] ── if exists ──► error
         │                    never auto-created
         ▼
-Clone ALL active fixed/estimated templates → MonthFixedLine
+Clone active fixed/estimated templates that apply to this month-number → MonthFixedLine
+        (template.months IS NULL or contains month)
         remaining_amount = template.amount
         original_amount  = template.amount
         kind             = template.kind
@@ -364,13 +367,13 @@ potential_savings already subtracts all remainings
 
 ### UC-07 — Template management
 
-- Catalog of reserved lines: category, name, amount, `kind`. Soft-delete → not cloned later; existing months unchanged.
+- Catalog of reserved lines: category, name, amount, `kind`, optional month schedule (UC-25). Soft-delete → not cloned later; existing months unchanged. Hard delete available (UC-25).
 
 ### UC-08 — Create calendar month
 
 - User picks month + year.
 - Duplicate rejected.
-- Active templates cloned **once** into the new instance.
+- Active templates that apply to the picked month-number cloned **once** into the new instance (C23).
 - Nothing created automatically.
 
 ### UC-09 — Add income
@@ -473,6 +476,17 @@ Implementation slice: `docs/usecases/UC-19-excel-export.md`.
 - User B never sees User A’s months, including via a crafted year or period list.
 - Does not export catalogs (categories, templates, annuals). Does not create months (C6). Does not import.
 
+### UC-25 — Fixed expense hard delete & month schedule
+
+Implementation slice: `docs/usecases/UC-20-fixed-expense-delete-and-schedule.md`.
+
+- On Fixed expenses, the edit form of any template (active or inactive) offers **Delete**. After confirmation the template is permanently removed. Months already created keep their copied lines.
+- Add and edit forms offer **Only in some months**. Off = applies every month (default). On = a 12-month picker, all months pre-selected; the user deselects months that do not apply. At least one month must remain selected. All 12 selected is saved as "every month".
+- Creating a month clones only active templates that apply to that month-number.
+- The overspend plan for a month counts only templates that apply to that month-number.
+- Rows with a schedule show which months apply.
+- User B can never delete or reschedule User A's templates.
+
 ---
 
 ## 10. Screens (logical)
@@ -483,7 +497,7 @@ Implementation slice: `docs/usecases/UC-19-excel-export.md`.
 4. Month workspace — summary + **annual reminders (when the month-number matches)** + incomes + reserved lines + actuals (add-actual name may autocomplete recent names)  
 5. Expense categories  
 6. Income categories  
-7. Fixed/estimated templates  
+7. Fixed/estimated templates — with optional month schedule and Delete  
 8. Profile settings — currency  
 9. Language switcher  
 10. Install PWA — if not installed  
@@ -517,7 +531,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Entity | Delete |
 | --- | --- |
 | Expense / income categories | Soft |
-| Templates (fixed/estimated catalog) | Soft |
+| Templates (fixed/estimated catalog) | Soft (deactivate) **and** Hard (explicit Delete, C23) |
 | Annuals (yearly reminder catalog) | Soft |
 | Other catalog/settings CRUDs | Soft |
 | Month incomes | Hard |
@@ -591,6 +605,12 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 32. Alice exports All: one sheet per Alice month, newest first; Bob’s months are absent; Aug 2026 with income 2000, actual 50, reserved remaining 1200 → savings 750.
 33. Year picker lists only years that have months, descending; **multiple years can be checked**. Export years 2026+2025 includes Alice’s 2026-08 and 2025-12 sheets.
 34. Month picker lists owned months descending. Checking Aug 2026 and Dec 2025 yields those two sheets only; totals match the workspace summary.
+35. Hard-delete template “Gym 40” → gone from Fixed expenses and from the next month's clone; a month created before the delete still has its Gym 40 line.
+36. “Water 60” scheduled Jan/Mar/Jul/Oct + “Mortgage 800” unscheduled → creating Jan 2027 clones both; creating Feb 2027 clones Mortgage only.
+37. Saving a schedule with all 12 months stores no schedule; saving zero months is rejected; duplicates are collapsed; month 13 is rejected.
+38. Utilities “Water 60” scheduled {Jan} + “Power 50”: February actuals 70 → overspend warning (plan 50); January actuals 70 → no warning (plan 110).
+39. User B cannot delete or reschedule User A's template.
+40. Rescheduling or deleting a template does not change any existing month.
 
 ---
 
@@ -624,6 +644,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Search | Name or observations, sanitized `LIKE`, read-only. Explicit submit. Not the add-actual autocomplete. |
 | Add-actual name autocomplete | This month + 2 prior months, name prefix, max 5, name only. |
 | Pass estimated line to upcoming month | Current calendar year only. Later created months of that year. Estimated kind only. Never auto-create. No undo. Not History. |
+| Template schedule & delete | Optional month-number schedule (absent = every month; all 12 = absent; never empty). Clone + overspend plan respect it. Hard delete allowed besides deactivate; existing months untouched. |
 | Excel export | Home picker. All / one or more years with data / specific created months. One sheet per month. No charts. Tenant-scoped. |
 
 No blocking product questions remain for V1 money behavior.
@@ -647,6 +668,7 @@ No blocking product questions remain for V1 money behavior.
 13. Add-actual name autocomplete (this month + 2 prior, prefix)
 14. Pass estimated line to a later created month of the current year
 15. Excel export from Home (all / year / specific months) 
+16. Template month schedule + hard delete (clone and overspend respect the schedule)
 
 ---
 
@@ -660,6 +682,8 @@ No blocking product questions remain for V1 money behavior.
 - No month: “Create a month to start. Nothing is created automatically.”
 - Overspend: “Actual tickets in this category are higher than the plan in your templates.”
 - Clone: “Fixed and estimated lines are copied when the month is created. This month is independent after that.”
+- Template schedule: “Only in some months. Leave it off for expenses charged every month.”
+- Template delete confirm: “Delete this fixed expense permanently? Months you already created keep their copy.”
 - Annual reminder: “Usually charged in {month}. Add an estimated/committed line manually if it applies this year.”
 - Search idle: “Find a ticket from any year. Search matches the name or the note.”
 - Search empty: “No tickets match that text. Try another word.”

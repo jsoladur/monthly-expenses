@@ -1,0 +1,2 @@
+ALTER TABLE "template" ADD COLUMN "months" smallint[];--> statement-breakpoint
+ALTER TABLE "template" ADD CONSTRAINT "template_months_ck" CHECK ("template"."months" IS NULL OR (cardinality("template"."months") BETWEEN 1 AND 11 AND "template"."months" <@ ARRAY[1,2,3,4,5,6,7,8,9,10,11,12]::smallint[]));

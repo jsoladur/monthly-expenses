@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -95,17 +96,25 @@ export const template = pgTable(
     // numeric(14,2): domain code uses integer cents (ADR-5, ARCH §8).
     amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
     kind: lineKindEnum("kind").notNull(),
+    // Month schedule (PRD C23, UC-20). NULL = every month; otherwise the
+    // sorted unique month-numbers (1-12) the template applies to. The service
+    // normalizes "all 12" to NULL, so a stored array has 1..11 entries.
+    months: smallint("months").array(),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    // Clone source at month creation = active templates of the user
-    // (PRD C17). Overspend baseline = sum of active ESTIMATED templates
-    // per category (PRD §7.4).
+    // Clone source at month creation = active templates of the user that
+    // apply to the new month-number (PRD C17 / C23). Overspend baseline =
+    // sum of those templates per category (PRD §7.4).
     index("template_clone_idx").on(table.userId, table.active, table.kind),
     index("template_category_idx").on(table.categoryId),
+    check(
+      "template_months_ck",
+      sql`${table.months} IS NULL OR (cardinality(${table.months}) BETWEEN 1 AND 11 AND ${table.months} <@ ARRAY[1,2,3,4,5,6,7,8,9,10,11,12]::smallint[])`,
+    ),
   ],
 );
 

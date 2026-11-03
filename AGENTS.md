@@ -29,10 +29,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Tenancy (P0):** every repository function takes `userId` as its first argument and applies it in every `WHERE`. A missing `user_id` filter is a P0 bug (PRD §5.1). Session checks live in the data-access layer via `requireUserId()`, not only in middleware (ARCH §3.2).
 - **Money:** `numeric(14,2)` in the DB, integer cents in domain code, strings matching `^-?\d{1,12}\.\d{2}$` on the wire. Never `float`/`number` arithmetic on amounts (ADR-5, ARCH §8).
 - **Layering (ARCH §5):** reads in React Server Components; mutations as thin server actions (Zod parse → service call → revalidate); UC-19 Excel export is a read-shaped action that returns file bytes (no revalidate); services own ALL domain rules and transactions (`cloneMonth`, `passToActual`, `undoPassToActual`, summaries, export); repositories are the only place SQL lives.
-- **Deletes (PRD §13):** soft delete for catalogs (`category`, `template`); hard delete for month-scoped money rows (`month_income`, `month_fixed_line`, `month_actual_expense`).
-- **Months:** never auto-created; templates cloned ONCE at creation; months never sync with templates or each other afterwards; no rollover (PRD C6/C7/C17/§7.8).
+- **Deletes (PRD §13):** soft delete for catalogs (`category`, `template`); `template` also has an explicit hard delete (UC-20 / C23); hard delete for month-scoped money rows (`month_income`, `month_fixed_line`, `month_actual_expense`).
+- **Months:** never auto-created; templates that apply to the month-number (`template.months`, UC-20) cloned ONCE at creation; months never sync with templates or each other afterwards; no rollover (PRD C6/C7/C17/§7.8).
 - **i18n:** every user-facing string keyed (`en`/`es`); month names from locale; amount input stays dot-decimal in both locales (PRD §11).
-- **Schema:** the entire database is created in UC-00's single migration. Later slices NEVER add tables or columns. Table names are singular; the users table is `app_user` (`user` is reserved in PostgreSQL).
+- **Schema:** the entire database is created in UC-00's single migration. Later slices NEVER add tables or columns unless the Product Owner decides so (exceptions so far: `annual` UC-14, theme, `template.months` UC-20). Table names are singular; the users table is `app_user` (`user` is reserved in PostgreSQL).
 
 ## 3. Workflow per use case
 

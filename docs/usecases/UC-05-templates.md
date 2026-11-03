@@ -13,6 +13,7 @@ The per-user management form for reusable fixed (`committed`) and estimated (`es
 - `createTemplate({ categoryId, name, observations?, amount, kind })`
 - `updateTemplate({ id, categoryId, name, observations?, amount, kind })`
 - `deactivateTemplate({ id })` / `reactivateTemplate({ id })` — soft delete toggle (`active`, `deleted_at`).
+- **Amended by UC-20 (2026-11-03):** `deleteTemplate({ id })` hard delete, and an optional `months` schedule on create/update. See `UC-20-fixed-expense-delete-and-schedule.md`.
 
 ## Rules
 

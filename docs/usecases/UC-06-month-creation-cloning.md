@@ -13,7 +13,7 @@ The heart of the app: manual month creation with the one-time template clone, pl
 - `createMonth(userId, year, month)` — ONE transaction (ARCH §5):
   1. Reject if `(user_id, year, month)` already exists — the unique index backs this (PRD UC-08).
   2. Insert the `month` row.
-  3. `SELECT` the user's ACTIVE templates → `INSERT` one `month_fixed_line` row per template: `category_id`, `name`, `observations` copied; `remaining_amount = amount`; `original_amount = amount`; `kind` copied; `origin = 'cloned'` (PRD C17, §8).
+  3. `SELECT` the user's ACTIVE templates **that apply to `month`** (`months IS NULL OR month = ANY(months)` — amended by UC-20) → `INSERT` one `month_fixed_line` row per template: `category_id`, `name`, `observations` copied; `remaining_amount = amount`; `original_amount = amount`; `kind` copied; `origin = 'cloned'` (PRD C17, §8).
 - `getMonthList(userId)` — newest first (PRD UC-14).
 - `getMonthWorkspace(userId, year, month)` — month header + reserved lines grouped by kind. (Incomes block arrives in UC-07, actuals in UC-08, summary in UC-11.)
 
