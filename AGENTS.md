@@ -32,7 +32,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Deletes (PRD §13):** soft delete for catalogs (`category`, `template`); `template` also has an explicit hard delete (UC-20 / C23); hard delete for month-scoped money rows (`month_income`, `month_fixed_line`, `month_actual_expense`).
 - **Months:** never auto-created; templates that apply to the month-number (`template.months`, UC-20) cloned ONCE at creation; months never sync with templates or each other afterwards; no rollover (PRD C6/C7/C17/§7.8).
 - **i18n:** every user-facing string keyed (`en`/`es`); month names from locale; amount input stays dot-decimal in both locales (PRD §11).
-- **Schema:** the entire database is created in UC-00's single migration. Later slices NEVER add tables or columns unless the Product Owner decides so (exceptions so far: `annual` UC-14, theme, `template.months` UC-20). Table names are singular; the users table is `app_user` (`user` is reserved in PostgreSQL).
+- **Schema:** the entire database is created in UC-00's single migration. Later slices NEVER add tables or columns unless the Product Owner decides so (exceptions so far: `annual` UC-14, theme UC-21, `template.months` UC-20, `category.counts_as_savings` UC-24). Table names are singular; the users table is `app_user` (`user` is reserved in PostgreSQL).
 
 ## 3. Workflow per use case
 

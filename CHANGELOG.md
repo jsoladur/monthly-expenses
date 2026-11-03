@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Use-case specs from the feature review: savings categories so investments stop counting as spending (UC-24), estimate check (UC-25), move an actual expense to a later month or up to 3 months back (UC-26), delete a month (UC-27), and an "already added" state for annual reminders (UC-28).
+- Slice files for already-shipped work that had none: theme preference (UC-21), month Stats data tables and category details (UC-22), and swipe gestures on month rows (UC-23).
+
 ## [0.10.1] - 2026-11-03
 
 ### Fixed

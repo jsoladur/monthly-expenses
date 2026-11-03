@@ -2,7 +2,7 @@
 
 > **App:** Monthly Expenses PWA (`https://expenses.jmsola.dev`)
 > **Behavior source of truth:** `docs/prds/GLOBAL.md` · **Tech source of truth:** `docs/architecture/ARCHITECTURE.md`
-> **Database:** defined in `docs/database/database.dbml`. UC-00 creates everything in one migration — EXCEPT `annual` (UC-14, migration 0002) and `template.months` (UC-20, migration 0005).
+> **Database:** defined in `docs/database/database.dbml`. UC-00 creates everything in one migration — EXCEPT `annual` (UC-14, migration 0002), `template.months` (UC-20, migration 0005) and `category.counts_as_savings` (UC-24, migration 0006).
 
 ## How to work with these files
 
@@ -17,7 +17,7 @@
 - **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); `template` also allows an explicit hard delete (UC-20 / C23); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind.
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03).
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03). UC-21 (theme, shipped) added `profile_settings.theme` (migration 0001). UC-22 and UC-23 (shipped) add none. UC-24 adds `category.counts_as_savings` (migration 0006, PO decision 2026-11-03). UC-25…UC-28 add none.
 
 ## Build order and dependencies
 
@@ -44,6 +44,14 @@
 | UC-18 | Pass estimated line to an upcoming month | PRD **UC-23** / C21. THIS file is the detailed slice | UC-01, UC-02, UC-06, UC-09. **No schema change** |
 | UC-19 | Excel export of month expenses | PRD **UC-24** / C22. THIS file is the detailed slice | UC-01, UC-02, UC-04, UC-06, UC-07, UC-08, UC-09, UC-11. **No schema change** |
 | UC-20 | Fixed expense hard delete & month schedule | PRD **UC-25** / C23. THIS file is the detailed slice | UC-05, UC-06, UC-11. **Adds `template.months` (migration 0005)** — PO decision 2026-11-03 |
+| UC-21 | Theme preference (auto / light / dark) | Not in PRD (post-MVP). Retroactive slice of shipped work | UC-01, UC-04. **Added `profile_settings.theme` (migration 0001)** |
+| UC-22 | Month Stats data tables & category details | Not in PRD. Retroactive slice of shipped work (0.9.0–0.9.1) | UC-08, UC-09, UC-11. **No schema change** |
+| UC-23 | Swipe gestures on month rows | Not in PRD. Retroactive slice of shipped work (0.3.7–0.3.10) | UC-07, UC-08, UC-09, UC-10. **No schema change** |
+| UC-24 | Savings categories (investments are not spending) | Proposed PRD **UC-26** / C24 (amends §6.2, §7.1, §7.4). THIS file is SoT until merged | UC-03, UC-11, UC-15, UC-19. **Adds `category.counts_as_savings` (migration 0006)** — PO decision 2026-11-03 |
+| UC-25 | Estimate check (reconcile envelopes with tickets) | Proposed PRD **UC-27** / C25 (builds on §7.3). THIS file is SoT until merged | UC-08, UC-09, UC-11. **No schema change** |
+| UC-26 | Move an actual expense to another month | Proposed PRD **UC-28** / C26 (any later created month, or up to 3 months back). THIS file is SoT until merged | UC-06, UC-08, UC-10, UC-11, UC-23. **No schema change** |
+| UC-27 | Delete a month | Proposed PRD **UC-29** / C27 (fulfils §13 month header). THIS file is SoT until merged | UC-06. **No schema change** (cascade FKs exist) |
+| UC-28 | Annual reminder "already added" state | Proposed PRD **UC-30** / C28 (amends §7.9 presentation). THIS file is SoT until merged | UC-14, UC-16. **No schema change** |
 
 ```mermaid
 flowchart TD
@@ -63,6 +71,14 @@ flowchart TD
     UC06 & UC09 --> UC18
     UC04 & UC07 & UC08 & UC11 --> UC19
     UC05 & UC06 & UC11 --> UC20
+    UC01 & UC04 --> UC21
+    UC08 & UC09 & UC11 --> UC22
+    UC07 & UC08 & UC09 & UC10 --> UC23
+    UC03 & UC11 & UC15 & UC19 --> UC24
+    UC08 & UC09 & UC11 --> UC25
+    UC06 & UC08 & UC10 & UC11 & UC23 --> UC26
+    UC06 --> UC27
+    UC14 & UC16 --> UC28
 ```
 
 ## PRD §15 test-scenario map
@@ -109,5 +125,10 @@ flowchart TD
 | 38 Overspend plan counts only templates applying to the open month | UC-20 + UC-11 |
 | 39 User B cannot delete or reschedule User A's template | UC-20 |
 | 40 Rescheduling/deleting a template never changes existing months | UC-20 |
+| 41–46 (proposed) Savings categories: split summary, retroactive reclassification, no overspend, Stats excludes investments from spend, income rejected, tenancy | UC-24 |
+| 47–51 (proposed) Estimate check: suggestion, multi-line distribution, release, no auto-reduce, tenancy | UC-25 |
+| 52–57 (proposed) Move actual: move keeps the row, 3-months-back window, any later month, same month rejected, pass-to-actual loses undo, tenancy | UC-26 |
+| 58–61 (proposed) Delete month: cascade, re-create clones current templates, cookie cleared, tenancy | UC-27 |
+| 62–65 (proposed) Annual reminder matched by category + folded name prefix; un-matched after delete | UC-28 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.
