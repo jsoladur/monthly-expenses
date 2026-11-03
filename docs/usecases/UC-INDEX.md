@@ -2,7 +2,7 @@
 
 > **App:** Monthly Expenses PWA (`https://expenses.jmsola.dev`)
 > **Behavior source of truth:** `docs/prds/GLOBAL.md` · **Tech source of truth:** `docs/architecture/ARCHITECTURE.md`
-> **Database:** defined in `docs/database/database.dbml`. UC-00 creates everything in one migration — EXCEPT `annual`, which arrives with UC-14 (migration 0002, the only post-UC-00 schema change).
+> **Database:** defined in `docs/database/database.dbml`. UC-00 creates everything in one migration — EXCEPT `annual` (UC-14, migration 0002) and `template.months` (UC-20, migration 0005).
 
 ## How to work with these files
 
@@ -14,10 +14,10 @@
 
 - **Tenancy:** every repository function takes `userId` as first argument and filters by it in every `WHERE` (PRD §5.1 — a missing filter is a P0 bug; ARCH §5 rule 1).
 - **Money:** amounts cross the wire as strings matching `^-?\d{1,12}\.\d{2}$`; domain code uses integer cents; DB uses `numeric(14,2)`; never floats (ADR-5, ARCH §8).
-- **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); hard delete for month-scoped money rows (PRD §13).
+- **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); `template` also allows an explicit hard delete (UC-20 / C23); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind.
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables.
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03).
 
 ## Build order and dependencies
 
@@ -43,6 +43,7 @@
 | UC-17 | Actual name autocomplete (add-ticket form) | PRD **UC-22** / C13. THIS file is the detailed slice | UC-01, UC-02, UC-06, UC-08. **No schema change** |
 | UC-18 | Pass estimated line to an upcoming month | PRD **UC-23** / C21. THIS file is the detailed slice | UC-01, UC-02, UC-06, UC-09. **No schema change** |
 | UC-19 | Excel export of month expenses | PRD **UC-24** / C22. THIS file is the detailed slice | UC-01, UC-02, UC-04, UC-06, UC-07, UC-08, UC-09, UC-11. **No schema change** |
+| UC-20 | Fixed expense hard delete & month schedule | PRD **UC-25** / C23. THIS file is the detailed slice | UC-05, UC-06, UC-11. **Adds `template.months` (migration 0005)** — PO decision 2026-11-03 |
 
 ```mermaid
 flowchart TD
@@ -61,6 +62,7 @@ flowchart TD
     UC01 & UC02 & UC08 --> UC17
     UC06 & UC09 --> UC18
     UC04 & UC07 & UC08 & UC11 --> UC19
+    UC05 & UC06 & UC11 --> UC20
 ```
 
 ## PRD §15 test-scenario map
@@ -101,5 +103,11 @@ flowchart TD
 | 32 Export All is tenant-scoped; one sheet per owned month, newest first | UC-19 |
 | 33 Select by year lists only years with months (desc); multiple years can be checked | UC-19 |
 | 34 Select specific months lists owned months (desc); only checked months appear; totals match §7.1 | UC-19 |
+| 35 Hard-delete template → gone from catalog + next clone; earlier month keeps its line | UC-20 |
+| 36 Scheduled template cloned only into its month-numbers | UC-20 + UC-06 |
+| 37 Schedule normalization (12 → none, 0 rejected, dedupe, 13 rejected) | UC-20 |
+| 38 Overspend plan counts only templates applying to the open month | UC-20 + UC-11 |
+| 39 User B cannot delete or reschedule User A's template | UC-20 |
+| 40 Rescheduling/deleting a template never changes existing months | UC-20 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.

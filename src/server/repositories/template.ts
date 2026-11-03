@@ -19,6 +19,8 @@ import type { Tx } from "@/server/repositories/user";
 // `template.active` is the soft-delete flag — inactive rows are EXCLUDED from
 // `listActiveTemplates*` (the clone source), and INCLUDED in
 // `listTemplatesForManagement` (so the user can scan history and reactivate).
+// `template.months` is the month schedule (UC-20): NULL = every month, so
+// month creation clones from `listActiveTemplatesForMonth`.
 //
 // `Tx` is the Drizzle transaction handle; repository functions accept it so
 // the service layer can compose them inside a transaction when needed
@@ -75,6 +77,26 @@ export async function listActiveTemplatesByKind(
   return listTemplatesByKind(userId, kind, { includeInactive: false }, tx);
 }
 
+// Clone source for a month of number `month` (PRD C17 / C23, UC-20): ACTIVE
+// templates whose schedule is NULL (every month) or contains `month`.
+export async function listActiveTemplatesForMonth(
+  userId: string,
+  month: number,
+  tx: Tx | typeof db = db,
+): Promise<Template[]> {
+  return tx
+    .select()
+    .from(template)
+    .where(
+      and(
+        eq(template.userId, userId),
+        eq(template.active, true),
+        sql`(${template.months} IS NULL OR ${month}::smallint = ANY(${template.months}))`,
+      ),
+    )
+    .orderBy(asc(template.kind), asc(template.createdAt));
+}
+
 export async function findTemplateById(
   userId: string,
   id: string,
@@ -108,6 +130,7 @@ export async function updateTemplate(
     observations: string | null;
     amount: string;
     kind: LineKind;
+    months: number[] | null;
   },
   tx: Tx | typeof db = db,
 ): Promise<Template | null> {
@@ -119,6 +142,7 @@ export async function updateTemplate(
       observations: patch.observations,
       amount: patch.amount,
       kind: patch.kind,
+      months: patch.months,
       updatedAt: sql`now()`,
     })
     .where(and(eq(template.userId, userId), eq(template.id, id)))
@@ -165,4 +189,18 @@ export async function reactivateTemplate(
     )
     .returning();
   return updated ?? null;
+}
+
+// HARD delete (PRD C23 / §13, UC-20). Safe because no FK references
+// `template` — month lines are snapshots copied at clone time.
+export async function deleteTemplate(
+  userId: string,
+  id: string,
+  tx: Tx | typeof db = db,
+): Promise<Template | null> {
+  const [deleted] = await tx
+    .delete(template)
+    .where(and(eq(template.userId, userId), eq(template.id, id)))
+    .returning();
+  return deleted ?? null;
 }

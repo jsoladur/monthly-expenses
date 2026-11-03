@@ -13,7 +13,7 @@ import {
   type MonthIncome,
 } from "@/server/db/schema";
 import { findMonthById } from "@/server/repositories/month";
-import { listActiveTemplates } from "@/server/repositories/template";
+import { listActiveTemplatesForMonth } from "@/server/repositories/template";
 import { MonthNotFoundError } from "@/server/services/months";
 import { parseAmount, sumCents } from "@/server/money";
 
@@ -35,7 +35,7 @@ import { parseAmount, sumCents } from "@/server/money";
 // are first-class (PRD §7.6) so we never use `Math.abs` or non-algebraic
 // sums. Overspend baseline uses `month_income` / `month_fixed_line` /
 // `month_actual_expense` join paths that already exist in their respective
-// repositories; we re-use `listActiveTemplates` so the baseline is sourced
+// repositories; we re-use `listActiveTemplatesForMonth` so the baseline is sourced
 // from the SAME clone-source query as month creation (PRD §7.4 vs §7.8).
 //
 // Tenancy: every read joins on `month.user_id` (PRD §5.1). A tenant calling
@@ -115,8 +115,9 @@ export async function getMonthSummary(
 //
 // LEFT   = Σ month_actual_expense.amount per expense category for the open
 //          month.
-// RIGHT  = Σ active template amounts in that category (committed + estimated).
-//          Same total as Fixed Expenses → Distribution by category.
+// RIGHT  = Σ active template amounts in that category (committed + estimated)
+//          that apply to the open month-number (PRD C23, UC-20). For
+//          unscheduled templates, same total as Fixed Expenses → Distribution.
 //          The MONTH'S remaining is NEVER used for this baseline.
 // Warn only when LEFT > RIGHT. Categories with no active templates get
 // NO warning.
@@ -158,10 +159,10 @@ export async function getOverspendWarnings(
     return [];
   }
 
-  // RIGHT side: per-category ACTIVE templates (committed + estimated). Reuse
-  // `listActiveTemplates` so the baseline matches the Fixed Expenses pie
-  // (active rows only) and the clone-source query UC-06 uses at month creation.
-  const activeTemplates = await listActiveTemplates(userId);
+  // RIGHT side: per-category ACTIVE templates (committed + estimated) that
+  // apply to this month-number — the same clone-source query UC-06 uses at
+  // month creation (PRD §7.4 / C23).
+  const activeTemplates = await listActiveTemplatesForMonth(userId, owned.month);
   const planByCategory = new Map<string, number>();
   for (const tpl of activeTemplates) {
     planByCategory.set(

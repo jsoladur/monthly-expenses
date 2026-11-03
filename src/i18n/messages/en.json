@@ -85,7 +85,9 @@
     "targetMonthNotFound": "That month no longer exists. Reload the page.",
     "targetNotUpcoming": "Pick a later month of this year that already exists.",
     "notCurrentYear": "This move is only available in the current year.",
-    "nothingToExport": "Nothing to export for that selection."
+    "nothingToExport": "Nothing to export for that selection.",
+    "emptySchedule": "Pick at least one month, or turn off “Only in some months”.",
+    "invalidSchedule": "Months must be between January and December."
   },
   "warnings": {
     "title": "Warnings",
@@ -376,10 +378,19 @@
       "deactivate": "Deactivate",
       "reactivate": "Reactivate",
       "placeholder": "e.g. Rent",
-      "selectCategory": "Pick a category"
+      "selectCategory": "Pick a category",
+      "delete": "Delete",
+      "confirmDelete": "Delete this fixed expense permanently? Months you already created keep their copy."
     },
     "help": "Fixed expenses are copied into a new month exactly once when that month is created. Inactive fixed expenses are not cloned.",
-    "cloneCopy": "Fixed expenses are copied when the month is created. This month is independent after that."
+    "cloneCopy": "Fixed expenses are copied when the month is created. This month is independent after that.",
+    "schedule": {
+      "toggle": "Only in some months",
+      "help": "Leave it off for expenses charged every month.",
+      "legend": "Months this fixed expense is copied into",
+      "everyMonth": "Every month",
+      "monthsList": "Copied in: {months}"
+    }
   },
   "annuals": {
     "title": "Annuals",

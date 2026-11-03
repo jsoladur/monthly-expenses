@@ -84,6 +84,7 @@ Table template {
   observations text
   amount numeric(14,2) [not null, note: 'May be negative (PRD §7.6). ADR-5: numeric(14,2) in DB, integer cents in domain code']
   kind line_kind [not null, note: 'committed | estimated (PRD §6.3)']
+  months "smallint[]" [note: 'Month schedule (PRD C23, UC-20, migration 0005). NULL = every month. Otherwise sorted unique month-numbers 1-12, 1..11 entries (all 12 is normalized to NULL). Check template_months_ck. Clone source = months IS NULL OR month = ANY(months).']
   active boolean [not null, default: true, note: 'Inactive templates are NOT cloned into new months; existing months stay unchanged (PRD §6.3 / §7.8)']
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
@@ -94,7 +95,7 @@ Table template {
     category_id [name: 'template_category_idx']
   }
 
-  Note: 'Reusable fixed/estimated definitions (management form). CLONE SOURCE ONLY at month creation — never updated from month edits (PRD §6.3). Soft delete (PRD §13).'
+  Note: 'Reusable fixed/estimated definitions (management form). CLONE SOURCE ONLY at month creation — never updated from month edits (PRD §6.3). Soft delete (deactivate) AND explicit hard delete (PRD §13 / C23); no FK references this table, month lines are snapshots.'
 }
 
 Table annual {

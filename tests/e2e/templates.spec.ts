@@ -109,6 +109,51 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Gastos fijos" })).toBeVisible();
     await expect(page.getByText("Aún no hay gastos fijos.")).toBeVisible();
   });
+
+  test("month schedule + hard delete (UC-20 acceptance)", async ({ context, page }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc20-${Date.now()}@example.com`,
+      googleSub: `e2e-uc20-sub-${Date.now()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetUserState(DB_URL, user.id);
+    await seedActiveExpenseCategory(DB_URL, user.id, "Utilities");
+
+    await page.goto(`${BASE_URL}/en/templates`);
+
+    // Add "Water" scheduled for Jan, Mar, Jul, Oct: toggle on starts with no
+    // month selected, so pick the four that apply.
+    await page.locator("#new-committed-name").fill("Water");
+    await page.locator("#new-committed-amount").fill("60.00");
+    await page.getByLabel("Only in some months").check();
+    for (const m of ["Jan", "Mar", "Jul", "Oct"]) {
+      await page.getByRole("button", { name: m, exact: true }).click();
+    }
+    await page.getByRole("button", { name: "Add" }).click();
+    await expect(page.getByText("Copied in: Jan · Mar · Jul · Oct")).toBeVisible();
+
+    // Deselecting every month blocks the save with a keyed error.
+    await page.getByRole("button", { name: "Edit" }).click();
+    for (const m of ["Jan", "Mar", "Jul", "Oct"]) {
+      await page.getByRole("button", { name: m, exact: true }).click();
+    }
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(/Pick at least one month/)).toBeVisible();
+
+    // Cancel the edit, then Delete from the row after confirming.
+    await page.getByRole("button", { name: "Cancel" }).click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText("No fixed expenses yet.")).toBeVisible();
+
+    const sql = postgres(DB_URL, { max: 1, prepare: false });
+    try {
+      const rows = await sql`SELECT id FROM template WHERE user_id = ${user.id}`;
+      expect(rows.length).toBe(0);
+    } finally {
+      await sql.end({ timeout: 1 });
+    }
+  });
 });
 
 // ----------------------------------------------------------------------------

@@ -14,7 +14,7 @@
 
 ## Progress
 
-- Slices DONE: **20 / 20**
+- Slices DONE: **21 / 21**
 - Next up: —
 
 ## Status table
@@ -42,3 +42,4 @@
 | UC-17 | Actual name autocomplete (add-ticket form) | DONE | 2026-09-12 | Prefix autocomplete on `#new-actual-name` from this month + 2 prior months. RSC loads a tenant-scoped unique-name corpus; the client filters after 2 folded characters and shows at most 5 inline suggestions (44px rows, sky-tint active). Selecting a name fills the name only. No schema change. |
 | UC-18 | Pass estimated line to an upcoming month | DONE | 2026-09-12 | Cut-paste an estimated `month_fixed_line` onto a later created month of the current calendar year. Hidden from History and other years. Button only when later months already exist. Target `origin = month_only`, remaining = original = source remaining. No schema change. No undo. |
 | UC-19 | Excel export of month expenses | DONE | 2026-09-13 | Home Export picker (All / year / specific months, newest first). One `.xlsx` sheet per month named `{month} {year}`; Summary on top; no Origin column; currency format + Excel formulas for Totals/Summary. ExcelJS (ADR-11). No schema change. |
+| UC-20 | Fixed expense hard delete & month schedule | DONE | 2026-11-03 | PO decision 2026-11-03 (PRD UC-25 / C23). Migration 0005 adds nullable `template.months smallint[]` + `template_months_ck` (1..11 entries, values 1-12). `NULL` = every month; pure `normalizeMonths` in `src/lib/template-schedule.ts` collapses all-12 to `NULL`, rejects empty (`EmptyScheduleError`) and out-of-range (`InvalidScheduleError`). Clone (`createMonth`) and overspend baseline (`getOverspendWarnings`) use the new `listActiveTemplatesForMonth(userId, month)`. Fixed-expenses totals/pies stay catalog-wide (all active templates). Hard delete via `deleteTemplate` repo/service/action; no FK references `template`, so existing month lines stay. UI: `MonthScheduleField` + `ScheduleRail` in `templates/month-schedule.tsx`; Delete is a row trash action with `window.confirm`. Tests: `tests/unit/template-schedule.test.ts`, `tests/integration/template-schedule.test.ts` (#35–#40 + DB check), e2e case in `tests/e2e/templates.spec.ts`. Pre-existing: `tests/e2e/summary.spec.ts` #5 expects `2000.00 €` but display now has a thousands separator. |

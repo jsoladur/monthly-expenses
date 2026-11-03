@@ -55,6 +55,7 @@ export default async function TemplatesPage({
             name: row.name,
             observations: row.observations ?? "",
             amountCents: amountStringToCents(row.amount),
+            months: row.months ?? null,
             active: row.active,
           }))}
           expenseCategories={expenseCategories.map((row) => ({ id: row.id, name: row.name }))}

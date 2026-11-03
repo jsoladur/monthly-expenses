@@ -9,13 +9,16 @@ import { requireUserId } from "@/server/auth/require-user-id";
 import { AmountFormatError } from "@/server/money";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import {
+  EmptyScheduleError,
   InactiveCategoryError,
+  InvalidScheduleError,
   IncomeCategoryError,
   TemplateAlreadyActiveError,
   TemplateAlreadyInactiveError,
   TemplateNotFoundError,
   createTemplate as serviceCreate,
   deactivateTemplate as serviceDeactivate,
+  deleteTemplate as serviceDelete,
   reactivateTemplate as serviceReactivate,
   updateTemplate as serviceUpdate,
 } from "@/server/services/templates";
@@ -43,12 +46,17 @@ import {
 
 const kindSchema = z.enum(lineKindEnum.enumValues);
 
+// Month schedule (UC-20): null = every month. Empty arrays pass Zod so the
+// service can answer with the specific `EmptyScheduleError`.
+const monthsSchema = z.array(z.int().min(1).max(12)).max(12).nullable();
+
 const createSchema = z.object({
   categoryId: uuidSchema,
   name: nonEmptyStringSchema.max(80),
   observations: nonEmptyStringSchema.max(500).optional(),
   amount: amountSchema,
   kind: kindSchema,
+  months: monthsSchema,
 });
 
 const updateSchema = z.object({
@@ -58,6 +66,7 @@ const updateSchema = z.object({
   observations: nonEmptyStringSchema.max(500).optional(),
   amount: amountSchema,
   kind: kindSchema,
+  months: monthsSchema,
 });
 
 const idSchema = z.object({
@@ -72,6 +81,8 @@ export type TemplateActionError =
   | "alreadyInactive"
   | "alreadyActive"
   | "amountFormat"
+  | "emptySchedule"
+  | "invalidSchedule"
   | "validation";
 
 export type TemplateActionResult =
@@ -84,6 +95,7 @@ export async function createTemplateAction(input: {
   observations?: string;
   amount: string;
   kind: "committed" | "estimated";
+  months: number[] | null;
 }): Promise<TemplateActionResult> {
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
@@ -97,6 +109,7 @@ export async function createTemplateAction(input: {
       observations: parsed.data.observations ?? null,
       amount: parsed.data.amount,
       kind: parsed.data.kind,
+      months: parsed.data.months,
     });
   } catch (err) {
     if (err instanceof IncomeCategoryError) {
@@ -111,6 +124,12 @@ export async function createTemplateAction(input: {
     if (err instanceof AmountFormatError) {
       return { ok: false, error: "amountFormat" };
     }
+    if (err instanceof EmptyScheduleError) {
+      return { ok: false, error: "emptySchedule" };
+    }
+    if (err instanceof InvalidScheduleError) {
+      return { ok: false, error: "invalidSchedule" };
+    }
     throw err;
   }
   revalidatePath("/[locale]/templates", "page");
@@ -124,6 +143,7 @@ export async function updateTemplateAction(input: {
   observations?: string;
   amount: string;
   kind: "committed" | "estimated";
+  months: number[] | null;
 }): Promise<TemplateActionResult> {
   const parsed = updateSchema.safeParse(input);
   if (!parsed.success) {
@@ -138,6 +158,7 @@ export async function updateTemplateAction(input: {
       observations: parsed.data.observations ?? null,
       amount: parsed.data.amount,
       kind: parsed.data.kind,
+      months: parsed.data.months,
     });
   } catch (err) {
     if (err instanceof IncomeCategoryError) {
@@ -154,6 +175,12 @@ export async function updateTemplateAction(input: {
     }
     if (err instanceof AmountFormatError) {
       return { ok: false, error: "amountFormat" };
+    }
+    if (err instanceof EmptyScheduleError) {
+      return { ok: false, error: "emptySchedule" };
+    }
+    if (err instanceof InvalidScheduleError) {
+      return { ok: false, error: "invalidSchedule" };
     }
     throw err;
   }
@@ -203,6 +230,26 @@ export async function reactivateTemplateAction(input: {
     }
     if (err instanceof InactiveCategoryError) {
       return { ok: false, error: "inactiveCategory" };
+    }
+    throw err;
+  }
+  revalidatePath("/[locale]/templates", "page");
+  return { ok: true };
+}
+
+export async function deleteTemplateAction(input: {
+  id: string;
+}): Promise<TemplateActionResult> {
+  const parsed = idSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "validation" };
+  }
+  const userId = await requireUserId(await getLocaleFromHeaders());
+  try {
+    await serviceDelete(userId, parsed.data);
+  } catch (err) {
+    if (err instanceof TemplateNotFoundError) {
+      return { ok: false, error: "notFound" };
     }
     throw err;
   }

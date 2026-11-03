@@ -37,6 +37,22 @@ export function monthName(locale: AppLocale, month: number): string {
   );
 }
 
+// Short, capitalized month label ("Jan" / "Ene") for compact pickers such
+// as the fixed-expense month schedule (UC-20). Trailing dots some locales
+// add to abbreviations are dropped.
+export function monthShortName(locale: AppLocale, month: number): string {
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new RangeError(`month must be an integer in 1..12, received ${month}`);
+  }
+  const raw = new Intl.DateTimeFormat(localeOf(locale), {
+    month: "short",
+    timeZone: "UTC",
+  })
+    .format(new Date(Date.UTC(2000, month - 1, 1)))
+    .replace(/\.$/, "");
+  return raw.charAt(0).toLocaleUpperCase(localeOf(locale)) + raw.slice(1);
+}
+
 export function monthYear(locale: AppLocale, year: number, month: number): string {
   if (!Number.isInteger(year)) {
     throw new RangeError(`year must be an integer, received ${year}`);

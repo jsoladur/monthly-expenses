@@ -141,6 +141,7 @@ erDiagram
         text observations
         numeric amount "numeric(14,2), may be negative"
         text kind "committed | estimated"
+        smallint_array months "NULL = every month; else month-numbers 1-12 (UC-20)"
         boolean active "inactive = not cloned"
     }
     MONTHS {
@@ -184,7 +185,8 @@ Invariants enforced by the schema and service layer:
 
 - `unique(user_id, year, month)` on `MONTHS` — duplicate month creation is rejected (PRD UC-08).
 - Category name unique per `(user_id, kind)` **among active rows** (partial unique index `WHERE active`) (PRD §6.2).
-- Soft delete only on `CATEGORIES`, `TEMPLATES` (and future catalogs). Hard delete on all month-scoped money rows (PRD §13).
+- Soft delete on `CATEGORIES`, `TEMPLATES` (and future catalogs). `TEMPLATES` additionally allow an explicit hard delete (PRD C23 / UC-20) — safe because no FK references `template`; month lines are snapshots. Hard delete on all month-scoped money rows (PRD §13).
+- `TEMPLATES.months` (`smallint[]`, nullable, UC-20): `NULL` = every month. Check `template_months_ck` keeps it non-empty, ≤ 11 entries, values 1–12; the service normalizes "all 12" to `NULL`. Clone source = `active AND (months IS NULL OR month = ANY(months))`.
 - `converted_from_line_id` + `edited_after_conversion` implement PRD §7.5 undo: undo allowed only while the actual is unedited; the conversion and its undo run in **one transaction** each.
 
 ---
@@ -204,7 +206,7 @@ flowchart TD
 Rules:
 
 1. **Repositories require `userId` as an explicit first parameter** and apply it in every `WHERE`. There is no way to call a repository without a tenant id. This is the enforcement mechanism for PRD §5.1.
-2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot, pass-to-actual (committed only), pass-to-upcoming-month (estimated, current year, later created month), overspend vs **active template** sums.
+2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot (only templates whose `months` schedule includes the new month-number, UC-20), pass-to-actual (committed only), pass-to-upcoming-month (estimated, current year, later created month), overspend vs **active template** sums.
 3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16, and the add-actual name corpus, UC-17) stay in RSC: GET `?q=` or page load → service → repository SQL. Do not add a mutation-shaped server action for a search or for name suggestions. **Pass to upcoming month** (UC-18) is a mutation: Zod → service transaction → revalidate source and target month pages. **Excel export** (UC-19) is a **read**: Zod → `requireUserId()` → service → `{ filename, base64 }`. RSC cannot trigger a file download, so a Server Action carries the bytes (CSRF). It must **not** `revalidatePath`. `exceljs` is imported only from server modules.
 4. Amounts cross the wire as **strings** (`"1234.56"`). Zod schema: `^-?\d{1,12}\.\d{2}$` (PRD C9: dot decimal, 2 places, may be negative).
 
@@ -281,7 +283,7 @@ expenses/
 1. DB columns: `numeric(14,2)`. Never `float`, `real`, or JS `number` arithmetic on amounts.
 2. Domain code converts to **integer cents** on entry and back to `"1234.56"` strings on exit (wire + amount input). All sums (potential savings, overspend baselines, Excel cached totals) are integer-cents algebra — including negatives (PRD §7.6). **Display** via `formatMoney` adds a comma thousands separator (`1,234.56 €`); the decimal remains a dot in both locales. **Excel cells** (UC-19) convert line items once at the write boundary with `Number(formatCents(cents))`. Section Totals and the Summary block are Excel formulas that reference those cells; the cached formula `result` is the same integer-cents value. Amount cells use currency number format from the profile (`#,##0.00 "€"` with the `formatMoney` symbol after the amount).
 3. Potential savings (PRD §7.1): `sum(incomes) − (sum(actuals) + sum(remaining_amount of fixed/estimated lines))`. Hard-deleted rows are excluded by virtue of being gone.
-4. Overspend warning (PRD §7.4): `sum(actuals in category)` vs `sum(ACTIVE TEMPLATE amounts in category)` (committed + estimated) — never the month remaining. Warn only, never block. Categories with no active templates get no warning.
+4. Overspend warning (PRD §7.4): `sum(actuals in category)` vs `sum(ACTIVE TEMPLATE amounts in category)` (committed + estimated) **that apply to the open month-number** (`months IS NULL OR month ∈ months`, UC-20) — never the month remaining. Warn only, never block. Categories with no applicable active templates get no warning.
 5. **Percent change (UC-15):** `ratioChangeToPercentTenths(currentCents, priorCents)` returns `(current/prior − 1)` as integer tenths of a percent (25.0% → `250`), half-up. Omit when `prior === 0`. Never divide euro floats.
 6. **CAGR (UC-15):** `cagrPercentTenths(startCents, endCents, years)` is `(end/start)^(1/n) − 1` via an integer nth-root of a scaled cents ratio — **not** `Math.pow` on euro amounts. Skip when `startCents === 0` (treat as a new category instead). `formatPercentTenths` renders the 1-decimal string.
 

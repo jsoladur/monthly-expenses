@@ -4,6 +4,7 @@ import { AmountFormatError, formatCents, parseAmount } from "@/server/money";
 import type { LineKind, Template } from "@/server/db/schema";
 import {
   deactivateTemplate as repoDeactivate,
+  deleteTemplate as repoDelete,
   findTemplateById,
   insertTemplate,
   listActiveTemplates as listActiveTemplatesFromRepo,
@@ -16,6 +17,14 @@ import {
 import { findCategoryById } from "@/server/repositories/category";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
+import { normalizeMonths } from "@/lib/template-schedule";
+
+export {
+  EmptyScheduleError,
+  InvalidScheduleError,
+  appliesToMonth,
+  normalizeMonths,
+} from "@/lib/template-schedule";
 
 // ============================================================================
 // Templates service (UC-05, PRD §6.3 / §7.4 / §13, ARCH §5 rule 3).
@@ -35,6 +44,11 @@ import type { Tx } from "@/server/repositories/user";
 //     integration test that snapshots month row counts around a CRUD cycle.
 //   - Inactive templates are excluded from `listActiveTemplates*` so UC-06
 //     cloning never picks them up (PRD §6.3 / C17).
+//   - Month schedule (PRD C23, UC-20): `months` is NULL (every month) or the
+//     sorted unique month-numbers 1-12. `normalizeMonths` collapses "all 12"
+//     to NULL and rejects an empty schedule.
+//   - Hard delete (PRD C23 / §13, UC-20) removes the row; existing months
+//     keep their cloned copies.
 //
 // Domain errors are exported as named classes. Server actions translate them
 // into i18n keys at the boundary; this layer must NOT depend on next-intl so
@@ -121,6 +135,7 @@ export interface TemplateInput {
   observations?: string | null;
   amount: string;
   kind: LineKind;
+  months?: readonly number[] | null;
 }
 
 export async function createTemplate(
@@ -129,6 +144,7 @@ export async function createTemplate(
   tx: Tx | typeof db = db,
 ): Promise<Template> {
   const amount = parseAmountOrThrow(input.amount);
+  const months = normalizeMonths(input.months);
   const category = await findCategoryById(userId, input.categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
@@ -148,6 +164,7 @@ export async function createTemplate(
       observations: input.observations ?? null,
       amount: formatCents(amount),
       kind: input.kind,
+      months,
       active: true,
     },
     tx,
@@ -160,6 +177,7 @@ export async function updateTemplate(
   tx: Tx | typeof db = db,
 ): Promise<Template> {
   const amount = parseAmountOrThrow(input.amount);
+  const months = normalizeMonths(input.months);
   const existing = await findTemplateById(userId, input.id, tx);
   if (!existing) {
     throw new TemplateNotFoundError();
@@ -184,6 +202,7 @@ export async function updateTemplate(
       observations: input.observations ?? null,
       amount: formatCents(amount),
       kind: input.kind,
+      months,
     },
     tx,
   );
@@ -231,6 +250,18 @@ export async function reactivateTemplate(
     throw new TemplateAlreadyActiveError();
   }
   return updated;
+}
+
+export async function deleteTemplate(
+  userId: string,
+  input: { id: string },
+  tx: Tx | typeof db = db,
+): Promise<Template> {
+  const deleted = await repoDelete(userId, input.id, tx);
+  if (!deleted) {
+    throw new TemplateNotFoundError();
+  }
+  return deleted;
 }
 
 // ----------------------------------------------------------------------------

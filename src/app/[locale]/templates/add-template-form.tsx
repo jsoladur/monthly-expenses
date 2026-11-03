@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AmountInput } from "@/components/amount-input";
 import type { CategoryOption } from "./templates-screen";
+import { MonthScheduleField } from "./month-schedule";
 
 // ============================================================================
 // Add template form (UC-05).
@@ -74,6 +75,7 @@ function AddTemplateFormBody({
 }) {
   const [bumpOnSuccess, setBumpOnSuccess] = useState(0);
   const [draftAmount, setDraftAmount] = useState("");
+  const [draftMonths, setDraftMonths] = useState<number[] | null>(null);
   const boundAction = bindKind(createTemplateAction, kind);
 
   const [state, formAction, pending] = useActionState<TemplateActionResult | null, FormData>(
@@ -83,12 +85,17 @@ function AddTemplateFormBody({
         name: String(formData.get("name") ?? "").trim(),
         observations: readObservations(formData),
         amount: draftAmount.trim(),
+        months: draftMonths,
         kind,
       };
+      if (draftMonths !== null && draftMonths.length === 0) {
+        return { ok: false, error: "emptySchedule" } satisfies TemplateActionResult;
+      }
       const result = await boundAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
         setDraftAmount("");
+        setDraftMonths(null);
       }
       return result;
     },
@@ -168,6 +175,11 @@ function AddTemplateFormBody({
       <p className="text-muted-foreground text-xs">
         {t("amount")} · {currency}
       </p>
+      <MonthScheduleField
+        idPrefix={`new-${kind}`}
+        value={draftMonths}
+        onChange={setDraftMonths}
+      />
       {errorMessage && (
         <p role="alert" className="text-destructive text-xs">
           {errorMessage}
@@ -187,6 +199,7 @@ function bindKind(
     observations?: string;
     amount: string;
     kind: Kind;
+    months: number[] | null;
   }) => Promise<TemplateActionResult>,
   kind: Kind,
 ): (input: {
@@ -194,6 +207,7 @@ function bindKind(
   name: string;
   observations?: string;
   amount: string;
+  months: number[] | null;
 }) => Promise<TemplateActionResult> {
   return (input) => action({ ...input, kind });
 }
@@ -221,6 +235,10 @@ function errorToMessage(
       return tv("amountFormat");
     case "validation":
       return tv("required");
+    case "emptySchedule":
+      return tv("emptySchedule");
+    case "invalidSchedule":
+      return tv("invalidSchedule");
     case "alreadyInactive":
     case "alreadyActive":
       return null;

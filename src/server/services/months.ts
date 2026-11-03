@@ -18,7 +18,7 @@ import {
   listMonthYears,
   listMonthsByYear,
 } from "@/server/repositories/month";
-import { listActiveTemplates } from "@/server/repositories/template";
+import { listActiveTemplatesForMonth } from "@/server/repositories/template";
 
 // ============================================================================
 // Months service (UC-06, PRD UC-08 / UC-14 / UC-19 / C6 / C7 / C12 / §7.8).
@@ -110,7 +110,8 @@ export async function createMonth(
       tx,
     );
 
-    const activeTemplates = await listActiveTemplates(userId, tx);
+    // Only templates whose schedule covers this month-number (PRD C23).
+    const activeTemplates = await listActiveTemplatesForMonth(userId, input.month, tx);
 
     if (activeTemplates.length > 0) {
       await insertClonedLines(

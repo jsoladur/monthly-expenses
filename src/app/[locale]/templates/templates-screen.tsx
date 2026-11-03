@@ -23,6 +23,8 @@ export interface TemplateRowData {
   name: string;
   observations: string;
   amountCents: number;
+  // UC-20 month schedule: null = every month.
+  months: number[] | null;
   active: boolean;
 }
 
