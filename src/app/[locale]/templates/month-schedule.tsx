@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { isAppLocale, monthShortName } from "@/i18n/format";
 import { routing } from "@/i18n/routing";
@@ -9,9 +10,10 @@ import { cn } from "@/lib/utils";
 // Fixed expense month schedule (UC-20, PRD C23, STYLE-GUIDE §5).
 //
 // `MonthScheduleField` is the add/edit form control. `null` = every month
-// (toggle off). Turning the toggle on pre-selects all 12 months so the user
-// only deselects the months that do not apply; the service normalizes a
-// 12-month schedule back to `null` and rejects an empty one.
+// (toggle off). Turning the toggle on restores the months picked before it
+// was last turned off in this form, or starts with none selected; the
+// service normalizes a 12-month schedule back to `null` and rejects an empty
+// one.
 //
 // `ScheduleRail` is the read-row summary: a 12-segment strip (aria-hidden)
 // plus the short month list that carries the meaning for screen readers.
@@ -37,6 +39,17 @@ export function MonthScheduleField({
   const locale = useAppLocale();
   const enabled = value !== null;
   const selected = new Set(value ?? []);
+  // Selection kept while the toggle is off, so off → on restores it.
+  const remembered = useRef<number[]>(value ?? []);
+
+  const toggleSchedule = (on: boolean) => {
+    if (on) {
+      onChange([...remembered.current]);
+    } else {
+      remembered.current = value ?? [];
+      onChange(null);
+    }
+  };
 
   const toggleMonth = (month: number) => {
     const next = new Set(selected);
@@ -56,7 +69,7 @@ export function MonthScheduleField({
           id={`${idPrefix}-schedule-toggle`}
           type="checkbox"
           checked={enabled}
-          onChange={(event) => onChange(event.target.checked ? [...ALL_MONTHS] : null)}
+          onChange={(event) => toggleSchedule(event.target.checked)}
           className="accent-primary size-4 cursor-pointer"
         />
         <span>{t("toggle")}</span>

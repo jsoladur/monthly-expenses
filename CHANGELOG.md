@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-03
+
 ### Added
-- Delete a fixed expense permanently from its edit form; months already created keep their copy (UC-20).
+- Delete a fixed expense permanently from its row; months already created keep their copy (UC-20).
 - Limit a fixed expense to specific months ("Only in some months"); new months only copy the fixed expenses that apply to them, and rows show which months apply (UC-20).
 
 ### Changed

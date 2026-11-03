@@ -480,8 +480,8 @@ Implementation slice: `docs/usecases/UC-19-excel-export.md`.
 
 Implementation slice: `docs/usecases/UC-20-fixed-expense-delete-and-schedule.md`.
 
-- On Fixed expenses, the edit form of any template (active or inactive) offers **Delete**. After confirmation the template is permanently removed. Months already created keep their copied lines.
-- Add and edit forms offer **Only in some months**. Off = applies every month (default). On = a 12-month picker, all months pre-selected; the user deselects months that do not apply. At least one month must remain selected. All 12 selected is saved as "every month".
+- On Fixed expenses, every template row (active or inactive) offers **Delete**. After confirmation the template is permanently removed. Months already created keep their copied lines.
+- Add and edit forms offer **Only in some months**. Off = applies every month (default). On = a 12-month picker that starts empty (or restores the months picked before it was switched off in the same form); the user selects the months that apply. At least one month must remain selected. All 12 selected is saved as "every month".
 - Creating a month clones only active templates that apply to that month-number.
 - The overspend plan for a month counts only templates that apply to that month-number.
 - Rows with a schedule show which months apply.

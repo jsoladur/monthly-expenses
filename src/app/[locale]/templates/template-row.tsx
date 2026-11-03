@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { IconButton } from "@/components/ui/icon-button";
 import { Pencil, CircleOff, RotateCcw, Check, X, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { AmountInput } from "@/components/amount-input";
 import { formatMoney } from "@/i18n/format";
 import {
@@ -24,8 +23,9 @@ import { MonthScheduleField, ScheduleRail } from "./month-schedule";
 //   - default: shows name + category + amount + (Deactivate | Reactivate) +
 //     Edit button
 //   - editing: shows the same fields as the add form (incl. the UC-20 month
-//     schedule) + Save + Cancel, and Delete (hard delete, UC-20) — Delete
-//     lives in the edit form, never as a row trash icon (STYLE-GUIDE §5)
+//     schedule) + Save + Cancel
+//   - Delete (hard delete, UC-20) is a row action next to Deactivate /
+//     Reactivate, same destructive IconButton as income/actual rows
 //   - reacting: while the server action is in flight, the buttons disable
 //
 // All mutations go through server actions invoked via `formAction`. We use
@@ -194,18 +194,6 @@ export function TemplateRow({
             value={draftMonths}
             onChange={setDraftMonths}
           />
-          <div className="border-border/60 flex justify-start border-t pt-2">
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={pending}
-              onClick={handleDelete}
-            >
-              <Trash2 className="size-4" />
-              {t("actions.delete")}
-            </Button>
-          </div>
           {error && (
             <p role="alert" className="text-destructive text-xs">
               {error}
@@ -267,6 +255,13 @@ export function TemplateRow({
             onClick={handleReactivate}
           />
         )}
+        <IconButton
+          icon={<Trash2 className="size-4" />}
+          label={t("actions.delete")}
+          destructive
+          disabled={pending}
+          onClick={handleDelete}
+        />
       </div>
       {error && (
         <p role="alert" className="text-destructive basis-full text-xs">

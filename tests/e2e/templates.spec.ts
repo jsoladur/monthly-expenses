@@ -121,12 +121,12 @@ test.describe("UC-05 fixed/estimated templates", () => {
 
     await page.goto(`${BASE_URL}/en/templates`);
 
-    // Add "Water" scheduled for Jan, Mar, Jul, Oct: toggle on pre-selects all
-    // 12 months, so deselect the other eight.
+    // Add "Water" scheduled for Jan, Mar, Jul, Oct: toggle on starts with no
+    // month selected, so pick the four that apply.
     await page.locator("#new-committed-name").fill("Water");
     await page.locator("#new-committed-amount").fill("60.00");
     await page.getByLabel("Only in some months").check();
-    for (const m of ["Feb", "Apr", "May", "Jun", "Aug", "Sep", "Nov", "Dec"]) {
+    for (const m of ["Jan", "Mar", "Jul", "Oct"]) {
       await page.getByRole("button", { name: m, exact: true }).click();
     }
     await page.getByRole("button", { name: "Add" }).click();
@@ -140,7 +140,8 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText(/Pick at least one month/)).toBeVisible();
 
-    // Delete (inside the edit form) after confirming.
+    // Cancel the edit, then Delete from the row after confirming.
+    await page.getByRole("button", { name: "Cancel" }).click();
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText("No fixed expenses yet.")).toBeVisible();

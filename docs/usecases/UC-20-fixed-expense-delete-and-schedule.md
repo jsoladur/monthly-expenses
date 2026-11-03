@@ -55,10 +55,10 @@ Two changes to the Fixed expenses catalog (`/[locale]/templates`, UC-05):
 
 - **Schedule control** in both the add form and the inline edit form:
   - A checkbox **"Only in some months"** (off by default). Off → `months = null`.
-  - On → a 12-cell month grid (locale short month names from `Intl`, never hardcoded): 4 columns × 3 rows on phones, 6 × 2 from `sm`, 12 × 1 from `md`. Each cell is a toggle button (`aria-pressed`), `h-11` touch target. Selected = sky-tint fill + navy text + navy border (STYLE-GUIDE §5 selection recipe). Turning the checkbox on pre-selects **all 12** months; the user deselects the ones that do not apply.
+  - On → a 12-cell month grid (locale short month names from `Intl`, never hardcoded): 4 columns × 3 rows on phones, 6 × 2 from `sm`, 12 × 1 from `md`. Each cell is a toggle button (`aria-pressed`), `h-11` touch target. Selected = sky-tint fill + navy text + navy border (STYLE-GUIDE §5 selection recipe). Turning the checkbox on starts with **no month selected** — or, if the user turned it off earlier while still in the same form, restores the months that were selected then. The user picks the months that apply.
   - Zero months selected → inline keyed error, form not submitted. All 12 selected → saved as `null`; the row shows no schedule.
 - **Schedule rail** on each row with a non-null schedule: a 12-segment strip (navy `--primary` segment = month applies, `--border` segment = month skipped) followed by the short month list ("Jan · Mar · Jul · Oct"). The strip is `aria-hidden`; the text carries the meaning.
-- **Delete** lives inside the inline edit form (STYLE-GUIDE §5 Lists: "Delete lives inside the edit sheet, not as a row trash icon"): a destructive (red) ghost button **"Delete"** separated from Save/Cancel. Clicking it asks for confirmation (`window.confirm`, same pattern as month-line and income deletes) with copy that states the month copies are kept.
+- **Delete** is a row action next to Deactivate / Reactivate: a trash `IconButton` with the destructive hover (same pattern as income and actual rows). Clicking it asks for confirmation (`window.confirm`) with copy that states the month copies are kept. PO decision 2026-11-03: visible on the row, not hidden in the edit form.
 
 ## i18n keys
 
