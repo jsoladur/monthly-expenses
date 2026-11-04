@@ -122,6 +122,39 @@ export async function updateActual(
   return updated[0] ?? null;
 }
 
+// UC-26: re-home a ticket onto another month of the SAME tenant. Both the
+// current parent month and the target month are checked against `userId`
+// in the one statement, so a foreign ticket or a foreign target updates
+// nothing (null). A move counts as an edit for the pass-to-actual undo gate
+// (PRD §7.5), so `edited_after_conversion` flips to true on converted rows;
+// for plain tickets the flag is meaningless and left as-is.
+export async function moveActual(
+  userId: string,
+  id: string,
+  targetMonthId: string,
+  tx: Tx | typeof db = db,
+): Promise<MonthActualExpense | null> {
+  const moved = await tx.execute<{ id: string }>(sql`
+    UPDATE ${monthActualExpense}
+    SET month_id = ${targetMonthId},
+        edited_after_conversion = CASE
+          WHEN converted_from_line_id IS NOT NULL THEN true
+          ELSE edited_after_conversion
+        END,
+        updated_at = now()
+    WHERE ${monthActualExpense.id} = ${id}
+      AND ${monthActualExpense.monthId} IN (
+        SELECT id FROM ${month} WHERE user_id = ${userId}
+      )
+      AND EXISTS (
+        SELECT 1 FROM ${month} WHERE id = ${targetMonthId} AND user_id = ${userId}
+      )
+    RETURNING id
+  `);
+  if (moved.length === 0) return null;
+  return findActualById(userId, id, tx);
+}
+
 export async function deleteActual(
   userId: string,
   id: string,

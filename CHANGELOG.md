@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-04
+
+### Added
+- Move an expense ticket to another month from its row on the Actuals tab: pick any later month you already created, or one of the 3 months before it. The picker shows each month's figure ("Ahorro" for closed months, "Ahorro potencial" for the current and later ones; "Saved" / "Left over" in English), the ticket keeps its category, name, notes and amount, and a notice links to the target month. Moving a ticket passed from a fixed expense removes its undo (UC-26).
+
 ## [0.12.0] - 2026-11-04
 
 ### Added

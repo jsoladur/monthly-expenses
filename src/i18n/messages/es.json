@@ -88,7 +88,8 @@
     "nothingToExport": "No hay nada que exportar para esa selección.",
     "emptySchedule": "Elige al menos un mes o desactiva «Solo en algunos meses».",
     "invalidSchedule": "Los meses deben estar entre enero y diciembre.",
-    "savingsOnIncomeCategory": "Solo las categorías de gasto pueden contar como ahorro."
+    "savingsOnIncomeCategory": "Solo las categorías de gasto pueden contar como ahorro.",
+    "moveTargetOutOfWindow": "Solo puedes moverlo a un mes ya creado: cualquiera posterior o hasta 3 meses antes."
   },
   "warnings": {
     "title": "Avisos",
@@ -280,6 +281,18 @@
       "a11y": {
         "suggestions": "{count, plural, one {# nombre reciente} other {# nombres recientes}}"
       }
+    },
+    "move": {
+      "action": "Mover a otro mes",
+      "title": "Mover a otro mes",
+      "earlier": "Meses anteriores",
+      "later": "Meses siguientes",
+      "leftOver": "Ahorro potencial {amount}",
+      "leftOverPast": "Ahorro {amount}",
+      "confirm": "Mover a {month}",
+      "done": "Gasto movido a {month}",
+      "openTarget": "Ver mes",
+      "undoLostNote": "Este gasto viene de un gasto fijo: tras moverlo ya no podrás deshacer el paso."
     }
   },
   "reservedLines": {

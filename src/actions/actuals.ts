@@ -16,6 +16,10 @@ import {
   deleteActual as serviceDelete,
   editActual as serviceEdit,
 } from "@/server/services/actuals";
+import {
+  MoveTargetOutOfWindowError,
+  moveActualToMonth as serviceMove,
+} from "@/server/services/move-actual";
 
 // ============================================================================
 // Actual expenses server actions (UC-08, ADR-6).
@@ -200,6 +204,57 @@ export async function deleteActualAction(input: {
   }
   revalidateMonthWorkspace(locale, parsed.data.year, parsed.data.month);
   return { ok: true };
+}
+
+// ----------------------------------------------------------------------------
+// Move to another month (UC-26)
+// ----------------------------------------------------------------------------
+
+const moveSchema = z.object({
+  actualId: uuidSchema,
+  targetMonthId: uuidSchema,
+});
+
+export type MoveActualActionError =
+  | "moveTargetOutOfWindow"
+  | "monthNotFound"
+  | "actualNotFound"
+  | "validation";
+
+export type MoveActualActionResult =
+  | { ok: true; to: { year: number; month: number } }
+  | { ok: false; error: MoveActualActionError };
+
+export async function moveActualAction(input: {
+  actualId: string;
+  targetMonthId: string;
+}): Promise<MoveActualActionResult> {
+  const parsed = moveSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "validation" };
+  }
+  const locale = await getLocaleFromHeaders();
+  const userId = await requireUserId(locale);
+  let result;
+  try {
+    result = await serviceMove(userId, parsed.data);
+  } catch (err) {
+    if (err instanceof MoveTargetOutOfWindowError) {
+      return { ok: false, error: "moveTargetOutOfWindow" };
+    }
+    if (err instanceof MonthNotFoundError) {
+      return { ok: false, error: "monthNotFound" };
+    }
+    if (err instanceof ActualNotFoundError) {
+      return { ok: false, error: "actualNotFound" };
+    }
+    throw err;
+  }
+  revalidateMonthWorkspace(locale, result.from.year, result.from.month);
+  revalidateMonthWorkspace(locale, result.to.year, result.to.month);
+  revalidatePath("/[locale]/search", "page");
+  revalidatePath("/[locale]/stats", "page");
+  return { ok: true, to: result.to };
 }
 
 // ----------------------------------------------------------------------------

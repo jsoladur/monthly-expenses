@@ -19,6 +19,8 @@ import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
 import { listRecentActualNameSuggestions } from "@/server/services/actuals";
 import { listUpcomingMonthsForPass } from "@/server/services/pass-to-upcoming";
+import { listMoveTargets, type MoveTargetMonth } from "@/server/services/move-actual";
+import type { MoveTargetOption } from "@/components/move-actual-drawer";
 import { isAppLocale, monthName, monthYear } from "@/i18n/format";
 import { parseAmount } from "@/server/money";
 import { MonthTouchClient } from "@/app/[locale]/months/[year]/[month]/month-touch-client";
@@ -159,6 +161,7 @@ export default async function MonthWorkspacePage({
     nameSuggestions,
     upcomingMonthsRaw,
     estimateCheck,
+    moveTargetsRaw,
   ] =
     await Promise.all([
       getMonthSummary(userId, workspace.month.id),
@@ -169,7 +172,26 @@ export default async function MonthWorkspacePage({
         ? Promise.resolve([])
         : listUpcomingMonthsForPass(userId, workspace.month.year, workspace.month.month),
       getEstimateCheck(userId, workspace.month.id),
+      listMoveTargets(userId, workspace.month.id),
     ]);
+  // UC-26: targets computed once per page; each carries its left-over so the
+  // picker can answer "is there room?" without a per-row fetch.
+  const toMoveOption = async (m: MoveTargetMonth): Promise<MoveTargetOption> => ({
+    id: m.id,
+    year: m.year,
+    month: m.month,
+    label: monthYear(locale as AppLocale, m.year, m.month),
+    leftOverCents: (await getMonthSummary(userId, m.id)).potentialSavings,
+    // A month before the current calendar month is closed: its figure is
+    // what was saved, not a forecast.
+    isPast: isBeforeCurrentMonth(m.year, m.month, new Date()),
+  });
+  const moveTargets = workspace.actuals.length > 0
+    ? {
+        previous: await Promise.all(moveTargetsRaw.previous.map(toMoveOption)),
+        upcoming: await Promise.all(moveTargetsRaw.upcoming.map(toMoveOption)),
+      }
+    : { previous: [], upcoming: [] };
   const now = new Date();
   const showPastMonthBanner = isPastMonth(
     workspace.month.year,
@@ -261,6 +283,7 @@ export default async function MonthWorkspacePage({
               }))}
               committedReservedLines={committedLines}
               nameSuggestions={nameSuggestions}
+              moveTargets={moveTargets}
             />
           }
           incomesTab={

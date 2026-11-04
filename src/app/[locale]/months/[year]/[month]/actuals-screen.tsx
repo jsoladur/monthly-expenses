@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AmountInput } from "@/components/amount-input";
 import { ActualNameAutocomplete } from "@/components/actual-name-autocomplete";
@@ -9,7 +9,9 @@ import {
   addActualAction,
   deleteActualAction,
   editActualAction,
+  moveActualAction,
   type ActualActionResult,
+  type MoveActualActionResult,
 } from "@/actions/actuals";
 import { deleteMonthLineAction } from "@/actions/reserved-lines";
 import {
@@ -19,7 +21,13 @@ import {
 } from "@/actions/pass-to-actual";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { Pencil, Trash2, Undo2, ArrowRightCircle } from "lucide-react";
+import { Pencil, Trash2, Undo2, ArrowRightCircle, ArrowLeftRight, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import {
+  MoveActualDrawer,
+  type MoveTargetGroups,
+  type MoveTargetOption,
+} from "@/components/move-actual-drawer";
 import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/reserved-lines-types";
 import { Collapsible } from "@/components/ui/collapsible";
 import { SwipeAction } from "@/components/ui/swipe-action";
@@ -73,6 +81,7 @@ export function ActualsScreen({
   expenseCategories,
   committedReservedLines = [],
   nameSuggestions = [],
+  moveTargets = EMPTY_MOVE_TARGETS,
 }: {
   monthId: string;
   year: number;
@@ -82,8 +91,12 @@ export function ActualsScreen({
   expenseCategories: CategoryOption[];
   committedReservedLines?: ReservedLineRowData[];
   nameSuggestions?: ActualNameSuggestion[];
+  moveTargets?: MoveTargetGroups;
 }) {
   const t = useTranslations("actuals");
+  const [movedTo, setMovedTo] = useState<MoveTargetOption | null>(null);
+  const dismissMoved = useCallback(() => setMovedTo(null), []);
+  const canMove = moveTargets.previous.length + moveTargets.upcoming.length > 0;
 
   return (
     <section className="flex flex-col gap-3">
@@ -107,9 +120,15 @@ export function ActualsScreen({
               month={month}
               currency={currency}
               expenseCategories={expenseCategories}
+              moveTargets={canMove ? moveTargets : null}
+              onMoved={setMovedTo}
             />
           ))}
         </ul>
+      )}
+
+      {movedTo && (
+        <MovedToast target={movedTo} onDismiss={dismissMoved} />
       )}
 
       {initialActuals.length === 0 && committedReservedLines.length === 0 && (
@@ -315,6 +334,8 @@ function ActualRow({
   month,
   currency,
   expenseCategories,
+  moveTargets,
+  onMoved,
 }: {
   row: ActualRowData;
   monthId: string;
@@ -322,10 +343,15 @@ function ActualRow({
   month: number;
   currency: string;
   expenseCategories: CategoryOption[];
+  moveTargets: MoveTargetGroups | null;
+  onMoved: (target: MoveTargetOption) => void;
 }) {
   const t = useTranslations("actuals");
   const tv = useTranslations("validation");
   const [editing, setEditing] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [movePending, setMovePending] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [undoPending, setUndoPending] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
@@ -349,6 +375,20 @@ function ActualRow({
     if (!result.ok) {
       setUndoError(errorToMessageUndo(result, tv));
     }
+  };
+
+  const handleMove = async (target: MoveTargetOption): Promise<boolean> => {
+    if (movePending) return false;
+    setMovePending(true);
+    setMoveError(null);
+    const result = await moveActualAction({ actualId: row.id, targetMonthId: target.id });
+    setMovePending(false);
+    if (!result.ok) {
+      setMoveError(errorToMessageMove(result, tv));
+      return false;
+    }
+    onMoved(target);
+    return true;
   };
 
   if (editing) {
@@ -394,6 +434,7 @@ function ActualRow({
           <RowActions
             canUndoPass={canUndoPass}
             onEdit={() => setEditing(true)}
+            onMove={moveTargets ? () => setMoveOpen(true) : undefined}
             onUndo={handleUndo}
             onDelete={handleDelete}
             undoPending={undoPending}
@@ -407,6 +448,20 @@ function ActualRow({
           </p>
         )}
       </div>
+      {moveTargets && (
+        <MoveActualDrawer
+          open={moveOpen}
+          onOpenChange={setMoveOpen}
+          ticketName={row.name}
+          ticketAmountCents={row.amountCents}
+          currency={currency}
+          targets={moveTargets}
+          showUndoLostNote={canUndoPass}
+          pending={movePending}
+          error={moveError}
+          onConfirm={handleMove}
+        />
+      )}
     </SwipeAction>
   );
 }
@@ -414,6 +469,7 @@ function ActualRow({
 function RowActions({
   canUndoPass,
   onEdit,
+  onMove,
   onUndo,
   onDelete,
   undoPending,
@@ -422,6 +478,7 @@ function RowActions({
 }: {
   canUndoPass: boolean;
   onEdit: () => void;
+  onMove?: () => void;
   onUndo: () => void;
   onDelete: () => void;
   undoPending: boolean;
@@ -438,6 +495,13 @@ function RowActions({
           label={t("actions.edit")}
           onClick={onEdit}
         />
+        {onMove && (
+          <IconButton
+            icon={<ArrowLeftRight className="size-4" />}
+            label={t("move.action")}
+            onClick={onMove}
+          />
+        )}
         {canUndoPass && (
           <IconButton
             icon={<Undo2 className="size-4" />}
@@ -624,6 +688,68 @@ function errorToMessage(
     case "validation":
       return tv("required");
   }
+}
+
+function errorToMessageMove(
+  state: Extract<MoveActualActionResult, { ok: false }>,
+  tv: ReturnType<typeof useTranslations<"validation">>,
+): string {
+  switch (state.error) {
+    case "moveTargetOutOfWindow":
+      return tv("moveTargetOutOfWindow");
+    case "monthNotFound":
+      return tv("monthNotFound");
+    case "actualNotFound":
+      return tv("actualNotFound");
+    case "validation":
+      return tv("required");
+  }
+}
+
+const EMPTY_MOVE_TARGETS: MoveTargetGroups = { previous: [], upcoming: [] };
+const MOVED_TOAST_MS = 6000;
+
+// Success notice for UC-26: the moved row has already left the list (the
+// action revalidated this page), so the notice lives on the screen, not the
+// row. It links to the target month and dismisses itself.
+function MovedToast({
+  target,
+  onDismiss,
+}: {
+  target: MoveTargetOption;
+  onDismiss: () => void;
+}) {
+  const t = useTranslations("actuals");
+  useEffect(() => {
+    const timer = window.setTimeout(onDismiss, MOVED_TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [target, onDismiss]);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="bg-popover text-popover-foreground fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 lg:bottom-6 lg:left-64 mx-auto flex max-w-md items-center gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg"
+    >
+      <span className="min-w-0 flex-1 truncate">
+        {t("move.done", { month: target.label })}
+      </span>
+      <Link
+        href={`/months/${target.year}/${target.month}`}
+        className="text-primary shrink-0 font-medium underline-offset-4 hover:underline"
+      >
+        {t("move.openTarget")}
+      </Link>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label={t("actions.cancel")}
+        className="text-muted-foreground hover:text-foreground -mr-1 shrink-0 rounded p-1"
+      >
+        <X className="size-4" />
+      </button>
+    </div>
+  );
 }
 
 function readObservations(formData: FormData): string | null {

@@ -88,7 +88,8 @@
     "nothingToExport": "Nothing to export for that selection.",
     "emptySchedule": "Pick at least one month, or turn off “Only in some months”.",
     "invalidSchedule": "Months must be between January and December.",
-    "savingsOnIncomeCategory": "Only expense categories can count as savings."
+    "savingsOnIncomeCategory": "Only expense categories can count as savings.",
+    "moveTargetOutOfWindow": "Pick a month you already created: any later month, or up to 3 months back."
   },
   "warnings": {
     "title": "Warnings",
@@ -280,6 +281,18 @@
       "a11y": {
         "suggestions": "{count, plural, one {# recent name} other {# recent names}}"
       }
+    },
+    "move": {
+      "action": "Move to another month",
+      "title": "Move to another month",
+      "earlier": "Earlier months",
+      "later": "Later months",
+      "leftOver": "Left over {amount}",
+      "leftOverPast": "Saved {amount}",
+      "confirm": "Move to {month}",
+      "done": "Moved to {month}",
+      "openTarget": "Open",
+      "undoLostNote": "Undo from fixed expenses will no longer be available."
     }
   },
   "reservedLines": {
