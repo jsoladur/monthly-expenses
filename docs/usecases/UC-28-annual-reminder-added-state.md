@@ -1,7 +1,7 @@
 # UC-28 — Annual reminder "already added" state
 
 > **Database:** **no schema change.** Nothing on a month row references an annual (§6.8); matching is computed at read time.
-> **PRD refs:** proposed **UC-30** / **C28**; amends §7.9 presentation only. Screen 4 (PRD §10). Until merged into `docs/prds/GLOBAL.md`, **this file is the behavior source of truth**.
+> **PRD refs:** **UC-30** / **C28** (merged into `docs/prds/GLOBAL.md` 2026-11-04); amends §7.9 presentation only. Screen 4 (PRD §10). The PRD wins for behavior; this file is the detailed slice.
 > **ARCH refs:** §5 (layering).
 
 ## 0. Why this exists
@@ -43,7 +43,7 @@ Matched → card shows "Added: {line name} · {amount}" with a check icon, quick
 
 - `annuals.reminder.{added, showDetails, hideDetails}`
 
-## 8. Acceptance criteria / tests (proposed PRD §15 #62–#65)
+## 8. Acceptance criteria / tests (PRD §15 #62–#65)
 
 - #62 Annual "Car insurance" (Transport, charge_month 3); March has reserved "Car insurance 2026" in Transport → reminder shows Added, no quick-add.
 - #63 Same name in a different category → not matched.

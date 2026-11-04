@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-25 estimate check — end-to-end acceptance.
@@ -59,7 +60,7 @@ test.describe("UC-25 estimate check", () => {
 
 // Income 3000; Groceries estimated 400 (remaining 400); ticket 120 — March 2025.
 async function seedPastMonth(context: BrowserContext, tag: string) {
-  const stamp = `${tag}-${Date.now()}`;
+  const stamp = `${tag}-${uniqueId()}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `e2e-uc25-${stamp}@example.com`,
     googleSub: `e2e-uc25-sub-${stamp}`,

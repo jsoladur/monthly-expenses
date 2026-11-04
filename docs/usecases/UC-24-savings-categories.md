@@ -1,7 +1,7 @@
 # UC-24 — Savings categories (investments that are not spending)
 
 > **Database:** **adds one column** — `category.counts_as_savings boolean NOT NULL DEFAULT false`, via migration 0006. Product Owner decision 2026-11-03 (review of shipped features).
-> **PRD refs:** proposed **UC-26** / **C24**; amends §6.2, §7.1, §7.4, §19. Screens 4, 5 and 13 (PRD §10). Until merged into `docs/prds/GLOBAL.md`, **this file is the behavior source of truth**.
+> **PRD refs:** **UC-26** / **C24** (merged into `docs/prds/GLOBAL.md` 2026-11-04); amends §6.2, §7.1, §7.4, §19. Screens 4, 5 and 13 (PRD §10). The PRD wins for behavior; this file is the detailed slice.
 > **ARCH refs:** §4 (data model), §5 (layering), §8 (money in integer cents).
 > **Touches:** UC-03 (categories), UC-11 (summary + overspend), UC-15 (Global Stats), UC-19 (Excel export), month-workspace Stats tab.
 
@@ -98,7 +98,7 @@ Categories with `counts_as_savings = true` raise **no** overspend warning. Inves
 - `export.summary.{invested, totalSaved}`
 - `validation.savingsOnIncomeCategory`
 
-## 10. Acceptance criteria / tests (proposed PRD §15 #41–#46)
+## 10. Acceptance criteria / tests (PRD §15 #41–#46)
 
 - #41 Income 3000; actuals Food 300; reserved Mortgage 800 (Housing); reserved Pension 500 (Investment, savings) → spending 1100, invested 500, left over 1400, total saved 1900. `potentialSavings` equals the pre-UC-24 value.
 - #42 Flipping "Investment" to savings changes no stored amount and reclassifies every existing month on the next read; flipping back restores the old figures.

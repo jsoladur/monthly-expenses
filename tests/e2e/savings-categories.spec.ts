@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-24 savings categories — end-to-end acceptance.
@@ -71,7 +72,7 @@ test.describe("UC-24 savings categories", () => {
 // Income 3000; Food actual 300; Mortgage 800 (Housing) and Pension 500
 // (Investment) reserved. Investment starts as a plain expense category.
 async function seedUserWithSplitMonth(context: BrowserContext, tag: string) {
-  const stamp = `${tag}-${Date.now()}`;
+  const stamp = `${tag}-${uniqueId()}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `e2e-uc24-${stamp}@example.com`,
     googleSub: `e2e-uc24-sub-${stamp}`,

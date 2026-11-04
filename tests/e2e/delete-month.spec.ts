@@ -1,7 +1,8 @@
-import { expect, test, type BrowserContext } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { insertMonthCloningTemplates } from "./_helpers/month";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-27 delete a month — end-to-end acceptance.
@@ -32,8 +33,7 @@ test.describe("UC-27 delete month", () => {
     // The workspace writes the resume hint on mount.
     await expect.poll(async () => lastOpened(context)).toBe(`${year}-11`);
 
-    await page.getByRole("button", { name: "Month actions" }).click();
-    await page.getByRole("menuitem", { name: "Delete month" }).click();
+    await openMenuItem(page, "Month actions", "Delete month");
 
     const dialog = page.getByRole("alertdialog");
     await expect(dialog.getByText(`Delete November ${year}?`)).toBeVisible();
@@ -70,8 +70,7 @@ test.describe("UC-27 delete month", () => {
     await seedMonth(user.id, 2026, 11);
 
     await page.goto(`${BASE_URL}/en/months/2026/11`);
-    await page.getByRole("button", { name: "Month actions" }).click();
-    await page.getByRole("menuitem", { name: "Delete month" }).click();
+    await openMenuItem(page, "Month actions", "Delete month");
     const dialog = page.getByRole("alertdialog");
     await dialog.getByRole("textbox").fill("November 2026");
     await dialog.getByRole("button", { name: "Cancel" }).click();
@@ -86,8 +85,7 @@ test.describe("UC-27 delete month", () => {
     await seedMonth(user.id, 2026, 11);
 
     await page.goto(`${BASE_URL}/es/months/2026/11`);
-    await page.getByRole("button", { name: "Acciones del mes" }).click();
-    await page.getByRole("menuitem", { name: "Eliminar mes" }).click();
+    await openMenuItem(page, "Acciones del mes", "Eliminar mes");
     const dialog = page.getByRole("alertdialog");
     await expect(dialog.getByText("¿Eliminar noviembre de 2026?")).toBeVisible();
     const confirm = dialog.getByRole("button", { name: "Eliminar mes" });
@@ -98,13 +96,26 @@ test.describe("UC-27 delete month", () => {
   });
 });
 
+// A click on the menu trigger before hydration is a no-op (dev server, heavy
+// parallel load), so retry until the item is actually on screen.
+async function openMenuItem(page: Page, trigger: string, item: string): Promise<void> {
+  const menuItem = page.getByRole("menuitem", { name: item });
+  await expect(async () => {
+    if (!(await menuItem.isVisible())) {
+      await page.getByRole("button", { name: trigger }).click();
+    }
+    await expect(menuItem).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+  await menuItem.click();
+}
+
 async function lastOpened(context: BrowserContext): Promise<string | undefined> {
   const cookie = (await context.cookies()).find((c) => c.name === "last_opened_month");
   return cookie ? decodeURIComponent(cookie.value) : undefined;
 }
 
 async function setupUser(context: BrowserContext, tag: string) {
-  const stamp = `${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const stamp = `${tag}-${uniqueId()}-${Math.random().toString(36).slice(2, 8)}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `e2e-uc27-${stamp}@example.com`,
     googleSub: `e2e-uc27-sub-${stamp}`,

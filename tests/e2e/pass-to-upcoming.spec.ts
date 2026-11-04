@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { insertMonthCloningTemplates } from "./_helpers/month";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-18 pass estimated line to an upcoming month — end-to-end acceptance.
@@ -24,8 +25,8 @@ test.describe("UC-18 pass to upcoming month", () => {
   }) => {
     const year = new Date().getFullYear();
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc18-${Date.now()}@example.com`,
-      googleSub: `e2e-uc18-sub-${Date.now()}`,
+      email: `e2e-uc18-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc18-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -58,8 +59,8 @@ test.describe("UC-18 pass to upcoming month", () => {
   }) => {
     const year = new Date().getFullYear();
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc18-none-${Date.now()}@example.com`,
-      googleSub: `e2e-uc18-none-sub-${Date.now()}`,
+      email: `e2e-uc18-none-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc18-none-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -81,8 +82,8 @@ test.describe("UC-18 pass to upcoming month", () => {
   }) => {
     const year = new Date().getFullYear() - 1;
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc18-hist-${Date.now()}@example.com`,
-      googleSub: `e2e-uc18-hist-sub-${Date.now()}`,
+      email: `e2e-uc18-hist-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc18-hist-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -102,8 +103,8 @@ test.describe("UC-18 pass to upcoming month", () => {
   test("Spanish variant renders translated picker copy", async ({ context, page }) => {
     const year = new Date().getFullYear();
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc18-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc18-es-sub-${Date.now()}`,
+      email: `e2e-uc18-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc18-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);

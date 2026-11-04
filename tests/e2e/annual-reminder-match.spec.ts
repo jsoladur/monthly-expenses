@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { insertMonthCloningTemplates } from "./_helpers/month";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-28 annual reminder "already added" state — end-to-end (#62, #65).
@@ -76,7 +77,7 @@ test.describe("UC-28 annual reminder added state", () => {
 });
 
 async function setupUser(context: BrowserContext, tag: string) {
-  const stamp = `${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const stamp = `${tag}-${uniqueId()}-${Math.random().toString(36).slice(2, 8)}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `e2e-uc28-${stamp}@example.com`,
     googleSub: `e2e-uc28-sub-${stamp}`,

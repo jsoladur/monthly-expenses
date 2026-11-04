@@ -47,11 +47,11 @@
 | UC-21 | Theme preference (auto / light / dark) | Not in PRD (post-MVP). Retroactive slice of shipped work | UC-01, UC-04. **Added `profile_settings.theme` (migration 0001)** |
 | UC-22 | Month Stats data tables & category details | Not in PRD. Retroactive slice of shipped work (0.9.0–0.9.1) | UC-08, UC-09, UC-11. **No schema change** |
 | UC-23 | Swipe gestures on month rows | Not in PRD. Retroactive slice of shipped work (0.3.7–0.3.10) | UC-07, UC-08, UC-09, UC-10. **No schema change** |
-| UC-24 | Savings categories (investments are not spending) | Proposed PRD **UC-26** / C24 (amends §6.2, §7.1, §7.4). THIS file is SoT until merged | UC-03, UC-11, UC-15, UC-19. **Adds `category.counts_as_savings` (migration 0006)** — PO decision 2026-11-03 |
-| UC-25 | Estimate check (reconcile envelopes with tickets) | Proposed PRD **UC-27** / C25 (builds on §7.3). THIS file is SoT until merged | UC-08, UC-09, UC-11. **No schema change** |
-| UC-26 | Move an actual expense to another month | Proposed PRD **UC-28** / C26 (any later created month, or up to 3 months back). THIS file is SoT until merged | UC-06, UC-08, UC-10, UC-11, UC-23. **No schema change** |
-| UC-27 | Delete a month | Proposed PRD **UC-29** / C27 (fulfils §13 month header). THIS file is SoT until merged | UC-06. **No schema change** (cascade FKs exist) |
-| UC-28 | Annual reminder "already added" state | Proposed PRD **UC-30** / C28 (amends §7.9 presentation). THIS file is SoT until merged | UC-14, UC-16. **No schema change** |
+| UC-24 | Savings categories (investments are not spending) | PRD **UC-26** / C24 (amends §6.2, §7.1, §7.4). THIS file is the detailed slice | UC-03, UC-11, UC-15, UC-19. **Adds `category.counts_as_savings` (migration 0006)** — PO decision 2026-11-03 |
+| UC-25 | Estimate check (reconcile envelopes with tickets) | PRD **UC-27** / C25 (builds on §7.3). THIS file is the detailed slice | UC-08, UC-09, UC-11. **No schema change** |
+| UC-26 | Move an actual expense to another month | PRD **UC-28** / C26 (any later created month, or up to 3 months back). THIS file is the detailed slice | UC-06, UC-08, UC-10, UC-11, UC-23. **No schema change** |
+| UC-27 | Delete a month | PRD **UC-29** / C27 (fulfils §13 month header). THIS file is the detailed slice | UC-06. **No schema change** (cascade FKs exist) |
+| UC-28 | Annual reminder "already added" state | PRD **UC-30** / C28 (amends §7.9 presentation). THIS file is the detailed slice | UC-14, UC-16. **No schema change** |
 
 ```mermaid
 flowchart TD
@@ -125,10 +125,10 @@ flowchart TD
 | 38 Overspend plan counts only templates applying to the open month | UC-20 + UC-11 |
 | 39 User B cannot delete or reschedule User A's template | UC-20 |
 | 40 Rescheduling/deleting a template never changes existing months | UC-20 |
-| 41–46 (proposed) Savings categories: split summary, retroactive reclassification, no overspend, Stats excludes investments from spend, income rejected, tenancy | UC-24 |
-| 47–51 (proposed) Estimate check: suggestion, multi-line distribution, release, no auto-reduce, tenancy | UC-25 |
-| 52–57 (proposed) Move actual: move keeps the row, 3-months-back window, any later month, same month rejected, pass-to-actual loses undo, tenancy | UC-26 |
-| 58–61 (proposed) Delete month: cascade, re-create clones current templates, cookie cleared, tenancy | UC-27 |
-| 62–65 (proposed) Annual reminder matched by category + folded name prefix; un-matched after delete | UC-28 |
+| 41–46 Savings categories: split summary, retroactive reclassification, no overspend, Stats excludes investments from spend, income rejected, tenancy | UC-24 |
+| 47–51 Estimate check: suggestion, multi-line distribution, release, no auto-reduce, tenancy | UC-25 |
+| 52–57 Move actual: move keeps the row, 3-months-back window, any later month, same month rejected, pass-to-actual loses undo, tenancy | UC-26 |
+| 58–61 Delete month: cascade, re-create clones current templates, cookie cleared, tenancy | UC-27 |
+| 62–65 Annual reminder matched by category + folded name prefix; un-matched after delete | UC-28 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.

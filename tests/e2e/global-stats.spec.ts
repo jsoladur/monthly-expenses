@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { seedTwoCompleteYearsPlusIncomplete } from "./_helpers/global-stats";
+import { uniqueId } from "./_helpers/unique";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const AUTH_SECRET =
@@ -15,9 +16,13 @@ test.describe("UC-15 global stats", () => {
 
     await page.goto(`${BASE_URL}/en/stats`);
     await expect(page.getByRole("heading", { level: 1, name: "Stats" })).toBeVisible();
+    // UC-15 §5: From = max(first recorded year, calendar year − 5), To = calendar
+    // year, both clamped to years with months. The fixture covers 2024–2026.
     const calendarYear = new Date().getFullYear();
-    await expect(page.getByTestId("stats-from")).toHaveValue(String(calendarYear - 1));
-    await expect(page.getByTestId("stats-to")).toHaveValue(String(calendarYear));
+    const expectedFrom = Math.min(Math.max(2024, calendarYear - 5), 2026);
+    const expectedTo = Math.min(Math.max(calendarYear, 2024), 2026);
+    await expect(page.getByTestId("stats-from")).toHaveValue(String(expectedFrom));
+    await expect(page.getByTestId("stats-to")).toHaveValue(String(expectedTo));
     await expect(page.getByTestId("stats-kpi-income")).toBeVisible();
     await expect(page.getByTestId("stats-kpi-spend")).toBeVisible();
     await expect(page.getByTestId("stats-kpi-savings")).toBeVisible();
@@ -117,7 +122,7 @@ async function seedSignedIn(
   context: BrowserContext,
   opts: { emailPrefix?: string } = {},
 ): Promise<{ id: string; email: string }> {
-  const stamp = `${opts.emailPrefix ?? "e2e-stats"}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const stamp = `${opts.emailPrefix ?? "e2e-stats"}-${uniqueId()}-${Math.random().toString(16).slice(2)}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `${stamp}@example.com`,
     googleSub: `sub-${stamp}`,

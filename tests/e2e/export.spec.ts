@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import ExcelJS from "exceljs";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const AUTH_SECRET =
@@ -16,8 +17,8 @@ test.describe("UC-19 Excel export", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc19-all-${Date.now()}@example.com`,
-      googleSub: `e2e-uc19-all-${Date.now()}`,
+      email: `e2e-uc19-all-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc19-all-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -51,8 +52,8 @@ test.describe("UC-19 Excel export", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc19-year-${Date.now()}@example.com`,
-      googleSub: `e2e-uc19-year-${Date.now()}`,
+      email: `e2e-uc19-year-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc19-year-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -85,8 +86,8 @@ test.describe("UC-19 Excel export", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc19-months-${Date.now()}@example.com`,
-      googleSub: `e2e-uc19-months-${Date.now()}`,
+      email: `e2e-uc19-months-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc19-months-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -114,8 +115,8 @@ test.describe("UC-19 Excel export", () => {
 
   test("zero months keeps Download disabled", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc19-empty-${Date.now()}@example.com`,
-      googleSub: `e2e-uc19-empty-${Date.now()}`,
+      email: `e2e-uc19-empty-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc19-empty-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -129,8 +130,8 @@ test.describe("UC-19 Excel export", () => {
 
   test("Spanish shell uses Exportar / Descargar Excel", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc19-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc19-es-${Date.now()}`,
+      email: `e2e-uc19-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc19-es-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);

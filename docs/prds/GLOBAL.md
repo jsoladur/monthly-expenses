@@ -48,6 +48,11 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C21 | **Pass to upcoming month** moves an **estimated** reserved line to a **later month of the same calendar year that already exists**. Current year only. Not History. Never auto-creates the target (C6). Not automatic leftover rollover (C7). |
 | C22 | **Excel export** downloads the signed-in user’s created months as one `.xlsx` workbook, one sheet per month. Scopes: all months, one or more years that already have months, or a checked set of created months. Year and month pickers are descending. Read-only. Never auto-creates a month (C6). |
 | C23 | **Template month schedule + hard delete.** A template may be limited to a set of calendar month-numbers (1–12). No schedule (`NULL`) = every month; a schedule with all 12 months is stored as no schedule; an empty schedule is invalid. A template can also be **hard-deleted** from the catalog (besides deactivate). Neither change rewrites months that already exist. |
+| C24 | **Savings categories.** An expense category may be flagged **counts as savings** (never an income category). Its money is recorded exactly like any other expense and still leaves the available money; only **reporting** separates it: the month summary splits **spending** from **invested**, Global Stats excludes it from spend, and it raises no overspend warning. The flag lives on the category only and reclassifies every month on the next read without rewriting any amount. |
+| C25 | **Estimate check.** Per open month and expense category with estimated lines, the app compares what is still reserved with what tickets already spent and **suggests** a remaining. It flags a *possible overlap* only — a ticket has no link to its envelope. Nothing changes until the user confirms a fix (never auto-balance, §7.3). |
+| C26 | **Move an actual expense** to another month the user already created: any later month (across years) or up to **3 calendar months back** from the ticket's own month. The row moves (same id and fields); it is never copied. Never auto-creates the target (C6). No undo — the user moves it back. |
+| C27 | **Delete a month.** A month header can be hard-deleted with all its incomes, reserved lines and actuals (cascade), behind a typed confirmation of the month label. Catalogs are untouched. Home never auto-picks or creates a replacement (C6/C12). |
+| C28 | **Annual reminder "added" state.** When the open month already holds a reserved line or actual in the annual's category whose folded name equals or starts with the annual's folded name, the reminder collapses to an **Added** row. Computed at read time; nothing links a line to an annual; the reminder never disappears. |
 
 ---
 
@@ -127,6 +132,7 @@ Agents may normalize tables as needed if **behavior and fields** stay equivalent
 | name | Mandatory, unique per user + type among **active** rows |
 | active / not deleted | Soft-delete only |
 | type | expense **or** income |
+| counts_as_savings | Boolean, default false. **Expense only** (rejected on income). Reporting flag (C24); never changes stored amounts. Soft-deleted categories keep it |
 
 **Soft-delete / deactivate:** cannot be chosen for **new** actuals, incomes, or new template lines. Existing month rows still display the name. Reactivate allowed.
 
@@ -221,11 +227,23 @@ potential_savings =
 
 Hard-deleted rows are excluded from sums.
 
+**Savings split (C24).** Each expense amount is classified by its category's `counts_as_savings` flag:
+
+```
+spending     = Σ actuals (non-savings categories) + Σ remaining (non-savings categories)
+invested     = Σ actuals (savings categories)     + Σ remaining (savings categories)
+left_over    = Σ incomes − spending − invested     ← identical to potential_savings above
+total_saved  = left_over + invested
+```
+
+`left_over` is the same number as `potential_savings` (UI copy "Left over" / "Sobrante"). Negatives stay algebraic (§7.6): a negative actual in a savings category lowers `invested`. "Invested" and "Total saved" only show for a month that has at least one savings-category row.
+
 ### 7.2 No double-count
 
 - A line lives in **either** `MonthFixedLine` **or** `MonthActualExpense`, never both.
 - **Pass to actual** moves the row (cut-paste). After move, it is **only** in actuals.
 - **Pass to upcoming month** moves an estimated line from this month instance to a later created month of the same year. After the move it is **only** on the target month.
+- **Move an actual** (C26) changes only the ticket's month. After the move it is **only** on the target month.
 - Manual estimate decrease does **not** create an actual.
 - Adding an actual does **not** change any remaining automatically.
 
@@ -245,6 +263,8 @@ Hard-deleted rows are excluded from sums.
   Example: templates “Groceries 400” + “Extra 50” in Food → plan = **450**. Actuals 500 → **warning**. Housing “Rent 700 committed” + “Repairs 160 estimated” → plan = **860**. Utilities “Water 60” scheduled {Jan} + “Power 50” → January plan = **110**, February plan = **50**.
 
 If a category has **no applicable active templates** for the open month, **no** overspend warning for that category.
+
+**Savings categories (C24) never raise an overspend warning.** Investing more than the plan is not overspending.
 
 **Warn only. Never block.** Remaining on a month line may be zero or negative if the user types it.
 
@@ -308,7 +328,36 @@ When the open month’s month-number matches an annual’s `charge_month`, show 
 - **Never** auto-create a reserved line or actual (C6/C12/C19).
 - Quick-add may **prefill** a month-only reserved-line form (name + category); the user still confirms kind and amount.
 - Reminders do **not** disappear after the user adds a line (no dismissal in V1).
+- **Added state (C28).** An annual is *matched* when any reserved line (committed or estimated) or actual of the open month has the annual's category **and** a folded name (accent- and case-insensitive, whitespace collapsed — same folding as Search) that equals or starts with the annual's folded name. First match: reserved lines before actuals, then by name. A matched reminder collapses to one row — “Added: {line name} · {amount}” (reserved lines show their original amount) — with a **Show details** toggle that expands the full card; quick-add is not offered on it. Unmatched reminders are listed first, and the header count shows only unmatched ones. Hard-deleting the matching line brings the full reminder back on the next render.
 - Soft-deleted annuals raise no reminders.
+
+### 7.11 Estimate check (confirmed)
+
+Per open month and expense category that has at least one estimated line (C25):
+
+```
+plan       = Σ original_amount   of the category's estimated lines
+remaining  = Σ remaining_amount  of the category's estimated lines
+tickets    = Σ actual amounts in the category, excluding tickets created by pass-to-actual
+suggested  = max(plan − tickets, 0)
+```
+
+- **Flagged** when `remaining > suggested` — a *possible overlap*, never “counted twice”. The card lists the category's tickets so the user decides.
+- Pass-to-actual tickets are listed but **not counted**: that move already removed their line from `plan`.
+- **Set to plan − tickets** distributes `suggested` over the category's estimated lines in name order: each keeps `min(its remaining, what is left)`, later lines go to 0.
+- **Release all** sets every estimated line of the category to 0. Offered only on months before the current calendar month.
+- Every fix is explicitly confirmed and runs in one transaction. Committed lines and templates are never touched. Adding a ticket still never changes a remaining (§7.3).
+
+### 7.12 Move an actual expense (confirmed)
+
+Compare months as `index = year × 12 + (month − 1)`; S is the ticket's month (C26).
+
+- Allowed target T: a month the user **already created**, `T ≠ S`, and either `index(T) > index(S)` (any later month, across years) or `index(S) − 3 ≤ index(T) < index(S)`.
+- The window is relative to the ticket's month, not today.
+- The row keeps id, category, name, observations, amount and creation time. An inactive category does not block the move.
+- A pass-to-actual ticket that is moved counts as **edited**: its undo (§7.5) is no longer offered.
+- Both months' summaries and overspend warnings recompute on the next read. A move may cause an overspend warning on the target (warn only).
+- No allowed target → the action is hidden for that ticket.
 
 ---
 
@@ -487,6 +536,54 @@ Implementation slice: `docs/usecases/UC-20-fixed-expense-delete-and-schedule.md`
 - Rows with a schedule show which months apply.
 - User B can never delete or reschedule User A's templates.
 
+### UC-26 — Savings categories
+
+Implementation slice: `docs/usecases/UC-24-savings-categories.md`.
+
+- On Expense categories, each row and the add form offer **Counts as savings** (off by default). Flagged rows show a piggy-bank badge. Income categories never offer it; the server rejects it.
+- Month summary: Income · Spending · Invested · **Left over** · Total saved (§7.1). Invested and Total saved appear only when the month has savings-category rows.
+- The month Stats tab pie excludes savings categories and shows one Invested figure.
+- Savings categories raise no overspend warning (§7.4).
+- Global Stats: spend, remaining, household cost change and category creep exclude savings categories; an Invested series is added. Selecting a savings category in the category filter labels it “(savings)”.
+- Excel export adds Invested and Total saved rows on sheets whose month has savings rows.
+- Flipping the flag reclassifies every month on the next read and changes no stored amount. User B cannot toggle User A's category.
+
+### UC-27 — Estimate check
+
+Implementation slice: `docs/usecases/UC-25-estimate-reconciliation.md`.
+
+- The month workspace has an **Estimate check** tab (after Data). Its badge counts flagged categories; there is no extra banner.
+- One card per expense category with estimated lines: plan, remaining, counted tickets, suggested remaining, and the category's ticket list (pass-to-actual tickets marked, not counted).
+- **Set to plan − tickets** and, on past months, **Release all** — each behind an inline confirmation (§7.11).
+- User B can neither read nor apply the check on User A's month.
+
+### UC-28 — Move an actual expense to another month
+
+Implementation slice: `docs/usecases/UC-26-move-actual-expense.md`.
+
+- On the Actuals tab, each ticket offers **Move to another month** when at least one allowed target exists (§7.12).
+- The picker lists previous (up to 3 back) and upcoming created months, each with its left-over figure (“Saved” for closed months).
+- After the move a notice links to the target month. Moving a pass-to-actual ticket warns that undo is lost.
+- User B cannot move User A's ticket, nor move a ticket into User A's month.
+
+### UC-29 — Delete a month
+
+Implementation slice: `docs/usecases/UC-27-delete-month.md`.
+
+- The month header's actions menu offers **Delete month**. The confirmation lists how many incomes, reserved lines and actuals will go, and enables Delete only once the user types the month label exactly as the header shows it (trimmed, case-insensitive; Spanish “noviembre de 2026”).
+- Deleting removes the month and all its rows in one transaction. Templates, categories and annuals are untouched.
+- If the last-opened cookie points at it, the cookie is cleared. The user lands on Home (month list) with a one-time note; no month is created.
+- The same month can be created again later; it clones **today's** applicable templates.
+- User B cannot delete User A's month.
+
+### UC-30 — Annual reminder “already added” state
+
+Implementation slice: `docs/usecases/UC-28-annual-reminder-added-state.md`.
+
+- A reminder whose annual is matched in the open month (§7.9, C28) collapses to “Added: {line name} · {amount}” with a check icon and a keyboard-accessible **Show details** toggle.
+- The same name in another category does not match; a name that only contains the annual's name mid-string does not match.
+- Hard-deleting the matching line restores the full reminder on the next render.
+
 ---
 
 ## 10. Screens (logical)
@@ -494,8 +591,8 @@ Implementation slice: `docs/usecases/UC-20-fixed-expense-delete-and-schedule.md`
 1. Sign-in  
 2. 403  
 3. Month list / empty + create month  
-4. Month workspace — summary + **annual reminders (when the month-number matches)** + incomes + reserved lines + actuals (add-actual name may autocomplete recent names)  
-5. Expense categories  
+4. Month workspace — header actions menu (Delete month) + summary (Spending / Invested / Left over / Total saved) + **annual reminders (when the month-number matches; “Added” rows when matched)** + tabs: Data (incomes, reserved lines, actuals — add-actual name may autocomplete recent names; each actual may be moved to another month), **Estimate check**, Stats, Help  
+5. Expense categories — with **Counts as savings** switch  
 6. Income categories  
 7. Fixed/estimated templates — with optional month schedule and Delete  
 8. Profile settings — currency  
@@ -514,7 +611,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker, export picker and workbook section labels.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker, export picker and workbook section labels, savings labels (Spending / Invested / Left over / Total saved), estimate check, move-to-month picker and notice, delete-month confirmation, annual reminder “Added” state.
 
 ---
 
@@ -537,7 +634,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Month incomes | Hard |
 | Month actual expenses | Hard |
 | Month fixed/estimated lines | Hard |
-| Month header | Not required in V1; if later, cascade hard-delete children |
+| Month header | Hard, explicit **Delete month** with typed confirmation; children cascade (C27) |
 
 ---
 
@@ -566,6 +663,11 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - Undo pass-to-upcoming-month
 - Import from Excel / round-trip edit
 - Charts, CSV, or catalog tables inside the Excel export
+- Line-level savings flags, portfolio tracking, returns or market data (savings is a category flag only, C24)
+- Applying the estimate check automatically, or linking a ticket to a specific estimated line
+- Moving incomes or several tickets at once; undo of a move
+- Undo / trash for a deleted month; deleting several months at once
+- Storing a link between a month line and an annual
 
 ---
 
@@ -611,6 +713,31 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 38. Utilities “Water 60” scheduled {Jan} + “Power 50”: February actuals 70 → overspend warning (plan 50); January actuals 70 → no warning (plan 110).
 39. User B cannot delete or reschedule User A's template.
 40. Rescheduling or deleting a template does not change any existing month.
+41. Income 3000; actuals Food 300; reserved Mortgage 800 (Housing); reserved Pension 500 (Investment, savings) → spending 1100, invested 500, left over 1400, total saved 1900; potential savings unchanged.
+42. Flipping “Investment” to savings changes no stored amount and reclassifies every existing month on the next read; flipping back restores the old figures.
+43. Investment template plan 500, actuals 600 → no overspend warning. The same numbers on a non-savings category → warning.
+44. Global Stats: spend in normal categories 20 000 → 20 000, investments 3 000 → 6 000 → household cost change 0 %, invested series 3 000 → 6 000, savings rate rises, no savings-rate-drop insight.
+45. Flagging an income category as savings is rejected.
+46. User B cannot toggle User A's category; User B's flags never change User A's figures.
+47. Groceries plan 400, remaining 400, tickets 120 → flagged, suggested 280; apply → remaining 280, savings +120.
+48. Groceries 300 + Extra 100 (remaining 300 / 100), tickets 350 → suggested 50 → Extra (first by name) 50, Groceries 0.
+49. Release all on a past month → every estimated line in the category is 0; committed lines and templates untouched.
+50. Adding a ticket never changes any remaining by itself. A committed line passed to actual in a category with estimates → its ticket is listed, not counted; no flag.
+51. User B cannot read or apply the estimate check on User A's month.
+52. Nov 2026 ticket “Dentist 90” moved to Dec 2026 → gone from Nov, in Dec with the same id, category, name, note and amount; Nov savings +90, Dec savings −90.
+53. From Feb 2027, Jan 2027, Dec 2026 and Nov 2026 are allowed targets (if created); Oct 2026 is rejected even when created.
+54. From Nov 2026, Jan 2028 is allowed if created. A month that is not created never appears and cannot be targeted.
+55. Moving to the same month is rejected. No target in the window → no move action on the ticket.
+56. A pass-to-actual ticket that is moved loses its undo; no reserved line appears anywhere.
+57. User B cannot move User A's ticket, nor move their own ticket into User A's month.
+58. Delete Nov 2026 with 2 incomes, 5 lines, 7 actuals → all rows gone; other months untouched; Search no longer returns its tickets.
+59. Re-create Nov 2026 after delete → succeeds and clones the current active templates for month-number 11.
+60. A last-opened cookie pointing at the deleted month is cleared; Home shows the month list; no month is created.
+61. User B cannot delete User A's month, and nothing of User A's is removed.
+62. Annual “Car insurance” (Transport, charge_month 3); March has reserved “Car insurance 2026” in Transport → reminder shows Added, no quick-add.
+63. The same name in a different category → not matched.
+64. Annual “Seguro hogar” matches actual “SEGURO HOGAR mapfre” (accent/case folding).
+65. Hard-deleting the matching line → the full reminder returns on the next render.
 
 ---
 
@@ -645,6 +772,11 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Add-actual name autocomplete | This month + 2 prior months, name prefix, max 5, name only. |
 | Pass estimated line to upcoming month | Current calendar year only. Later created months of that year. Estimated kind only. Never auto-create. No undo. Not History. |
 | Template schedule & delete | Optional month-number schedule (absent = every month; all 12 = absent; never empty). Clone + overspend plan respect it. Hard delete allowed besides deactivate; existing months untouched. |
+| Savings categories | Category flag, expense only. Reporting split only (spending vs invested); no overspend; retroactive reclassification; amounts never rewritten. |
+| Estimate check | Own month tab. Suggests `max(plan − tickets, 0)`; flags a possible overlap only; fixes are explicit and confirmed; Release all on past months only. |
+| Move actual | Any later created month or up to 3 calendar months back from the ticket's month. Row moves, never copies. No auto-create, no undo. |
+| Delete month | Hard delete with cascade behind a typed label. Catalogs untouched; re-creating clones today's templates. |
+| Annual reminder added | Read-time match: same category + folded name prefix. Collapses to Added; never dismissed; nothing stored. |
 | Excel export | Home picker. All / one or more years with data / specific created months. One sheet per month. No charts. Tenant-scoped. |
 
 No blocking product questions remain for V1 money behavior.
@@ -669,6 +801,11 @@ No blocking product questions remain for V1 money behavior.
 14. Pass estimated line to a later created month of the current year
 15. Excel export from Home (all / year / specific months) 
 16. Template month schedule + hard delete (clone and overspend respect the schedule)
+17. Savings categories (summary split, no overspend, Stats and export)
+18. Estimate check tab
+19. Move an actual expense to another month
+20. Delete a month
+21. Annual reminder “Added” state
 
 ---
 
@@ -691,3 +828,9 @@ No blocking product questions remain for V1 money behavior.
 - Pass to upcoming month: “Move this estimate to a later month you already created.”
 - Export idle: “Download an Excel file with one sheet per month.”
 - Export empty: “Create a month first. Nothing is exported until a month exists.”
+- Savings category: “Money set aside (pension, index funds). It still leaves your available money, but it is not spending.”
+- Left over: “Income minus spending minus money set aside for savings.”
+- Estimate check flag: “Possible overlap: tickets in this category may already be covered by the reserve.”
+- Move ticket: “Move this ticket to another month you already created.”
+- Delete month confirm: “Delete {month} and everything in it? This cannot be undone. Type the month name to confirm.”
+- Annual reminder added: “Added: {line name} · {amount}.”

@@ -1,7 +1,7 @@
 # UC-26 — Move an actual expense to another month
 
 > **Database:** **no schema change.** The move rewrites `month_actual_expense.month_id` in place.
-> **PRD refs:** proposed **UC-28** / **C26**; builds on §6.7, §7.2 (no double-count), §7.5 (undo gate), §7.8 (no auto-create). Screen 4 (PRD §10). Until merged into `docs/prds/GLOBAL.md`, **this file is the behavior source of truth**.
+> **PRD refs:** **UC-28** / **C26** (merged into `docs/prds/GLOBAL.md` 2026-11-04); builds on §6.7, §7.2 (no double-count), §7.5 (undo gate), §7.8 (no auto-create). Screen 4 (PRD §10). The PRD wins for behavior; this file is the detailed slice.
 > **ARCH refs:** §5 (thin action → service owns the transaction → repository SQL), §8 / ADR-5.
 > **Sibling:** UC-18 moves **estimated reserved lines** forward within the current year. This slice moves **actual tickets** and has its own window (§3). The two do not share rules.
 > **Replaces:** the earlier "Copy incomes from the previous month" draft, first numbered UC-23 (PO decision 2026-11-03).
@@ -74,7 +74,7 @@ Other rules:
 - `actuals.move.{action, title, earlier, later, leftOver, confirm, done, openTarget, undoLostNote}`
 - `validation.moveTargetOutOfWindow`
 
-## 8. Acceptance criteria / tests (proposed PRD §15 #52–#57)
+## 8. Acceptance criteria / tests (PRD §15 #52–#57)
 
 - #52 Nov 2026 ticket "Dentist 90" moved to Dec 2026 → absent from Nov actuals and totals, present in Dec with the same id, category, name, note and amount; Nov savings +90, Dec savings −90.
 - #53 Window backward: from Feb 2027, targets Jan 2027, Dec 2026 and Nov 2026 are allowed (if created); Oct 2026 is rejected (`MoveTargetOutOfWindowError`) even when created.

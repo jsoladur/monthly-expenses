@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const AUTH_SECRET =
@@ -68,7 +69,7 @@ test.describe("UC-17 actual name autocomplete", () => {
 });
 
 async function seedSignedIn(context: BrowserContext, locale: "en" | "es" = "en") {
-  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const stamp = `${uniqueId()}-${Math.random().toString(36).slice(2, 8)}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `e2e-uc17-${locale}-${stamp}@example.com`,
     googleSub: `e2e-uc17-sub-${locale}-${stamp}`,

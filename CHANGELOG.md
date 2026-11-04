@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-04
+
+### Changed
+- The product requirements (`docs/prds/GLOBAL.md`) now include savings categories, the estimate check, moving a ticket to another month, deleting a month and the annual reminder "Added" state as PRD UC-26…UC-30 / C24–C28, with test scenarios #41–#65. The use-case files are now detailed slices under the PRD (UC-24…UC-28).
+
+### Fixed
+- End-to-end tests no longer fail or flake: each seeded test user is unique per browser project (chromium and mobile-safari no longer share and wipe one user), Stats expects the documented default year range, income amounts expect the thousands separator, and Search / Delete month wait for the page to become interactive before typing or opening the menu.
+
 ## [0.15.0] - 2026-11-04
 
 ### Added

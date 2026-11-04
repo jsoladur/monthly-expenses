@@ -1,6 +1,7 @@
-import { expect, test, type BrowserContext } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const AUTH_SECRET =
@@ -54,7 +55,7 @@ test.describe("UC-16 search", () => {
     await seedTicket(DB_URL, user.id);
 
     await page.goto(`${BASE_URL}/en/search`);
-    await page.locator("#search-q").fill("cafe");
+    await fillQuery(page, "cafe");
     await page.getByTestId("search-submit").click();
 
     await expect(page).toHaveURL(/q=cafe/);
@@ -78,7 +79,7 @@ test.describe("UC-16 search", () => {
 
     await page.goto(`${BASE_URL}/es/search`);
     await expect(page.getByRole("heading", { level: 1, name: "Buscar" })).toBeVisible();
-    await page.locator("#search-q").fill("cafe");
+    await fillQuery(page, "cafe");
     await page.getByTestId("search-submit").click();
 
     const hit = page.getByTestId("search-hit");
@@ -93,6 +94,7 @@ test.describe("UC-16 search", () => {
     await seedSignedIn(context);
     await page.goto(`${BASE_URL}/en/search`);
     const submit = page.getByTestId("search-submit");
+    await fillQuery(page, "ab"); // waits for hydration before the "a" checks
     await page.locator("#search-q").fill("a");
     await expect(submit).toBeDisabled();
     await page.locator("#search-q").press("Enter");
@@ -101,14 +103,14 @@ test.describe("UC-16 search", () => {
     await expect(submit).toBeEnabled();
 
     await page.goto(`${BASE_URL}/en/search?q=a`);
-    await expect(page.getByRole("alert")).toHaveText("Type at least two letters.");
+    await expect(page.locator("main").getByRole("alert")).toHaveText("Type at least two letters.");
     await expect(page.getByTestId("search-hit")).toHaveCount(0);
   });
 
   test("24 — no-match query shows empty copy with the typed q", async ({ context, page }) => {
     await seedSignedIn(context);
     await page.goto(`${BASE_URL}/en/search`);
-    await page.locator("#search-q").fill("zzzz");
+    await fillQuery(page, "zzzz");
     await page.getByTestId("search-submit").click();
     await expect(page.getByText('No tickets match “zzzz”. Try another word.')).toBeVisible();
   });
@@ -132,7 +134,7 @@ async function seedSignedIn(
   context: BrowserContext,
   opts: { emailPrefix?: string } = {},
 ): Promise<{ id: string; email: string }> {
-  const stamp = `${opts.emailPrefix ?? "e2e-search"}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const stamp = `${opts.emailPrefix ?? "e2e-search"}-${uniqueId()}-${Math.random().toString(16).slice(2)}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `${stamp}@example.com`,
     googleSub: `sub-${stamp}`,
@@ -170,4 +172,16 @@ async function seedTicket(dbUrl: string, userId: string): Promise<void> {
   } finally {
     await sql.end({ timeout: 1 });
   }
+}
+
+// The field is controlled. On WebKit (dev server) a fill can land before
+// hydration: React then adopts the typed DOM value as "already seen" while its
+// state stays empty, so re-filling the SAME text fires no onChange and submit
+// stays disabled. Clear first so every retry is a real change.
+async function fillQuery(page: Page, q: string): Promise<void> {
+  await expect(async () => {
+    await page.locator("#search-q").fill("");
+    await page.locator("#search-q").fill(q);
+    await expect(page.getByTestId("search-submit")).toBeEnabled({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
 }

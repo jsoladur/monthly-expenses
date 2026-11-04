@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { insertMonthCloningTemplates } from "./_helpers/month";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-26 move an actual expense to another month — end-to-end acceptance.
@@ -102,7 +103,7 @@ test.describe("UC-26 move actual to another month", () => {
 });
 
 async function setupUser(context: BrowserContext, tag: string) {
-  const stamp = `${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const stamp = `${tag}-${uniqueId()}-${Math.random().toString(36).slice(2, 8)}`;
   const user = await ensureUser(DB_URL, AUTH_SECRET, {
     email: `e2e-uc26-${stamp}@example.com`,
     googleSub: `e2e-uc26-sub-${stamp}`,

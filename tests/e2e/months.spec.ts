@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-06 month creation, cloning & home — end-to-end acceptance.
@@ -38,8 +39,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc06-${Date.now()}@example.com`,
-      googleSub: `e2e-uc06-sub-${Date.now()}`,
+      email: `e2e-uc06-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -84,8 +85,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc06-dup-${Date.now()}@example.com`,
-      googleSub: `e2e-uc06-dup-sub-${Date.now()}`,
+      email: `e2e-uc06-dup-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-dup-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -105,8 +106,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
 
   test("Spanish variant renders translated empty-state copy", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc06-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc06-es-sub-${Date.now()}`,
+      email: `e2e-uc06-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -125,8 +126,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc06-back-home-${Date.now()}@example.com`,
-      googleSub: `e2e-uc06-back-home-sub-${Date.now()}`,
+      email: `e2e-uc06-back-home-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-back-home-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -144,8 +145,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc06-back-hist-${Date.now()}@example.com`,
-      googleSub: `e2e-uc06-back-hist-sub-${Date.now()}`,
+      email: `e2e-uc06-back-hist-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-back-hist-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);
@@ -167,8 +168,8 @@ test.describe("UC-06 month creation, cloning & home", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc06-stats-${Date.now()}@example.com`,
-      googleSub: `e2e-uc06-stats-sub-${Date.now()}`,
+      email: `e2e-uc06-stats-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-stats-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetMonthState(DB_URL, user.id);

@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { insertMonthCloningTemplates } from "./_helpers/month";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-10 pass-to-actual & undo — end-to-end acceptance.
@@ -38,8 +39,8 @@ test.describe("UC-10 pass-to-actual & undo", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc10-${Date.now()}@example.com`,
-      googleSub: `e2e-uc10-sub-${Date.now()}`,
+      email: `e2e-uc10-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc10-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -100,8 +101,8 @@ test.describe("UC-10 pass-to-actual & undo", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc10-est-${Date.now()}@example.com`,
-      googleSub: `e2e-uc10-est-sub-${Date.now()}`,
+      email: `e2e-uc10-est-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc10-est-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -122,8 +123,8 @@ test.describe("UC-10 pass-to-actual & undo", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc10-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc10-es-sub-${Date.now()}`,
+      email: `e2e-uc10-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc10-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);

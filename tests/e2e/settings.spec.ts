@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-04 profile settings — end-to-end acceptance.
@@ -35,8 +36,8 @@ test.describe("UC-04 profile settings (currency)", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc04-${Date.now()}@example.com`,
-      googleSub: `e2e-uc04-sub-${Date.now()}`,
+      email: `e2e-uc04-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc04-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetProfileSettings(DB_URL, user.id, "EUR");
@@ -74,8 +75,8 @@ test.describe("UC-04 profile settings (currency)", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc04-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc04-es-sub-${Date.now()}`,
+      email: `e2e-uc04-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc04-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetProfileSettings(DB_URL, user.id, "EUR");

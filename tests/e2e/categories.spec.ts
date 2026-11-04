@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-03 categories — end-to-end happy path + acceptance.
@@ -30,8 +31,8 @@ test.describe("UC-03 categories", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-${Date.now()}@example.com`,
-      googleSub: `e2e-sub-${Date.now()}`,
+      email: `e2e-${uniqueId()}@example.com`,
+      googleSub: `e2e-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetUserCategories(DB_URL, user.id);
@@ -68,8 +69,8 @@ test.describe("UC-03 categories", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-es-${Date.now()}@example.com`,
-      googleSub: `e2e-es-sub-${Date.now()}`,
+      email: `e2e-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetUserCategories(DB_URL, user.id);

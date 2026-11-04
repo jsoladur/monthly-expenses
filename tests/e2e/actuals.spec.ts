@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-08 actual expenses (tickets) — end-to-end acceptance.
@@ -32,8 +33,8 @@ const DB_URL =
 test.describe("UC-08 actual expenses", () => {
   test("add → edit → delete (UC-08 acceptance)", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc08-${Date.now()}@example.com`,
-      googleSub: `e2e-uc08-sub-${Date.now()}`,
+      email: `e2e-uc08-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc08-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -87,8 +88,8 @@ test.describe("UC-08 actual expenses", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc08-noact-${Date.now()}@example.com`,
-      googleSub: `e2e-uc08-noact-sub-${Date.now()}`,
+      email: `e2e-uc08-noact-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc08-noact-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -105,8 +106,8 @@ test.describe("UC-08 actual expenses", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc08-reserve-${Date.now()}@example.com`,
-      googleSub: `e2e-uc08-reserve-sub-${Date.now()}`,
+      email: `e2e-uc08-reserve-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc08-reserve-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -132,8 +133,8 @@ test.describe("UC-08 actual expenses", () => {
 
   test("Spanish variant renders translated copy", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc08-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc08-es-sub-${Date.now()}`,
+      email: `e2e-uc08-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc08-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);

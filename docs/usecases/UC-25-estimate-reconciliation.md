@@ -1,7 +1,7 @@
 # UC-25 — Estimate check (reconcile envelopes with tickets)
 
 > **Database:** **no schema change.**
-> **PRD refs:** proposed **UC-27** / **C25**; builds on §7.3 (estimates vs tickets), §7.4, §7.7, §19 "Estimate help". Screen 4 (PRD §10). Until merged into `docs/prds/GLOBAL.md`, **this file is the behavior source of truth**.
+> **PRD refs:** **UC-27** / **C25** (merged into `docs/prds/GLOBAL.md` 2026-11-04); builds on §7.3 (estimates vs tickets), §7.4, §7.7, §19 "Estimate help". Screen 4 (PRD §10). The PRD wins for behavior; this file is the detailed slice.
 > **ARCH refs:** §5 (layering), §8 (integer cents).
 
 ## 0. Why this exists
@@ -58,7 +58,7 @@ suggested  = max(plan − tickets, 0)      (per category)
 - `estimateCheck.{open, title, description, plan, spent, reserved, suggest, release, apply, confirmSuggest, confirmRelease, empty, matches, possibleOverlap, showTickets, ticketFromLine, overlapHint, flaggedCount, error}`
 - `months.tabs.check` (en "Estimate check" / es "Revisión"), `estimateCheck.noEstimates`
 
-## 8. Acceptance criteria / tests (proposed PRD §15 #47–#51)
+## 8. Acceptance criteria / tests (PRD §15 #47–#51)
 
 - #47 Groceries plan 400, remaining 400, tickets 120 → flagged, suggested 280; apply → remaining 280, savings +120.
 - #48 Two lines Groceries 300 + Extra 100 (remaining 300 / 100), tickets 350 → suggested 50 → Extra (first by name) 50, Groceries 0.

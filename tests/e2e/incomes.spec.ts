@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-07 month incomes — end-to-end acceptance.
@@ -29,8 +30,8 @@ const DB_URL =
 test.describe("UC-07 month incomes", () => {
   test("add → edit → delete (UC-07 acceptance)", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc07-${Date.now()}@example.com`,
-      googleSub: `e2e-uc07-sub-${Date.now()}`,
+      email: `e2e-uc07-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc07-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -47,7 +48,7 @@ test.describe("UC-07 month incomes", () => {
 
     // Row appears with the expected name + amount label.
     await expect(page.getByText("Monthly salary", { exact: true })).toBeVisible();
-    await expect(page.locator("#tabpanel-incomes").getByText("2000.00 €", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-incomes").getByText("2,000.00 €", { exact: true })).toBeVisible();
 
     // Edit: switch to edit mode, change the amount, save.
     await page.getByRole("button", { name: "Edit" }).click();
@@ -57,13 +58,13 @@ test.describe("UC-07 month incomes", () => {
     await page.locator('input[id^="edit-income-amount-"]').fill("2500.00");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Year-end bonus", { exact: true })).toBeVisible();
-    await expect(page.locator("#tabpanel-incomes").getByText("2500.00 €", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-incomes").getByText("2,500.00 €", { exact: true })).toBeVisible();
 
     // Delete (auto-accept the confirm dialog).
     page.once("dialog", (d) => d.accept());
     await page.getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText("Year-end bonus", { exact: true })).toHaveCount(0);
-    await expect(page.locator("#tabpanel-incomes").getByText("2500.00 €", { exact: true })).toHaveCount(0);
+    await expect(page.locator("#tabpanel-incomes").getByText("2,500.00 €", { exact: true })).toHaveCount(0);
     await expect(page.getByText("No incomes yet.")).toBeVisible();
 
     // Verify the DB row is GONE (PRD C15 / §13 hard delete).
@@ -76,8 +77,8 @@ test.describe("UC-07 month incomes", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc07-noact-${Date.now()}@example.com`,
-      googleSub: `e2e-uc07-noact-sub-${Date.now()}`,
+      email: `e2e-uc07-noact-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc07-noact-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -92,8 +93,8 @@ test.describe("UC-07 month incomes", () => {
 
   test("Spanish variant renders translated copy", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc07-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc07-es-sub-${Date.now()}`,
+      email: `e2e-uc07-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc07-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -107,7 +108,7 @@ test.describe("UC-07 month incomes", () => {
     await page.locator("#new-income-amount").fill("2000.00");
     await page.getByRole("button", { name: "Añadir" }).click();
     await expect(page.getByText("Salario mensual", { exact: true })).toBeVisible();
-    await expect(page.locator("#tabpanel-incomes").getByText("2000.00 €", { exact: true })).toBeVisible();
+    await expect(page.locator("#tabpanel-incomes").getByText("2,000.00 €", { exact: true })).toBeVisible();
   });
 });
 

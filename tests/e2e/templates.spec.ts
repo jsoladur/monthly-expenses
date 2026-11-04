@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-05 templates — end-to-end acceptance.
@@ -33,8 +34,8 @@ test.describe("UC-05 fixed/estimated templates", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc05-${Date.now()}@example.com`,
-      googleSub: `e2e-uc05-sub-${Date.now()}`,
+      email: `e2e-uc05-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc05-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetUserState(DB_URL, user.id);
@@ -72,8 +73,8 @@ test.describe("UC-05 fixed/estimated templates", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc05-obs-${Date.now()}@example.com`,
-      googleSub: `e2e-uc05-obs-sub-${Date.now()}`,
+      email: `e2e-uc05-obs-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc05-obs-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetUserState(DB_URL, user.id);
@@ -99,8 +100,8 @@ test.describe("UC-05 fixed/estimated templates", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc05-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc05-es-sub-${Date.now()}`,
+      email: `e2e-uc05-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc05-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetUserState(DB_URL, user.id);
@@ -112,8 +113,8 @@ test.describe("UC-05 fixed/estimated templates", () => {
 
   test("month schedule + hard delete (UC-20 acceptance)", async ({ context, page }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc20-${Date.now()}@example.com`,
-      googleSub: `e2e-uc20-sub-${Date.now()}`,
+      email: `e2e-uc20-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc20-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetUserState(DB_URL, user.id);

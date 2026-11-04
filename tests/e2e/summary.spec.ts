@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { insertMonthCloningTemplates } from "./_helpers/month";
+import { uniqueId } from "./_helpers/unique";
 
 // ============================================================================
 // UC-11 summary, savings & warnings — end-to-end acceptance.
@@ -35,8 +36,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc11-summary-${Date.now()}@example.com`,
-      googleSub: `e2e-uc11-summary-sub-${Date.now()}`,
+      email: `e2e-uc11-summary-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc11-summary-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -64,8 +65,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc11-pass-${Date.now()}@example.com`,
-      googleSub: `e2e-uc11-pass-sub-${Date.now()}`,
+      email: `e2e-uc11-pass-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc11-pass-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -94,8 +95,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc11-over-${Date.now()}@example.com`,
-      googleSub: `e2e-uc11-over-sub-${Date.now()}`,
+      email: `e2e-uc11-over-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc11-over-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -127,8 +128,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc11-nowarn-${Date.now()}@example.com`,
-      googleSub: `e2e-uc11-nowarn-sub-${Date.now()}`,
+      email: `e2e-uc11-nowarn-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc11-nowarn-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -147,8 +148,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc11-past-${Date.now()}@example.com`,
-      googleSub: `e2e-uc11-past-sub-${Date.now()}`,
+      email: `e2e-uc11-past-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc11-past-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);
@@ -173,8 +174,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     page,
   }) => {
     const user = await ensureUser(DB_URL, AUTH_SECRET, {
-      email: `e2e-uc11-es-${Date.now()}@example.com`,
-      googleSub: `e2e-uc11-es-sub-${Date.now()}`,
+      email: `e2e-uc11-es-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc11-es-sub-${uniqueId()}`,
     });
     await attachSessionCookie(context, user);
     await resetWorkspace(DB_URL, user.id);

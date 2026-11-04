@@ -1,7 +1,7 @@
 # UC-27 — Delete a month
 
 > **Database:** **no schema change.** `month_income`, `month_fixed_line` and `month_actual_expense` already reference `month.id` with `ON DELETE CASCADE` (migration 0000).
-> **PRD refs:** proposed **UC-29** / **C27**; fulfils PRD §13 "Month header — Not required in V1; if later, cascade hard-delete children". Screens 3 and 4 (PRD §10). Until merged into `docs/prds/GLOBAL.md`, **this file is the behavior source of truth**.
+> **PRD refs:** **UC-29** / **C27** (merged into `docs/prds/GLOBAL.md` 2026-11-04); fulfils PRD §13 "Month header — Not required in V1; if later, cascade hard-delete children". Screens 3 and 4 (PRD §10). The PRD wins for behavior; this file is the detailed slice.
 > **ARCH refs:** §5 (layering), §3.2 (`requireUserId()`).
 
 ## 0. Why this exists
@@ -44,7 +44,7 @@ Permanently delete a month and everything inside it, behind a deliberate confirm
 
 - `month.delete.{menu, title, body, counts, typeToConfirm, confirm, done}`
 
-## 8. Acceptance criteria / tests (proposed PRD §15 #58–#61)
+## 8. Acceptance criteria / tests (PRD §15 #58–#61)
 
 - #58 Delete Nov 2026 with 2 incomes, 5 lines, 7 actuals → all rows gone; other months untouched; Search no longer returns its tickets.
 - #59 Re-create Nov 2026 after delete → succeeds and clones current active templates for month-number 11.
