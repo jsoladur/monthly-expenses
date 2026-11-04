@@ -8,6 +8,7 @@ import {
   type MonthIncome,
 } from "@/server/db/schema";
 import {
+  deleteMonth as deleteMonthRow,
   findMonthByPeriod,
   insertClonedLines,
   insertMonth,
@@ -140,6 +141,25 @@ export async function createMonth(
   }
 
   return created;
+}
+
+export interface DeleteMonthInput {
+  monthId: string;
+}
+
+// UC-27: permanently delete a month and everything inside it. One
+// transaction; children go by FK cascade. Templates, categories and annuals
+// are never touched. Re-creating the same period afterwards clones TODAY's
+// templates (PRD C17 still holds — it is a brand-new month).
+export async function deleteMonth(
+  userId: string,
+  input: DeleteMonthInput,
+): Promise<{ year: number; month: number }> {
+  const deleted = await db.transaction((tx) => deleteMonthRow(userId, input.monthId, tx));
+  if (!deleted) {
+    throw new MonthNotFoundError();
+  }
+  return deleted;
 }
 
 // ----------------------------------------------------------------------------

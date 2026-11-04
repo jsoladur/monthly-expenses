@@ -193,6 +193,25 @@
     },
     "home": {
       "noMonths": "Todavía no has creado ningún mes."
+    },
+    "delete": {
+      "actions": "Acciones del mes",
+      "menu": "Eliminar mes",
+      "title": "¿Eliminar {month}?",
+      "lead": "Se borrará para siempre:",
+      "counts": {
+        "incomes": "{count, plural, =0 {Ningún ingreso} one {# ingreso} other {# ingresos}}",
+        "lines": "{count, plural, =0 {Ninguna línea reservada} one {# línea reservada} other {# líneas reservadas}}",
+        "actuals": "{count, plural, =0 {Ningún gasto real} one {# gasto real} other {# gastos reales}}"
+      },
+      "body": "Tus plantillas y categorías no se tocan. Si vuelves a crear este mes, copiará tus gastos fijos actuales.",
+      "irreversible": "No se puede deshacer.",
+      "typeToConfirm": "Escribe <b>{month}</b> para confirmar",
+      "confirm": "Eliminar mes",
+      "pending": "Eliminando…",
+      "cancel": "Cancelar",
+      "error": "No se pudo eliminar el mes. Recarga e inténtalo de nuevo.",
+      "done": "Se ha eliminado {month}."
     }
   },
   "history": {

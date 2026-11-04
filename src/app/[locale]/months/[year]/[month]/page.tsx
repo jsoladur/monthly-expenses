@@ -46,6 +46,7 @@ import { OverspendWarnings } from "@/app/[locale]/months/[year]/[month]/overspen
 import { AppShell } from "@/components/app-shell";
 import { Link, redirect } from "@/i18n/navigation";
 import { auth, signOut } from "@/auth";
+import { MonthActionsMenu } from "@/app/[locale]/months/[year]/[month]/month-actions-menu";
 import { MonthWorkspaceTabs } from "@/app/[locale]/months/[year]/[month]/month-workspace-tabs";
 
 export default async function MonthWorkspacePage({
@@ -251,9 +252,20 @@ export default async function MonthWorkspacePage({
             </Link>
           )}
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
-        </h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
+          </h1>
+          <MonthActionsMenu
+            monthId={workspace.month.id}
+            label={monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
+            counts={{
+              incomes: workspace.incomes.length,
+              lines: workspace.lines.length,
+              actuals: workspace.actuals.length,
+            }}
+          />
+        </div>
 
         {showPastMonthBanner && <PastMonthBanner />}
 

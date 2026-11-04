@@ -48,3 +48,15 @@ export async function setLastOpenedMonthCookie(
     maxAge: 60 * 60 * 24 * 365,
   });
 }
+
+// UC-27: forget the resume hint when it points at a month that no longer
+// exists. Only clears when it matches, so deleting another month keeps it.
+export async function clearLastOpenedMonthCookieIf(
+  year: number,
+  monthValue: number,
+): Promise<void> {
+  const current = await readLastOpenedMonthCookie();
+  if (!current || current.year !== year || current.month !== monthValue) return;
+  const store = await cookies();
+  store.delete({ name: LAST_OPENED_MONTH_COOKIE, path: "/" });
+}

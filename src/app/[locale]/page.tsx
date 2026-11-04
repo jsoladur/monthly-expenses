@@ -10,13 +10,17 @@ import { AppShell } from "@/components/app-shell";
 import { ExportExpensesDrawer } from "@/components/export-expenses-drawer";
 import { Link } from "@/i18n/navigation";
 import { uniqueYearsDescending } from "@/lib/export-selection";
+import { Trash2 } from "lucide-react";
 
 export default async function LocaleHome({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ deleted?: string | string[] }>;
 }) {
   const { locale } = await params;
+  const { deleted: deletedRaw } = await searchParams;
   if (!isAppLocale(locale)) {
     redirect({ href: "/", locale: routing.defaultLocale });
   }
@@ -28,6 +32,14 @@ export default async function LocaleHome({
   const tv = await getTranslations({ locale, namespace: "validation" });
 
   const allMonths = await getMonthList(userId);
+  // UC-27: one-shot note after a month delete (`?deleted=YYYY-M`). Shown only
+  // when that period really is gone for this tenant.
+  const deletedPeriod = parseDeletedPeriod(deletedRaw);
+  const deletedLabel =
+    deletedPeriod &&
+    !allMonths.some((m) => m.year === deletedPeriod.year && m.month === deletedPeriod.month)
+      ? monthYear(locale as AppLocale, deletedPeriod.year, deletedPeriod.month)
+      : null;
   const currentYear = new Date().getFullYear();
   const months = allMonths.filter((m) => m.year === currentYear);
   const session = await auth();
@@ -57,6 +69,16 @@ export default async function LocaleHome({
           </h1>
           <ExportExpensesDrawer years={exportYears} months={exportMonths} />
         </div>
+
+        {deletedLabel && (
+          <p
+            role="status"
+            className="bg-muted/60 text-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-sm"
+          >
+            <Trash2 className="text-muted-foreground size-4 shrink-0" aria-hidden />
+            {tm("delete.done", { month: deletedLabel })}
+          </p>
+        )}
 
         {months.length === 0 ? (
           <section
@@ -130,4 +152,14 @@ export default async function LocaleHome({
       </div>
     </AppShell>
   );
+}
+
+function parseDeletedPeriod(raw: string | string[] | undefined): { year: number; month: number } | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const match = value ? /^(\d{4})-(\d{1,2})$/.exec(value) : null;
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (year < 1970 || month < 1 || month > 12) return null;
+  return { year, month };
 }

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-04
+
+### Added
+- Delete a month you created by mistake: the "⋯" menu next to the month title opens a confirmation that lists how many incomes, reserved lines and expenses go with it, and only deletes once you type the month name as shown. Templates and categories stay; creating the month again copies your current fixed expenses. Home confirms the delete and no longer resumes the deleted month (UC-27).
+
 ## [0.13.0] - 2026-11-04
 
 ### Added

@@ -193,6 +193,25 @@
     },
     "home": {
       "noMonths": "You have not created a month yet."
+    },
+    "delete": {
+      "actions": "Month actions",
+      "menu": "Delete month",
+      "title": "Delete {month}?",
+      "lead": "This permanently removes:",
+      "counts": {
+        "incomes": "{count, plural, =0 {No incomes} one {# income} other {# incomes}}",
+        "lines": "{count, plural, =0 {No reserved lines} one {# reserved line} other {# reserved lines}}",
+        "actuals": "{count, plural, =0 {No actual expenses} one {# actual expense} other {# actual expenses}}"
+      },
+      "body": "Your templates and categories are not touched. If you create this month again it copies your current fixed expenses.",
+      "irreversible": "This cannot be undone.",
+      "typeToConfirm": "Type <b>{month}</b> to confirm",
+      "confirm": "Delete month",
+      "pending": "Deleting…",
+      "cancel": "Cancel",
+      "error": "The month could not be deleted. Reload and try again.",
+      "done": "{month} was deleted."
     }
   },
   "history": {

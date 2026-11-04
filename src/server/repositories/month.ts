@@ -73,6 +73,21 @@ export async function insertMonth(
   return created;
 }
 
+// UC-27: hard delete of the month row; `month_income`, `month_fixed_line` and
+// `month_actual_expense` go by `ON DELETE CASCADE` (migration 0000). Returns
+// the deleted period, or `null` when the id is not owned by this tenant.
+export async function deleteMonth(
+  userId: string,
+  monthId: string,
+  tx: Tx | typeof db = db,
+): Promise<{ year: number; month: number } | null> {
+  const rows = await tx
+    .delete(month)
+    .where(and(eq(month.userId, userId), eq(month.id, monthId)))
+    .returning({ year: month.year, month: month.month });
+  return rows[0] ?? null;
+}
+
 export async function listMonths(
   userId: string,
   tx: Tx | typeof db = db,

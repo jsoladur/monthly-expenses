@@ -3,13 +3,19 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { monthSchema, yearSchema } from "@/server/validators";
+import { monthSchema, uuidSchema, yearSchema } from "@/server/validators";
 import { requireUserId } from "@/server/auth/require-user-id";
 import {
   DuplicateMonthError,
+  MonthNotFoundError,
   createMonth as serviceCreateMonth,
+  deleteMonth as serviceDeleteMonth,
 } from "@/server/services/months";
-import { setLastOpenedMonthCookie } from "@/server/cookies/last-opened-month";
+import {
+  clearLastOpenedMonthCookieIf,
+  setLastOpenedMonthCookie,
+} from "@/server/cookies/last-opened-month";
+import { redirect } from "@/i18n/navigation";
 
 // ============================================================================
 // Months server actions (UC-06, ADR-6).
@@ -69,6 +75,47 @@ export async function createMonthAction(input: {
   }
   revalidatePath("/[locale]", "page");
   return { ok: true, year: parsed.data.year, month: parsed.data.month };
+}
+
+// ----------------------------------------------------------------------------
+// UC-27 delete a month.
+//
+// The typed month label is a UI guard only; the server trusts nothing but
+// the id + tenant. On success: clear `last_opened_month` if it pointed at the
+// deleted month, revalidate every locale page (Home, History, Search, Stats),
+// and redirect to the locale Home — which lists months and never auto-picks
+// or creates one (PRD C6/C12).
+// ----------------------------------------------------------------------------
+
+const deleteSchema = z.object({ monthId: uuidSchema });
+
+export type DeleteMonthResult = { ok: false; error: "validation" | "notFound" };
+
+export async function deleteMonthAction(input: {
+  monthId: string;
+}): Promise<DeleteMonthResult> {
+  const parsed = deleteSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "validation" };
+  }
+  const locale = await getLocaleFromHeaders();
+  const userId = await requireUserId(locale);
+  let deleted: { year: number; month: number };
+  try {
+    deleted = await serviceDeleteMonth(userId, { monthId: parsed.data.monthId });
+  } catch (err) {
+    if (err instanceof MonthNotFoundError) {
+      return { ok: false, error: "notFound" };
+    }
+    throw err;
+  }
+  await clearLastOpenedMonthCookieIf(deleted.year, deleted.month);
+  revalidatePath("/[locale]", "layout");
+  // `deleted` only drives a one-shot confirmation note on Home.
+  return redirect({
+    href: { pathname: "/", query: { deleted: `${deleted.year}-${deleted.month}` } },
+    locale,
+  });
 }
 
 // The edge middleware sets `x-next-intl-locale` on every request it

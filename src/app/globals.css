@@ -42,6 +42,7 @@
   --color-input: hsl(var(--input));
   --color-border: hsl(var(--border));
   --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-accent: hsl(var(--accent));
   --color-muted-foreground: hsl(var(--muted-foreground));
