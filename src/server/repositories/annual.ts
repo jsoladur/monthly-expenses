@@ -3,6 +3,9 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import {
   annual,
+  month,
+  monthActualExpense,
+  monthFixedLine,
   type Annual,
   type NewAnnual,
 } from "@/server/db/schema";
@@ -67,6 +70,43 @@ export async function getAnnualReminders(
       ),
     )
     .orderBy(asc(annual.name));
+}
+
+/**
+ * UC-28: the open month's reserved lines and actuals, reduced to what the
+ * annual "already added" match needs. Both reads join `month` on `user_id`
+ * so a foreign month id yields nothing (PRD §5.1).
+ */
+export async function listAnnualMatchCandidates(
+  userId: string,
+  monthId: string,
+  tx: Tx | typeof db = db,
+): Promise<{
+  lines: { categoryId: string; name: string; amount: string }[];
+  actuals: { categoryId: string; name: string; amount: string }[];
+}> {
+  const tenantMonth = and(eq(month.userId, userId), eq(month.id, monthId));
+  const [lines, actuals] = await Promise.all([
+    tx
+      .select({
+        categoryId: monthFixedLine.categoryId,
+        name: monthFixedLine.name,
+        amount: monthFixedLine.originalAmount,
+      })
+      .from(monthFixedLine)
+      .innerJoin(month, eq(month.id, monthFixedLine.monthId))
+      .where(tenantMonth),
+    tx
+      .select({
+        categoryId: monthActualExpense.categoryId,
+        name: monthActualExpense.name,
+        amount: monthActualExpense.amount,
+      })
+      .from(monthActualExpense)
+      .innerJoin(month, eq(month.id, monthActualExpense.monthId))
+      .where(tenantMonth),
+  ]);
+  return { lines, actuals };
 }
 
 export async function insertAnnual(

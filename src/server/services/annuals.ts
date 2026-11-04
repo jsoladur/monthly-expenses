@@ -6,11 +6,16 @@ import {
   findAnnualById,
   getAnnualReminders as repoGetReminders,
   insertAnnual,
+  listAnnualMatchCandidates,
   listAnnuals,
   reactivateAnnual as repoReactivate,
   updateAnnual as repoUpdate,
 } from "@/server/repositories/annual";
 import { findCategoryById } from "@/server/repositories/category";
+import { findMonthById } from "@/server/repositories/month";
+import { MonthNotFoundError } from "@/server/services/months";
+import { findAnnualMatch, type AnnualMatch, type AnnualMatchCandidate } from "@/lib/annual-match";
+import { parseAmount } from "@/server/money";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
 
@@ -93,15 +98,32 @@ export async function listAnnualsForManagement(
   return listAnnuals(userId, { includeInactive: true }, tx);
 }
 
+export type AnnualReminder = Annual & { match: AnnualMatch | null };
+
+/**
+ * Reminders for the open month (UC-14) plus, per reminder, whether the month
+ * already holds a matching reserved line or actual (UC-28). The match is
+ * computed at read time — nothing links a line to an annual — so deleting
+ * the matching line brings the full reminder back on the next render.
+ */
 export async function getAnnualReminders(
   userId: string,
-  chargeMonth: number,
+  monthId: string,
   tx: Tx | typeof db = db,
-): Promise<Annual[]> {
-  if (chargeMonth < 1 || chargeMonth > 12) {
-    throw new InvalidChargeMonthError();
+): Promise<AnnualReminder[]> {
+  const monthRow = await findMonthById(userId, monthId, tx);
+  if (!monthRow) {
+    throw new MonthNotFoundError();
   }
-  return repoGetReminders(userId, chargeMonth, tx);
+  const reminders = await repoGetReminders(userId, monthRow.month, tx);
+  if (reminders.length === 0) return [];
+
+  const { lines, actuals } = await listAnnualMatchCandidates(userId, monthId, tx);
+  const candidates: AnnualMatchCandidate[] = [
+    ...lines.map((l) => ({ source: "reserved" as const, categoryId: l.categoryId, name: l.name, amountCents: parseAmount(l.amount) })),
+    ...actuals.map((a) => ({ source: "actual" as const, categoryId: a.categoryId, name: a.name, amountCents: parseAmount(a.amount) })),
+  ];
+  return reminders.map((r) => ({ ...r, match: findAnnualMatch(r, candidates) }));
 }
 
 // ----------------------------------------------------------------------------

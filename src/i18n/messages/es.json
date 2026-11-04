@@ -465,7 +465,12 @@
       "selectCategory": "Elige una categoría",
       "selectMonth": "Elige un mes"
     },
-    "noActiveCategories": "Crea primero una categoría de gasto activa."
+    "noActiveCategories": "Crea primero una categoría de gasto activa.",
+    "reminder": {
+      "added": "Añadido: {name} · {amount}",
+      "showDetails": "Ver detalles",
+      "hideDetails": "Ocultar detalles"
+    }
   },
   "reminders": {
     "annual": "Suele cobrarse en {month}. Si este año toca, añade a mano una línea estimada o comprometida.",

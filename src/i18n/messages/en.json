@@ -465,7 +465,12 @@
       "selectCategory": "Pick a category",
       "selectMonth": "Pick a month"
     },
-    "noActiveCategories": "Create an active expense category first."
+    "noActiveCategories": "Create an active expense category first.",
+    "reminder": {
+      "added": "Added: {name} · {amount}",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
+    }
   },
   "reminders": {
     "annual": "Usually charged in {month}. Add an estimated/committed line manually if it applies this year.",

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-04
+
+### Added
+- Annual reminders now notice when the month already has a matching reserved line or expense ticket (same category, name starting with the annual's name, ignoring accents and case): the card shrinks to an "Added: {line} · {amount}" row with a Show details toggle, and comes back in full if that line is deleted (UC-28).
+
 ## [0.14.0] - 2026-11-04
 
 ### Added

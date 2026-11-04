@@ -167,7 +167,7 @@ export default async function MonthWorkspacePage({
     await Promise.all([
       getMonthSummary(userId, workspace.month.id),
       getOverspendWarnings(userId, workspace.month.id),
-      getAnnualReminders(userId, workspace.month.month),
+      getAnnualReminders(userId, workspace.month.id),
       listRecentActualNameSuggestions(userId, workspace.month.year, workspace.month.month),
       cameFromHistory
         ? Promise.resolve([])
@@ -224,6 +224,7 @@ export default async function MonthWorkspacePage({
     categoryName: expenseCategoryMap.get(r.categoryId)?.name ?? "—",
     isDirectDebit: r.isDirectDebit,
     amountCents: r.amount !== null ? parseAmount(r.amount) : null,
+    match: r.match,
   }));
 
   async function startSignOut() {
