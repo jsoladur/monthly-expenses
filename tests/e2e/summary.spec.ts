@@ -160,7 +160,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
     // Banner copy from PRD §19 / #13.
     await expect(page.getByTestId("past-month-banner")).toBeVisible();
     await expect(
-      page.getByText("ATTENTION: This month is not the current calendar month."),
+      page.getByText("ATTENTION: This is not the current month."),
     ).toBeVisible();
 
     // Edits ARE allowed in past months (PRD §7.7). The add-actual form is
@@ -192,8 +192,8 @@ test.describe("UC-11 summary, savings & warnings", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: /Avisos/ }).click();
     await expect(page.getByTestId("overspend-badge")).toBeVisible();
-    await expect(page.getByText(/Plan en gastos fijos:/)).toBeVisible();
-    await expect(page.getByText(/Excedido por/)).toBeVisible();
+    await expect(page.getByText(/Previsto en gastos fijos:/)).toBeVisible();
+    await expect(page.getByText(/Exceso:/)).toBeVisible();
   });
 });
 

@@ -80,7 +80,7 @@
     "actualNotFound": "That expense no longer exists. Reload the page.",
     "reservedLineNotFound": "That reserved line no longer exists. Reload the page.",
     "cannotUndoPass": "Cannot undo after the actual has been edited.",
-    "notUndoable": "This expense was not created by pass-to-actual.",
+    "notUndoable": "This expense was not passed from a reserved line, so there is nothing to undo.",
     "committedLineCannotPassToUpcoming": "Only estimated lines can move to an upcoming month.",
     "targetMonthNotFound": "That month no longer exists. Reload the page.",
     "targetNotUpcoming": "Pick a later month of this year that already exists.",
@@ -92,7 +92,7 @@
   },
   "warnings": {
     "title": "Warnings",
-    "pastMonth": "ATTENTION: This month is not the current calendar month.",
+    "pastMonth": "ATTENTION: This is not the current month.",
     "overspend": "Actual tickets in this category are higher than the plan in your fixed expenses.",
     "overspendPlan": "Plan in fixed expenses: {plan}",
     "overspendOver": "Over by {amount}",
@@ -128,7 +128,7 @@
       "savings": "Left over",
       "savingsHelp": "Income minus everything recorded or still reserved this month.",
       "negativeNote": "Negative amounts count (refunds, payouts).",
-      "pastMonthBanner": "ATTENTION: This month is not the current calendar month.",
+      "pastMonthBanner": "ATTENTION: This is not the current month.",
       "spending": "Spending (excl. invested)",
       "invested": "Invested",
       "totalSaved": "Total saved",
@@ -150,7 +150,8 @@
       "actuals": "Actuals",
       "incomes": "Incomes",
       "reserved": "Estimated",
-      "help": "Help"
+      "help": "Help",
+      "check": "Estimate check"
     },
     "stats": {
       "expensesByCategory": "Expenses by category",
@@ -179,7 +180,7 @@
         },
         "reserved": {
           "term": "Reserved",
-          "def": "Money still sitting in estimated envelopes. It is not spent until you pass it to actuals or the month closes."
+          "def": "Money still reserved in estimated lines. It is not spent until you pass it to actuals or the month closes."
         },
         "committed": {
           "term": "Committed",
@@ -442,7 +443,7 @@
   "settings": {
     "title": "Profile settings",
     "currency": "Currency",
-    "help": "Labels show two decimals. No currency conversion.",
+    "help": "Amounts show two decimals. No currency conversion.",
     "currentLabel": "Current currency",
     "theme": "Theme",
     "themeHelp": "Choose how the app looks. Auto follows your device settings.",
@@ -506,7 +507,7 @@
       }
     },
     "incomes": {
-      "netNote": "Amounts are net income as recorded — take-home pay (salario neto), not gross."
+      "netNote": "Amounts are net income as recorded — take-home pay, not gross."
     },
     "charts": {
       "incomeVsSpend": {
@@ -685,11 +686,11 @@
       },
       "income": {
         "term": "Income",
-        "def": "Net income as you recorded it — take-home pay (salario neto), not gross salary."
+        "def": "Net income as you recorded it — take-home pay, not gross salary."
       },
       "spend": {
         "term": "Actual spend",
-        "def": "Expense tickets already entered. Leftover envelopes are not treated as spent."
+        "def": "Expense tickets already entered. Money still reserved is not treated as spent."
       },
       "savings": {
         "term": "Realized savings",
@@ -705,7 +706,7 @@
       },
       "project": {
         "term": "Project remaining as spent",
-        "def": "Only on Overview, and only when the latest month still has reserved remaining. Off (default): charts use tickets already recorded; leftover envelopes are not spent. On: that month’s remaining is added as if you spent it, so you can see an “if I finish the envelopes” picture. It does not change other months or your books."
+        "def": "Only on Overview, and only when the latest month still has reserved remaining. Off (default): charts use tickets already recorded; money still reserved is not spent. On: that month’s remaining is added as if you spent it, so you can see what happens if you spend everything still reserved. It does not change other months or your books."
       },
       "ytd": {
         "term": "YTD (year to date)",
@@ -725,7 +726,7 @@
       "body": "Stats never creates months. Open Home and create a month to start building history.",
       "cta": "Go to Home"
     },
-    "openMonthNote": "{monthYear} still has {amount} reserved. Charts use tickets already recorded; they do not treat leftover envelopes as spent.",
+    "openMonthNote": "{monthYear} still has {amount} reserved. Charts use tickets already recorded; they do not treat money still reserved as spent.",
     "incompleteYear": "{year} has {n} months",
     "ytd": "YTD",
     "lfl": "Like-for-like",
@@ -786,5 +787,27 @@
       "originCloned": "Cloned",
       "originMonthOnly": "One-off"
     }
+  },
+  "estimateCheck": {
+    "open": "Estimate check",
+    "title": "Estimate check",
+    "description": "Compares what is still reserved in each category with the tickets you already recorded there. The app can't tell which tickets belong to the estimate, so check them before adjusting. Nothing changes until you confirm.",
+    "plan": "Plan",
+    "spent": "Tickets",
+    "reserved": "Still reserved",
+    "suggest": "Set to {amount}",
+    "release": "Release all",
+    "apply": "Apply",
+    "confirmSuggest": "{category} will keep {amount} reserved. Your tickets stay as they are.",
+    "confirmRelease": "The reservation for {category} goes to {amount}. Do it when you won't spend more in this category this month.",
+    "empty": "What is reserved matches the tickets in each category.",
+    "matches": "Matches",
+    "flaggedCount": "{count, plural, one {# category to review} other {# categories to review}}",
+    "error": "Could not apply the fix. Reload the page and try again.",
+    "possibleOverlap": "Maybe already spent: {amount}",
+    "showTickets": "{count, plural, one {See # ticket} other {See # tickets}}",
+    "ticketFromLine": "comes from a fixed expense, not counted",
+    "overlapHint": "If these tickets were not planned, the reservation is right and there is nothing to do.",
+    "noEstimates": "This month has no estimated lines to check."
   }
 }

@@ -22,7 +22,7 @@ import { insertMonthCloningTemplates } from "./_helpers/month";
 //     `EstimatedLineCannotPassError` (#12) — covered in
 //     `tests/integration/pass-to-actual.test.ts`.
 //   - Spanish variant: pass + undo copy renders translated (Pasar a
-//     gastos reales / Deshacer pase).
+//     gasto real / Deshacer).
 // ============================================================================
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
@@ -136,15 +136,15 @@ test.describe("UC-10 pass-to-actual & undo", () => {
     await page.getByRole("button", { name: /Comprometidas/ }).click();
 
     page.once("dialog", (d) => d.accept());
-    await page.getByRole("button", { name: "Pasar a real", exact: true }).click();
+    await page.getByRole("button", { name: "Pasar a gasto real", exact: true }).click();
 
     await expect(
-      page.getByRole("button", { name: "Deshacer pase", exact: true }),
+      page.getByRole("button", { name: "Deshacer", exact: true }),
     ).toBeVisible();
 
     page.once("dialog", (d) => d.accept());
     await page
-      .getByRole("button", { name: "Deshacer pase", exact: true })
+      .getByRole("button", { name: "Deshacer", exact: true })
       .click();
 
     await page.getByRole("button", { name: /Comprometidas/ }).click();

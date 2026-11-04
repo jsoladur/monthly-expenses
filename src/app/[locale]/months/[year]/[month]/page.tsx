@@ -12,6 +12,8 @@ import {
   isPastMonth,
 } from "@/server/services/summary";
 import { getAnnualReminders } from "@/server/services/annuals";
+import { getEstimateCheck } from "@/server/services/estimate-check";
+import { isBeforeCurrentMonth } from "@/lib/estimate-check";
 import { getProfileSettings } from "@/server/services/settings";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
@@ -34,6 +36,7 @@ import {
 } from "@/app/[locale]/months/[year]/[month]/actuals-screen";
 import { SummaryBlock } from "@/app/[locale]/months/[year]/[month]/summary-block";
 import { PastMonthBanner } from "@/app/[locale]/months/[year]/[month]/past-month-banner";
+import { EstimateCheckPanel } from "@/app/[locale]/months/[year]/[month]/estimate-check";
 import { EstimatedReservedLinesScreen } from "@/app/[locale]/months/[year]/[month]/estimated-reserved-lines-screen";
 import { StatsScreen, MonthStatsHelp } from "@/app/[locale]/months/[year]/[month]/stats-screen";
 import { AnnualReminderCards, type AnnualReminder } from "@/app/[locale]/months/[year]/[month]/annual-reminder-cards";
@@ -149,7 +152,14 @@ export default async function MonthWorkspacePage({
     rows: orderRows(reservedLineRows.filter((r) => r.kind === kind)),
   }));
 
-  const [summary, overspendWarnings, annualReminders, nameSuggestions, upcomingMonthsRaw] =
+  const [
+    summary,
+    overspendWarnings,
+    annualReminders,
+    nameSuggestions,
+    upcomingMonthsRaw,
+    estimateCheck,
+  ] =
     await Promise.all([
       getMonthSummary(userId, workspace.month.id),
       getOverspendWarnings(userId, workspace.month.id),
@@ -158,6 +168,7 @@ export default async function MonthWorkspacePage({
       cameFromHistory
         ? Promise.resolve([])
         : listUpcomingMonthsForPass(userId, workspace.month.year, workspace.month.month),
+      getEstimateCheck(userId, workspace.month.id),
     ]);
   const now = new Date();
   const showPastMonthBanner = isPastMonth(
@@ -165,6 +176,12 @@ export default async function MonthWorkspacePage({
     workspace.month.month,
     now,
   );
+  const isBeforeCurrent = isBeforeCurrentMonth(
+    workspace.month.year,
+    workspace.month.month,
+    now,
+  );
+  const flaggedEstimateCount = estimateCheck.categories.filter((c) => c.flagged).length;
 
   const session = await auth();
   const email = session?.user?.email ?? "";
@@ -173,6 +190,7 @@ export default async function MonthWorkspacePage({
 
   const t = await getTranslations({ locale, namespace: "months.tabs" });
   const tMonths = await getTranslations({ locale, namespace: "months" });
+  const tEstimate = await getTranslations({ locale, namespace: "estimateCheck" });
 
   const committedLines = reservedLineGroups.find((g) => g.kind === "committed")?.rows ?? [];
   const committedTotalCents = committedLines.reduce((sum, line) => sum + line.originalCents, 0);
@@ -277,6 +295,16 @@ export default async function MonthWorkspacePage({
               }))}
             />
           }
+          checkTab={
+            <EstimateCheckPanel
+              monthId={workspace.month.id}
+              year={workspace.month.year}
+              month={workspace.month.month}
+              currency={currency}
+              check={estimateCheck}
+              isPast={isBeforeCurrent}
+            />
+          }
           statsTab={
             <StatsScreen
               actuals={actualRows.map((r) => ({
@@ -309,6 +337,8 @@ export default async function MonthWorkspacePage({
           helpTab={<MonthStatsHelp />}
           labels={{
             data: t("data"),
+            check: t("check"),
+            checkFlagged: tEstimate("flaggedCount", { count: flaggedEstimateCount }),
             stats: t("stats"),
             actuals: t("actuals"),
             incomes: t("incomes"),
@@ -319,6 +349,7 @@ export default async function MonthWorkspacePage({
             actuals: actualRows.length,
             incomes: incomeRows.length,
             reserved: reservedLineGroups.find((g) => g.kind === "estimated")?.rows.length ?? 0,
+            flagged: flaggedEstimateCount,
           }}
         />
       </div>

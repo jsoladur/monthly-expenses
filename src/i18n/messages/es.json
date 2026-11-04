@@ -80,7 +80,7 @@
     "actualNotFound": "Ese gasto ya no existe. Recarga la página.",
     "reservedLineNotFound": "Esa línea reservada ya no existe. Recarga la página.",
     "cannotUndoPass": "No se puede deshacer después de editar el gasto.",
-    "notUndoable": "Este gasto no se creó con pasar-a-real, no hay nada que deshacer.",
+    "notUndoable": "Este gasto no viene de pasar una línea a gasto real, así que no hay nada que deshacer.",
     "committedLineCannotPassToUpcoming": "Solo las líneas estimadas pueden pasar a un mes próximo.",
     "targetMonthNotFound": "Ese mes ya no existe. Recarga la página.",
     "targetNotUpcoming": "Elige un mes posterior de este año que ya exista.",
@@ -92,10 +92,10 @@
   },
   "warnings": {
     "title": "Avisos",
-    "pastMonth": "ATENCIÓN: Este mes no es el mes natural actual.",
-    "overspend": "Los tickets reales en esta categoría superan el plan definido en tus gastos fijos.",
-    "overspendPlan": "Plan en gastos fijos: {plan}",
-    "overspendOver": "Excedido por {amount}",
+    "pastMonth": "ATENCIÓN: este no es el mes en curso.",
+    "overspend": "Lo gastado en esta categoría supera lo previsto en tus gastos fijos.",
+    "overspendPlan": "Previsto en gastos fijos: {plan}",
+    "overspendOver": "Exceso: {amount}",
     "inactiveCategory": "Esta categoría está inactiva. No puede elegirse para entradas nuevas."
   },
   "months": {
@@ -128,7 +128,7 @@
       "savings": "Sobrante",
       "savingsHelp": "Ingresos menos todo lo registrado o aún reservado este mes.",
       "negativeNote": "Los importes negativos cuentan (reembolsos, devoluciones).",
-      "pastMonthBanner": "ATENCIÓN: Este mes no es el mes natural actual.",
+      "pastMonthBanner": "ATENCIÓN: este no es el mes en curso.",
       "spending": "Gasto (excl. invertido)",
       "invested": "Invertido",
       "totalSaved": "Ahorro total",
@@ -150,7 +150,8 @@
       "actuals": "Gastos",
       "incomes": "Ingresos",
       "reserved": "Estimado",
-      "help": "Ayuda"
+      "help": "Ayuda",
+      "check": "Revisión"
     },
     "stats": {
       "expensesByCategory": "Gastos por categoría",
@@ -172,14 +173,14 @@
       "noLines": "No hay líneas en este grupo.",
       "total": "Total",
       "glossary": {
-        "title": "Qué significan estos trozos",
+        "title": "Qué significa cada parte",
         "actuals": {
           "term": "Gastos reales",
           "def": "Tickets de gasto ya registrados este mes."
         },
         "reserved": {
           "term": "Reservado",
-          "def": "Dinero que sigue en sobres estimados. No está gastado hasta que lo pasas a gastos reales o cierra el mes."
+          "def": "Dinero que sigue reservado en líneas estimadas. No cuenta como gastado hasta que lo pasas a gasto real o termina el mes."
         },
         "committed": {
           "term": "Comprometido",
@@ -215,7 +216,7 @@
     },
     "idle": "Encuentra un gasto de cualquier año. La búsqueda mira el nombre o la nota.",
     "tooShort": "Escribe al menos dos letras.",
-    "empty": "Ningún gasto coincide con “{q}”. Prueba otra palabra.",
+    "empty": "Ningún gasto coincide con «{q}». Prueba otra palabra.",
     "count": "{count, plural, one {# gasto} other {# gastos}}",
     "truncated": "Mostrando los primeros 100. Afina la búsqueda.",
     "a11y": {
@@ -267,10 +268,10 @@
       "placeholder": "p. ej. Pan",
       "observationsPlaceholder": "Notas opcionales",
       "selectCategory": "Elige una categoría",
-      "undoPass": "Deshacer pase",
-      "confirmUndoPass": "¿Deshacer el pase? La línea comprometida vuelve como línea reservada.",
-      "passToActual": "Pasar a real",
-      "confirmPassToActual": "¿Pasar esta línea a reales? La línea reservada se convierte en un ticket de gasto."
+      "undoPass": "Deshacer",
+      "confirmUndoPass": "¿Deshacer? El gasto vuelve a ser una línea reservada.",
+      "passToActual": "Pasar a gasto real",
+      "confirmPassToActual": "¿Pasar esta línea a gasto real? La línea reservada se convierte en un ticket de gasto."
     },
     "noActiveCategories": "Crea primero una categoría de gasto activa.",
     "historicalInactiveNote": "La categoría de este ticket está inactiva. Sigue mostrándose porque el ticket se añadió antes.",
@@ -308,10 +309,10 @@
       "delete": "Eliminar",
       "confirmDelete": "¿Eliminar esta línea reservada?",
       "edit": "Editar restante",
-      "placeholder": "p. ej. Seguro único",
+      "placeholder": "p. ej. Seguro puntual",
       "selectCategory": "Elige una categoría",
       "selectKind": "Elige un tipo",
-      "passToActual": "Pasar a gastos reales",
+      "passToActual": "Pasar a gasto real",
       "passToActualHelp": "Mueve esta línea reservada a gasto real.",
       "confirmPassToActual": "¿Pasar esta línea reservada a gasto real?",
       "passToUpcoming": "Pasar a un mes próximo",
@@ -435,14 +436,14 @@
     "noActiveCategories": "Crea primero una categoría de gasto activa."
   },
   "reminders": {
-    "annual": "Suele cargarse en {month}. Añade manualmente una línea estimada/comprometida si aplica este año.",
+    "annual": "Suele cobrarse en {month}. Si este año toca, añade a mano una línea estimada o comprometida.",
     "quickAdd": "Añadir rápido",
     "title": "Recordatorios anuales"
   },
   "settings": {
     "title": "Ajustes del perfil",
     "currency": "Moneda",
-    "help": "Las etiquetas muestran dos decimales. Sin conversión de moneda.",
+    "help": "Los importes se muestran con dos decimales. No se convierte entre monedas.",
     "currentLabel": "Moneda actual",
     "theme": "Tema",
     "themeHelp": "Elige cómo se ve la aplicación. Auto sigue los ajustes de tu dispositivo.",
@@ -491,7 +492,7 @@
       "savings": "Ahorro realizado",
       "savingsRate": "Tasa de ahorro",
       "vsPrior": "frente al periodo anterior",
-      "rateHidden": "Oculto cuando el ingreso es 0",
+      "rateHidden": "Se oculta si los ingresos son 0",
       "invested": "Invertido",
       "investedCaption": "Incluido en el ahorro realizado"
     },
@@ -506,15 +507,15 @@
       }
     },
     "incomes": {
-      "netNote": "Las cifras son ingresos netos tal como los registraste — salario neto / neto cobrado, no bruto."
+      "netNote": "Las cifras son ingresos netos tal como los registraste: lo que cobras, no el bruto."
     },
     "charts": {
       "incomeVsSpend": {
         "title": "Ingresos frente a gasto real",
-        "help": "Las barras son el gasto; la línea son los ingresos. El mismo eje de moneda."
+        "help": "Las barras son el gasto y la línea, los ingresos. Comparten el mismo eje de importes."
       },
       "rolling": {
-        "title": "Ingresos y gasto acumulados a 12 meses",
+        "title": "Ingresos y gasto de los últimos 12 meses",
         "help": "Cada punto suma los últimos 12 meses creados."
       },
       "savingsRate": {
@@ -522,12 +523,12 @@
         "help": "Ahorro realizado como proporción de los ingresos. La línea marca el 0%."
       },
       "compositionFirst": {
-        "title": "Mix de gasto — primer año completo",
+        "title": "Reparto del gasto — primer año completo",
         "help": "Cómo se reparte el gasto real entre categorías."
       },
       "compositionLatest": {
-        "title": "Mix de gasto — último año completo",
-        "help": "Compáralo con el primer año completo para ver el cambio de mix."
+        "title": "Reparto del gasto — último año completo",
+        "help": "Compáralo con el primer año completo para ver cómo ha cambiado el reparto."
       },
       "yearly": {
         "title": "Totales anuales",
@@ -542,12 +543,12 @@
         "help": "Totales apilados. Las categorías inactivas siguen en el historial."
       },
       "mix": {
-        "title": "Mix de categorías",
-        "help": "Participación del rango seleccionado."
+        "title": "Reparto por categorías",
+        "help": "Peso de cada categoría en el periodo seleccionado."
       },
       "largestShare": {
         "title": "Peso de la categoría mayor",
-        "help": "Cuánto se concentra el mix año a año."
+        "help": "Cuánto se concentra el gasto en una categoría, año a año."
       },
       "matrix": {
         "title": "Año × categoría",
@@ -582,9 +583,9 @@
         "help": "Euros por encima del año base. Mezcla volumen y precio."
       },
       "sparklines": {
-        "title": "Principales categorías, acumulado a 12 meses",
+        "title": "Principales categorías, últimos 12 meses",
         "help": "Cada punto suma los últimos 12 meses creados de esa categoría, no solo ese mes.",
-        "rolling": "Acumulado a 12 meses",
+        "rolling": "Últimos 12 meses",
         "thisMonth": "Este mes"
       },
       "overlay": {
@@ -603,7 +604,7 @@
     "inflation": {
       "impact": {
         "hccAhead": "El coste de la vida registrada subió más que los ingresos. La tasa de ahorro es la válvula de presión.",
-        "incomeAhead": "Los ingresos crecieron más que el gasto registrado. Comprueba si el mix se desplazó a vivienda o dependientes.",
+        "incomeAhead": "Los ingresos crecieron más que el gasto registrado. Comprueba si el gasto se desplazó hacia vivienda o personas a cargo.",
         "tied": "El cambio de ingresos coincidió con el cambio del coste del hogar en el último par comparable.",
         "largestShare": "{name} fue el {latest} de los ingresos en el último año completo (era {base} en el año base)."
       },
@@ -613,18 +614,18 @@
       "empty": "No hay señales de tendencia en este rango.",
       "group": {
         "risk": "Riesgos de caja",
-        "watch": "Atención",
+        "watch": "A vigilar",
         "info": "Notas",
         "growth": "Crecimiento por categoría"
       },
       "savingsRateDrop": "La tasa de ahorro bajó {drop} pp en {year}.",
       "spendOutpacingIncome": "El gasto registrado subió {gap} pp más rápido que los ingresos en {year}.",
-      "categoryRunaway": "{name} creció {yoy} interanual, más rápido que los ingresos.",
-      "categorySpike": "{name} saltó {yoy} interanual.",
+      "categoryRunaway": "{name} creció un {yoy} interanual, más rápido que los ingresos.",
+      "categorySpike": "{name} se disparó un {yoy} interanual.",
       "newCategoryMaterial": "{name} aparece por primera vez y es el {share} del gasto del último año.",
       "housingBurden": "{name} es el {share} de los ingresos.",
       "incomeConcentration": "{name} es el {share} de los ingresos.",
-      "incomeSourceGone": "{name} era una fuente de ingreso material hace dos años y desapareció en {year}.",
+      "incomeSourceGone": "{name} era una fuente de ingresos importante hace dos años y desapareció en {year}.",
       "deficitMonth": "El gasto superó los ingresos en: {months}.",
       "deficitYear": "{year} cerró con ahorro realizado negativo.",
       "seasonalityPeak": "El pico de gasto en {year} está claramente por encima de la media mensual de ese año.",
@@ -685,11 +686,11 @@
       },
       "income": {
         "term": "Ingresos",
-        "def": "Ingresos netos tal como los registraste — salario neto / neto cobrado, no bruto."
+        "def": "Ingresos netos tal como los registraste: lo que cobras, no el sueldo bruto."
       },
       "spend": {
         "term": "Gasto real",
-        "def": "Tickets de gasto ya apuntados. Los sobres restantes no se tratan como gastados."
+        "def": "Tickets de gasto ya apuntados. Lo que sigue reservado no cuenta como gastado."
       },
       "savings": {
         "term": "Ahorro realizado",
@@ -697,7 +698,7 @@
       },
       "savingsRate": {
         "term": "Tasa de ahorro",
-        "def": "Ahorro realizado como proporción de los ingresos. Oculta cuando el ingreso es 0."
+        "def": "Ahorro realizado como proporción de los ingresos. Se oculta si los ingresos son 0."
       },
       "lfl": {
         "term": "Comparable (LFL)",
@@ -705,14 +706,14 @@
       },
       "project": {
         "term": "Proyectar el restante como gastado",
-        "def": "Solo en Resumen, y solo cuando el último mes todavía tiene restante reservado. Desactivado (por defecto): los gráficos usan los tickets ya apuntados; los sobres restantes no están gastados. Activado: el restante de ese mes se suma como si lo hubieras gastado, para ver un “si termino los sobres”. No cambia otros meses ni tus libros."
+        "def": "Solo en Resumen, y solo cuando el último mes todavía tiene restante reservado. Desactivado (por defecto): los gráficos usan los tickets ya apuntados; lo reservado no cuenta como gastado. Activado: el restante de ese mes se suma como si lo hubieras gastado, para ver cómo quedaría si gastas todo lo reservado. No cambia otros meses ni tus datos."
       },
       "ytd": {
         "term": "YTD (año en curso)",
         "def": "Este año aún no es un año comparable cerrado: o no tiene 12 meses creados, o el mes calendario actual sigue en curso. Los gráficos de totales incluyen igual los tickets ya apuntados, con esta marca."
       },
       "rolling": {
-        "term": "Acumulado a 12 meses",
+        "term": "Últimos 12 meses (móvil)",
         "def": "Cada punto suma los últimos 12 meses creados, para que un mes ausente no parezca una caída."
       },
       "cagr": {
@@ -725,7 +726,7 @@
       "body": "Estadísticas nunca crea meses. Abre Inicio y crea un mes para empezar a construir historial.",
       "cta": "Ir a Inicio"
     },
-    "openMonthNote": "{monthYear} todavía tiene {amount} reservado. Los gráficos usan los tickets ya registrados; no tratan los sobres restantes como gastados.",
+    "openMonthNote": "{monthYear} todavía tiene {amount} reservado. Los gráficos usan los tickets ya registrados; lo que sigue reservado no cuenta como gastado.",
     "incompleteYear": "{year} tiene {n} meses",
     "ytd": "YTD",
     "lfl": "Comparable",
@@ -744,11 +745,11 @@
   "pwa": {
     "install": {
       "button": "Instalar app",
-      "prompt": "Instala Monthly Expenses en tu dispositivo para un acceso rápido.",
-      "iosInstructions": "Toca el botón de compartir y luego \"Añadir a la pantalla de inicio\" para instalar.",
+      "prompt": "Instala Gastos mensuales en tu dispositivo para abrirla más rápido.",
+      "iosInstructions": "Toca el botón de compartir y luego «Añadir a la pantalla de inicio».",
       "dismiss": "Ahora no"
     },
-    "offlineNote": "Los datos son solo en línea. La aplicación se carga al instante una vez instalada."
+    "offlineNote": "Los datos necesitan conexión. Una vez instalada, la aplicación se abre al instante."
   },
   "export": {
     "button": "Exportar",
@@ -778,7 +779,7 @@
       "name": "Nombre",
       "notes": "Notas",
       "amount": "Importe",
-      "remaining": "Pendiente",
+      "remaining": "Restante",
       "original": "Original",
       "origin": "Origen",
       "total": "Total",
@@ -786,5 +787,27 @@
       "originCloned": "Copiada",
       "originMonthOnly": "Puntual"
     }
+  },
+  "estimateCheck": {
+    "open": "Revisar estimaciones",
+    "title": "Revisar estimaciones",
+    "description": "Compara lo que aún tienes reservado en cada categoría con los gastos que ya has registrado en ella. La app no sabe qué gastos corresponden a lo estimado, así que revísalos antes de ajustar. Nada se modifica hasta que lo confirmes.",
+    "plan": "Plan",
+    "spent": "Gastos",
+    "reserved": "Aún reservado",
+    "suggest": "Ajustar a {amount}",
+    "release": "Liberar todo",
+    "apply": "Aplicar",
+    "confirmSuggest": "En {category} quedarán reservados {amount}. Tus gastos no se modifican.",
+    "confirmRelease": "La reserva de {category} pasará a {amount}. Hazlo cuando ya no vayas a gastar más en esta categoría este mes.",
+    "empty": "Lo reservado cuadra con los gastos de cada categoría.",
+    "matches": "Cuadra",
+    "flaggedCount": "{count, plural, one {# categoría por revisar} other {# categorías por revisar}}",
+    "error": "No se pudo aplicar el ajuste. Recarga la página e inténtalo de nuevo.",
+    "possibleOverlap": "Quizá ya gastado: {amount}",
+    "showTickets": "{count, plural, one {Ver # gasto} other {Ver # gastos}}",
+    "ticketFromLine": "viene de un gasto fijo, no se cuenta",
+    "overlapHint": "Si estos gastos no estaban previstos, la reserva es correcta y no tienes que hacer nada.",
+    "noEstimates": "Este mes no tiene gastos estimados que revisar."
   }
 }

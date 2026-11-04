@@ -44,7 +44,7 @@ test.describe("UC-04 profile settings (currency)", () => {
     await page.goto(`${BASE_URL}/en/settings`);
 
     await expect(page.getByRole("heading", { level: 1, name: "Profile settings" })).toBeVisible();
-    await expect(page.getByText("Labels show two decimals. No currency conversion.")).toBeVisible();
+    await expect(page.getByText("Amounts show two decimals. No currency conversion.")).toBeVisible();
 
     const currencyForm = page.getByRole("form", { name: "Currency" });
     await expect(currencyForm.locator("#currency")).toHaveValue("EUR");
@@ -82,7 +82,7 @@ test.describe("UC-04 profile settings (currency)", () => {
 
     await page.goto(`${BASE_URL}/es/settings`);
     await expect(page.getByRole("heading", { level: 1, name: "Ajustes del perfil" })).toBeVisible();
-    await expect(page.getByText("Las etiquetas muestran dos decimales. Sin conversión de moneda.")).toBeVisible();
+    await expect(page.getByText("Los importes se muestran con dos decimales. No se convierte entre monedas.")).toBeVisible();
     await expect(page.getByRole("form", { name: "Moneda" }).locator("#currency")).toHaveValue("EUR");
   });
 });

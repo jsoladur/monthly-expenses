@@ -7,6 +7,7 @@ import {
   CircleHelp,
   List,
   Receipt,
+  Scale,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -15,10 +16,13 @@ interface MonthWorkspaceTabsProps {
   actualsTab: ReactNode;
   incomesTab: ReactNode;
   reservedTab: ReactNode;
+  checkTab: ReactNode;
   statsTab: ReactNode;
   helpTab: ReactNode;
   labels: {
     data: string;
+    check: string;
+    checkFlagged: string;
     stats: string;
     actuals: string;
     incomes: string;
@@ -29,14 +33,17 @@ interface MonthWorkspaceTabsProps {
     actuals: number;
     incomes: number;
     reserved: number;
+    /** Categories flagged by the estimate check (UC-25); badge hidden at 0. */
+    flagged: number;
   };
 }
 
-type ParentTab = "data" | "stats" | "help";
+type ParentTab = "data" | "check" | "stats" | "help";
 type DataTab = "actuals" | "incomes" | "reserved";
 
 const PARENT_ICONS: Record<ParentTab, LucideIcon> = {
   data: List,
+  check: Scale,
   stats: BarChart3,
   help: CircleHelp,
 };
@@ -51,12 +58,14 @@ export function MonthWorkspaceTabs({
   actualsTab,
   incomesTab,
   reservedTab,
+  checkTab,
   statsTab,
   helpTab,
   labels,
   counts,
 }: MonthWorkspaceTabsProps) {
   const [activeParentTab, setActiveParentTab] = useState<ParentTab>("data");
+
   const [activeDataTab, setActiveDataTab] = useState<DataTab>("actuals");
 
   const dataTabs = [
@@ -67,6 +76,7 @@ export function MonthWorkspaceTabs({
 
   const parentTabs: Array<{ id: ParentTab; label: string }> = [
     { id: "data", label: labels.data },
+    { id: "check", label: labels.check },
     { id: "stats", label: labels.stats },
     { id: "help", label: labels.help },
   ];
@@ -83,7 +93,8 @@ export function MonthWorkspaceTabs({
               aria-selected={activeParentTab === tab.id}
               aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveParentTab(tab.id)}
-              className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              data-testid={`month-tab-${tab.id}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeParentTab === tab.id
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -91,6 +102,15 @@ export function MonthWorkspaceTabs({
             >
               <Icon className="size-3.5 shrink-0" aria-hidden />
               {tab.label}
+              {tab.id === "check" && counts.flagged > 0 && (
+                <span
+                  className="bg-estimated min-w-5 rounded-full px-1.5 py-0.5 text-center text-xs font-bold text-white tabular-nums"
+                  aria-label={labels.checkFlagged}
+                  data-testid="estimate-check-badge"
+                >
+                  {counts.flagged}
+                </span>
+              )}
             </button>
           );
         })}
@@ -136,6 +156,12 @@ export function MonthWorkspaceTabs({
             {activeDataTab === "reserved" && reservedTab}
           </div>
         </>
+      )}
+
+      {activeParentTab === "check" && (
+        <div role="tabpanel" id="tabpanel-check">
+          {checkTab}
+        </div>
       )}
 
       {activeParentTab === "stats" && (

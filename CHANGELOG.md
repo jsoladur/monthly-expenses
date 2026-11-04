@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-04
+
+### Added
+- Estimate check tab in the month workspace (after Data), with a badge counting categories to review. Per category it shows the plan, the category's tickets and what is still reserved, and lists the tickets so you decide; tickets passed from a fixed line are shown but not counted. One tap (confirmed) sets the reservation to plan − tickets or, on past months, releases it; nothing changes automatically (UC-25).
+
+### Changed
+- Clearer wording in both languages: Spanish no longer translates "envelope" literally as "sobre" (it now says "reservado"/"estimado"), "Pasar a real" / "Deshacer pase" become "Pasar a gasto real" / "Deshacer", Stats uses "Reparto del gasto" and "Últimos 12 meses" instead of "Mix" and "Acumulado a 12 meses", the past-month notice reads "este no es el mes en curso", and the overspend badge reads "Previsto en gastos fijos" / "Exceso". English drops "envelope" from the estimate check and Stats glossary, and the leftover Spanish "(salario neto)" in English income notes.
+
 ## [0.11.0] - 2026-11-03
 
 ### Added
