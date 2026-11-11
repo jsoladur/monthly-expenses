@@ -25,6 +25,8 @@ export interface TemplateRowData {
   amountCents: number;
   // UC-20 month schedule: null = every month.
   months: number[] | null;
+  // UC-29 last payment month (committed only): null = none.
+  endMonth: { year: number; month: number } | null;
   active: boolean;
 }
 

@@ -53,6 +53,7 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C26 | **Move an actual expense** to another month the user already created: any later month (across years) or up to **3 calendar months back** from the ticket's own month. The row moves (same id and fields); it is never copied. Never auto-creates the target (C6). No undo — the user moves it back. |
 | C27 | **Delete a month.** A month header can be hard-deleted with all its incomes, reserved lines and actuals (cascade), behind a typed confirmation of the month label. Catalogs are untouched. Home never auto-picks or creates a replacement (C6/C12). |
 | C28 | **Annual reminder "added" state.** When the open month already holds a reserved line or actual in the annual's category whose folded name equals or starts with the annual's folded name, the reminder collapses to an **Added** row. Computed at read time; nothing links a line to an annual; the reminder never disappears. |
+| C29 | **Last payment month (loans & instalments).** A **committed** template may carry an optional last payment month (month + year). Creating a month copies the template only when that month is **not after** it, and **deactivates** (soft, never deletes) every template whose last payment month is that month or earlier — so a skipped month still ends it. Reactivating a template clears its last payment month. Existing months are never rewritten. |
 
 ---
 
@@ -146,7 +147,8 @@ Agents may normalize tables as needed if **behavior and fields** stay equivalent
 | amount | Mandatory, 2 decimals, **may be negative** |
 | kind | `committed` **or** `estimated` |
 | months | Optional schedule: set of month-numbers 1–12. **Absent = every month.** All 12 selected = every month (stored as absent). At least one month when set. Only templates that apply to a month-number are cloned into a new month of that number (C23). |
-| active | Soft-delete; inactive templates are **not** cloned into **new** months |
+| last payment month | Optional, **committed only**: month + year of the last payment (loans, instalments). **Absent = no end.** The template is cloned into months up to and including it, and deactivated when a month on or after it is created (C29). |
+| active | Soft-delete; inactive templates are **not** cloned into **new** months. Set automatically when the last payment month is reached (C29); reactivating clears the last payment month. |
 
 Clone source only. Never updated from month edits. **Delete:** deactivate (soft, reversible) **or** delete (hard, permanent — the row is gone from the catalog; months already created keep their copied lines).
 
@@ -262,7 +264,9 @@ total_saved  = left_over + invested
 - **Right:** `SUM(active template amounts)` in that same category (committed **and** estimated) **whose schedule applies to the open month-number** (C23). For templates without a schedule this is the same total as Fixed Expenses → Distribution by category.  
   Example: templates “Groceries 400” + “Extra 50” in Food → plan = **450**. Actuals 500 → **warning**. Housing “Rent 700 committed” + “Repairs 160 estimated” → plan = **860**. Utilities “Water 60” scheduled {Jan} + “Power 50” → January plan = **110**, February plan = **50**.
 
-If a category has **no applicable active templates** for the open month, **no** overspend warning for that category.
+**Last payment month (C29).** A template that has a last payment month counts toward the plan of every month **up to and including** that month — whether it is still active or was already deactivated — and of no later month. Example: “Car loan 250”, last payment March 2027 → March plan includes 250 even though creating March deactivated the template; April plan does not.
+
+If a category has **no applicable templates** for the open month, **no** overspend warning for that category.
 
 **Savings categories (C24) never raise an overspend warning.** Investing more than the plan is not overspending.
 
@@ -303,6 +307,7 @@ Rules:
 
 - Each month is a **separated instance**.
 - Clone happens **once**, at create time, from **active** fixed + estimated templates **whose schedule includes the new month's month-number** (no schedule = every month, C23).
+- A committed template with a **last payment month** (C29) is cloned only when the new month is not after it. In the same create step, every active template whose last payment month is the new month or earlier is **deactivated** (soft). This is the only catalog change month creation makes.
 - After create, August and September never sync to each other or back to templates.
 - User may add **any number of actual expenses** on a month.
 - User may add or hard-delete reserved lines **only on that month** (one-offs). They are not written to the template and will not appear in the next month unless added to the template before that month is created.
@@ -416,7 +421,7 @@ potential_savings already subtracts all remainings
 
 ### UC-07 — Template management
 
-- Catalog of reserved lines: category, name, amount, `kind`, optional month schedule (UC-25). Soft-delete → not cloned later; existing months unchanged. Hard delete available (UC-25).
+- Catalog of reserved lines: category, name, amount, `kind`, optional month schedule (UC-25), optional last payment month on committed templates (UC-31). Soft-delete → not cloned later; existing months unchanged. Hard delete available (UC-25).
 
 ### UC-08 — Create calendar month
 
@@ -584,6 +589,20 @@ Implementation slice: `docs/usecases/UC-28-annual-reminder-added-state.md`.
 - The same name in another category does not match; a name that only contains the annual's name mid-string does not match.
 - Hard-deleting the matching line restores the full reminder on the next render.
 
+### UC-31 — Last payment month for committed fixed expenses
+
+Implementation slice: `docs/usecases/UC-29-committed-last-payment-month.md`.
+
+- On Fixed expenses → Committed, the add and edit forms offer **Has a last payment**. Off = no end (default). On = a month and a year. Estimated fixed expenses do not offer it.
+- Creating a month copies a fixed expense with a last payment month only when the new month is not after it. The last payment month itself is copied.
+- Creating a month on or after the last payment month deactivates the fixed expense (it is not deleted). This also holds when the exact month was skipped.
+- Creating a month before the last payment month never deactivates it.
+- Saving a last payment month never deactivates anything by itself and never changes existing months.
+- Reactivating a fixed expense clears its last payment month, after a confirmation that says so.
+- Rows with a last payment month show it.
+- The overspend plan keeps counting the fixed expense for months up to and including its last payment month (§7.4).
+- User B can never set a last payment month on User A's templates, and User B creating a month never deactivates User A's templates.
+
 ---
 
 ## 10. Screens (logical)
@@ -738,6 +757,14 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 63. The same name in a different category → not matched.
 64. Annual “Seguro hogar” matches actual “SEGURO HOGAR mapfre” (accent/case folding).
 65. Hard-deleting the matching line → the full reminder returns on the next render.
+66. “Car loan 250” committed, last payment Mar 2027. Create Feb 2027 → copied, template active. Create Mar 2027 → copied, template inactive (not deleted). Create Apr 2027 → no Car loan line.
+67. Last payment Mar 2027, March never created. Create May 2027 → no Car loan line; template inactive.
+68. Last payment Mar 2027. Create Jan 2027 → copied; template still active.
+69. A last payment month on an estimated template is rejected; month 13 or year 1969 is rejected.
+70. Reactivate an ended template → its last payment month is cleared; the next created month copies it and leaves it active.
+71. Loans “Car loan 250”, last payment Mar 2027, March ticket 250 → no overspend warning in March although the template is inactive; the April plan does not count it.
+72. User B cannot set a last payment month on User A's template; User B creating a month never deactivates User A's templates.
+73. Scheduled Jan/Jul with last payment Mar 2027 → creating Mar 2027 copies nothing and deactivates it. Months created earlier keep their lines.
 
 ---
 

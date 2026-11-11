@@ -19,7 +19,10 @@ import {
   listMonthYears,
   listMonthsByYear,
 } from "@/server/repositories/month";
-import { listActiveTemplatesForMonth } from "@/server/repositories/template";
+import {
+  deactivateEndedTemplates,
+  listTemplatesToClone,
+} from "@/server/repositories/template";
 
 // ============================================================================
 // Months service (UC-06, PRD UC-08 / UC-14 / UC-19 / C6 / C7 / C12 / §7.8).
@@ -38,6 +41,11 @@ import { listActiveTemplatesForMonth } from "@/server/repositories/template";
 //   - Incomes are NOT cloned (PRD §7.8).
 //   - Active templates only — soft-deleted templates are excluded from the
 //     clone source (PRD §6.3 / §7.8).
+//   - Last payment month (PRD C29, UC-29): a committed template that has one
+//     is cloned only when the new month is not after it. In the same
+//     transaction, every active template whose last payment month is the new
+//     month or earlier is soft-deactivated — the only catalog change month
+//     creation makes.
 //   - Months are created only on explicit user action (PRD C6/C12) — there
 //     is no implicit / scheduled creation.
 //   - After creation the month is INDEPENDENT: edits to templates after the
@@ -111,8 +119,14 @@ export async function createMonth(
       tx,
     );
 
-    // Only templates whose schedule covers this month-number (PRD C23).
-    const activeTemplates = await listActiveTemplatesForMonth(userId, input.month, tx);
+    // Only templates whose schedule covers this month-number (PRD C23) and
+    // whose last payment month, if any, is not before this month (PRD C29).
+    const activeTemplates = await listTemplatesToClone(
+      userId,
+      input.year,
+      input.month,
+      tx,
+    );
 
     if (activeTemplates.length > 0) {
       await insertClonedLines(
@@ -129,6 +143,10 @@ export async function createMonth(
         tx,
       );
     }
+
+    // AFTER the clone, so the last payment month itself still gets its line:
+    // loans that reached their last payment stop being copied (PRD C29).
+    await deactivateEndedTemplates(userId, input.year, input.month, tx);
 
     return insertedMonth;
   });

@@ -18,6 +18,7 @@ import { findCategoryById } from "@/server/repositories/category";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
 import { normalizeMonths } from "@/lib/template-schedule";
+import { normalizeEndMonth, type EndMonth } from "@/lib/template-end";
 
 export {
   EmptyScheduleError,
@@ -25,6 +26,11 @@ export {
   appliesToMonth,
   normalizeMonths,
 } from "@/lib/template-schedule";
+export {
+  EndMonthOnEstimatedError,
+  InvalidEndMonthError,
+  normalizeEndMonth,
+} from "@/lib/template-end";
 
 // ============================================================================
 // Templates service (UC-05, PRD §6.3 / §7.4 / §13, ARCH §5 rule 3).
@@ -49,6 +55,9 @@ export {
 //     to NULL and rejects an empty schedule.
 //   - Hard delete (PRD C23 / §13, UC-20) removes the row; existing months
 //     keep their cloned copies.
+//   - Last payment month (PRD C29, UC-29): optional, COMMITTED only. Saving
+//     it never deactivates anything — `createMonth` does that when a month on
+//     or after it is created. Reactivating clears it.
 //
 // Domain errors are exported as named classes. Server actions translate them
 // into i18n keys at the boundary; this layer must NOT depend on next-intl so
@@ -136,6 +145,7 @@ export interface TemplateInput {
   amount: string;
   kind: LineKind;
   months?: readonly number[] | null;
+  endMonth?: EndMonth | null;
 }
 
 export async function createTemplate(
@@ -145,6 +155,7 @@ export async function createTemplate(
 ): Promise<Template> {
   const amount = parseAmountOrThrow(input.amount);
   const months = normalizeMonths(input.months);
+  const end = normalizeEndMonth(input.kind, input.endMonth);
   const category = await findCategoryById(userId, input.categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
@@ -165,6 +176,8 @@ export async function createTemplate(
       amount: formatCents(amount),
       kind: input.kind,
       months,
+      endYear: end?.year ?? null,
+      endMonth: end?.month ?? null,
       active: true,
     },
     tx,
@@ -178,6 +191,7 @@ export async function updateTemplate(
 ): Promise<Template> {
   const amount = parseAmountOrThrow(input.amount);
   const months = normalizeMonths(input.months);
+  const end = normalizeEndMonth(input.kind, input.endMonth);
   const existing = await findTemplateById(userId, input.id, tx);
   if (!existing) {
     throw new TemplateNotFoundError();
@@ -203,6 +217,8 @@ export async function updateTemplate(
       amount: formatCents(amount),
       kind: input.kind,
       months,
+      endYear: end?.year ?? null,
+      endMonth: end?.month ?? null,
     },
     tx,
   );

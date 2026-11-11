@@ -88,6 +88,8 @@
     "nothingToExport": "No hay nada que exportar para esa selección.",
     "emptySchedule": "Elige al menos un mes o desactiva «Solo en algunos meses».",
     "invalidSchedule": "Los meses deben estar entre enero y diciembre.",
+    "endMonthOnEstimated": "Solo los gastos fijos comprometidos pueden tener un mes de último pago.",
+    "invalidEndMonth": "Elige un mes y un año de cuatro cifras para el último pago.",
     "savingsOnIncomeCategory": "Solo las categorías de gasto pueden contar como ahorro.",
     "moveTargetOutOfWindow": "Solo puedes moverlo a un mes ya creado: cualquiera posterior o hasta 3 meses antes."
   },
@@ -428,7 +430,8 @@
       "placeholder": "p. ej. Alquiler",
       "selectCategory": "Elige una categoría",
       "delete": "Eliminar",
-      "confirmDelete": "¿Eliminar este gasto fijo para siempre? Los meses que ya creaste conservan su copia."
+      "confirmDelete": "¿Eliminar este gasto fijo para siempre? Los meses que ya creaste conservan su copia.",
+      "confirmReactivateEnded": "¿Reactivar este gasto fijo? Se borrará su mes de último pago ({month}) y volverá a copiarse en cada mes nuevo."
     },
     "help": "Los gastos fijos se copian en un mes nuevo una sola vez al crearlo. Los gastos fijos inactivos no se clonan.",
     "cloneCopy": "Los gastos fijos se copian al crear el mes. Este mes es independiente a partir de ahí.",
@@ -438,6 +441,15 @@
       "legend": "Meses en los que se copia este gasto fijo",
       "everyMonth": "Todos los meses",
       "monthsList": "Se copia en: {months}"
+    },
+    "endMonth": {
+      "toggle": "Tiene un último pago",
+      "help": "Para préstamos y pagos a plazos.",
+      "legend": "Mes del último pago",
+      "month": "Mes",
+      "year": "Año",
+      "note": "Se copia por última vez en {month}. Al crear ese mes, este gasto fijo se desactiva.",
+      "rowLabel": "Último pago: {month}"
     }
   },
   "annuals": {

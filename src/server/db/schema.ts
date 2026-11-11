@@ -107,6 +107,12 @@ export const template = pgTable(
     // sorted unique month-numbers (1-12) the template applies to. The service
     // normalizes "all 12" to NULL, so a stored array has 1..11 entries.
     months: smallint("months").array(),
+    // Last payment month (PRD C29, UC-29) of a COMMITTED template (loans,
+    // instalments). Both NULL = no end. The template is cloned into months up
+    // to and including it; creating a month on or after it deactivates the
+    // template.
+    endYear: smallint("end_year"),
+    endMonth: smallint("end_month"),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -121,6 +127,10 @@ export const template = pgTable(
     check(
       "template_months_ck",
       sql`${table.months} IS NULL OR (cardinality(${table.months}) BETWEEN 1 AND 11 AND ${table.months} <@ ARRAY[1,2,3,4,5,6,7,8,9,10,11,12]::smallint[])`,
+    ),
+    check(
+      "template_end_ck",
+      sql`(${table.endYear} IS NULL AND ${table.endMonth} IS NULL) OR (${table.endYear} IS NOT NULL AND ${table.endMonth} IS NOT NULL AND ${table.kind} = 'committed' AND ${table.endMonth} BETWEEN 1 AND 12 AND ${table.endYear} BETWEEN 1970 AND 9999)`,
     ),
   ],
 );

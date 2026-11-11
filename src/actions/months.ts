@@ -74,6 +74,9 @@ export async function createMonthAction(input: {
     throw err;
   }
   revalidatePath("/[locale]", "page");
+  // Creating a month can deactivate fixed expenses that reached their last
+  // payment month (PRD C29, UC-29).
+  revalidatePath("/[locale]/templates", "page");
   return { ok: true, year: parsed.data.year, month: parsed.data.month };
 }
 

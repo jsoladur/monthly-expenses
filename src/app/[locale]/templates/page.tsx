@@ -56,6 +56,10 @@ export default async function TemplatesPage({
             observations: row.observations ?? "",
             amountCents: amountStringToCents(row.amount),
             months: row.months ?? null,
+            endMonth:
+              row.endYear !== null && row.endMonth !== null
+                ? { year: row.endYear, month: row.endMonth }
+                : null,
             active: row.active,
           }))}
           expenseCategories={expenseCategories.map((row) => ({ id: row.id, name: row.name }))}

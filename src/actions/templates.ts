@@ -4,13 +4,21 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { lineKindEnum } from "@/server/db/schema";
-import { amountSchema, nonEmptyStringSchema, uuidSchema } from "@/server/validators";
+import {
+  amountSchema,
+  monthSchema,
+  nonEmptyStringSchema,
+  uuidSchema,
+  yearSchema,
+} from "@/server/validators";
 import { requireUserId } from "@/server/auth/require-user-id";
 import { AmountFormatError } from "@/server/money";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import {
   EmptyScheduleError,
+  EndMonthOnEstimatedError,
   InactiveCategoryError,
+  InvalidEndMonthError,
   InvalidScheduleError,
   IncomeCategoryError,
   TemplateAlreadyActiveError,
@@ -50,6 +58,10 @@ const kindSchema = z.enum(lineKindEnum.enumValues);
 // service can answer with the specific `EmptyScheduleError`.
 const monthsSchema = z.array(z.int().min(1).max(12)).max(12).nullable();
 
+// Last payment month (UC-29): null = none. Committed only — the service
+// answers with `EndMonthOnEstimatedError` otherwise.
+const endMonthSchema = z.object({ year: yearSchema, month: monthSchema }).nullable();
+
 const createSchema = z.object({
   categoryId: uuidSchema,
   name: nonEmptyStringSchema.max(80),
@@ -57,6 +69,7 @@ const createSchema = z.object({
   amount: amountSchema,
   kind: kindSchema,
   months: monthsSchema,
+  endMonth: endMonthSchema,
 });
 
 const updateSchema = z.object({
@@ -67,6 +80,7 @@ const updateSchema = z.object({
   amount: amountSchema,
   kind: kindSchema,
   months: monthsSchema,
+  endMonth: endMonthSchema,
 });
 
 const idSchema = z.object({
@@ -83,6 +97,8 @@ export type TemplateActionError =
   | "amountFormat"
   | "emptySchedule"
   | "invalidSchedule"
+  | "endMonthOnEstimated"
+  | "invalidEndMonth"
   | "validation";
 
 export type TemplateActionResult =
@@ -96,6 +112,7 @@ export async function createTemplateAction(input: {
   amount: string;
   kind: "committed" | "estimated";
   months: number[] | null;
+  endMonth: { year: number; month: number } | null;
 }): Promise<TemplateActionResult> {
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
@@ -110,6 +127,7 @@ export async function createTemplateAction(input: {
       amount: parsed.data.amount,
       kind: parsed.data.kind,
       months: parsed.data.months,
+      endMonth: parsed.data.endMonth,
     });
   } catch (err) {
     if (err instanceof IncomeCategoryError) {
@@ -130,6 +148,12 @@ export async function createTemplateAction(input: {
     if (err instanceof InvalidScheduleError) {
       return { ok: false, error: "invalidSchedule" };
     }
+    if (err instanceof EndMonthOnEstimatedError) {
+      return { ok: false, error: "endMonthOnEstimated" };
+    }
+    if (err instanceof InvalidEndMonthError) {
+      return { ok: false, error: "invalidEndMonth" };
+    }
     throw err;
   }
   revalidatePath("/[locale]/templates", "page");
@@ -144,6 +168,7 @@ export async function updateTemplateAction(input: {
   amount: string;
   kind: "committed" | "estimated";
   months: number[] | null;
+  endMonth: { year: number; month: number } | null;
 }): Promise<TemplateActionResult> {
   const parsed = updateSchema.safeParse(input);
   if (!parsed.success) {
@@ -159,6 +184,7 @@ export async function updateTemplateAction(input: {
       amount: parsed.data.amount,
       kind: parsed.data.kind,
       months: parsed.data.months,
+      endMonth: parsed.data.endMonth,
     });
   } catch (err) {
     if (err instanceof IncomeCategoryError) {
@@ -181,6 +207,12 @@ export async function updateTemplateAction(input: {
     }
     if (err instanceof InvalidScheduleError) {
       return { ok: false, error: "invalidSchedule" };
+    }
+    if (err instanceof EndMonthOnEstimatedError) {
+      return { ok: false, error: "endMonthOnEstimated" };
+    }
+    if (err instanceof InvalidEndMonthError) {
+      return { ok: false, error: "invalidEndMonth" };
     }
     throw err;
   }

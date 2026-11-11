@@ -13,7 +13,7 @@ import {
   type MonthIncome,
 } from "@/server/db/schema";
 import { findMonthById } from "@/server/repositories/month";
-import { listActiveTemplatesForMonth } from "@/server/repositories/template";
+import { listPlanTemplatesForMonth } from "@/server/repositories/template";
 import { MonthNotFoundError } from "@/server/services/months";
 import { parseAmount, sumCents } from "@/server/money";
 
@@ -35,8 +35,9 @@ import { parseAmount, sumCents } from "@/server/money";
 // are first-class (PRD §7.6) so we never use `Math.abs` or non-algebraic
 // sums. Overspend baseline uses `month_income` / `month_fixed_line` /
 // `month_actual_expense` join paths that already exist in their respective
-// repositories; we re-use `listActiveTemplatesForMonth` so the baseline is sourced
-// from the SAME clone-source query as month creation (PRD §7.4 vs §7.8).
+// repositories; the baseline comes from `listPlanTemplatesForMonth` — the
+// clone-source rules of month creation, plus loans that already ended but
+// were still paid in the open month (PRD §7.4 / C29).
 //
 // Tenancy: every read joins on `month.user_id` (PRD §5.1). A tenant calling
 // this with a `monthId` they don't own gets `MonthNotFoundError` — same
@@ -137,6 +138,8 @@ export async function getMonthSummary(
 // RIGHT  = Σ active template amounts in that category (committed + estimated)
 //          that apply to the open month-number (PRD C23, UC-20). For
 //          unscheduled templates, same total as Fixed Expenses → Distribution.
+//          A template with a last payment month (PRD C29, UC-29) counts for
+//          every month up to and including it, active or not.
 //          The MONTH'S remaining is NEVER used for this baseline.
 // Warn only when LEFT > RIGHT. Categories with no active templates get
 // NO warning. Savings categories never warn: investing more than the plan
@@ -184,10 +187,13 @@ export async function getOverspendWarnings(
     return [];
   }
 
-  // RIGHT side: per-category ACTIVE templates (committed + estimated) that
-  // apply to this month-number — the same clone-source query UC-06 uses at
-  // month creation (PRD §7.4 / C23).
-  const activeTemplates = await listActiveTemplatesForMonth(userId, owned.month);
+  // RIGHT side: per-category templates (committed + estimated) that apply to
+  // this month — schedule (PRD C23) and last payment month (PRD C29).
+  const activeTemplates = await listPlanTemplatesForMonth(
+    userId,
+    owned.year,
+    owned.month,
+  );
   const planByCategory = new Map<string, number>();
   for (const tpl of activeTemplates) {
     planByCategory.set(

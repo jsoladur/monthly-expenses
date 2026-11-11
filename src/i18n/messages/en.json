@@ -88,6 +88,8 @@
     "nothingToExport": "Nothing to export for that selection.",
     "emptySchedule": "Pick at least one month, or turn off “Only in some months”.",
     "invalidSchedule": "Months must be between January and December.",
+    "endMonthOnEstimated": "Only committed fixed expenses can have a last payment month.",
+    "invalidEndMonth": "Pick a month and a four-digit year for the last payment.",
     "savingsOnIncomeCategory": "Only expense categories can count as savings.",
     "moveTargetOutOfWindow": "Pick a month you already created: any later month, or up to 3 months back."
   },
@@ -428,7 +430,8 @@
       "placeholder": "e.g. Rent",
       "selectCategory": "Pick a category",
       "delete": "Delete",
-      "confirmDelete": "Delete this fixed expense permanently? Months you already created keep their copy."
+      "confirmDelete": "Delete this fixed expense permanently? Months you already created keep their copy.",
+      "confirmReactivateEnded": "Reactivate this fixed expense? Its last payment month ({month}) will be cleared, so it is copied into every new month again."
     },
     "help": "Fixed expenses are copied into a new month exactly once when that month is created. Inactive fixed expenses are not cloned.",
     "cloneCopy": "Fixed expenses are copied when the month is created. This month is independent after that.",
@@ -438,6 +441,15 @@
       "legend": "Months this fixed expense is copied into",
       "everyMonth": "Every month",
       "monthsList": "Copied in: {months}"
+    },
+    "endMonth": {
+      "toggle": "Has a last payment",
+      "help": "For loans and instalments.",
+      "legend": "Last payment month",
+      "month": "Month",
+      "year": "Year",
+      "note": "Copied for the last time in {month}. Creating that month deactivates this fixed expense.",
+      "rowLabel": "Last payment: {month}"
     }
   },
   "annuals": {

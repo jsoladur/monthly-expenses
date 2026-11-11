@@ -50,6 +50,13 @@
       "when": 1793719945655,
       "tag": "0006_savings_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794395379754,
+      "tag": "0007_template_end_month",
+      "breakpoints": true
     }
   ]
 }

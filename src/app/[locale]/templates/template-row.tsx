@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { IconButton } from "@/components/ui/icon-button";
 import { Pencil, CircleOff, RotateCcw, Check, X, Trash2 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
-import { formatMoney } from "@/i18n/format";
+import { formatMoney, isAppLocale, monthYear } from "@/i18n/format";
+import { routing } from "@/i18n/routing";
+import { isValidEndMonth, type EndMonth } from "@/lib/template-end";
 import {
   deactivateTemplateAction,
   deleteTemplateAction,
@@ -15,6 +17,7 @@ import {
 } from "@/actions/templates";
 import type { CategoryOption, TemplateRowData } from "./templates-screen";
 import { MonthScheduleField, ScheduleRail } from "./month-schedule";
+import { EndMonthField, EndMonthNote } from "./end-month";
 
 // ============================================================================
 // Template row (UC-05).
@@ -26,6 +29,8 @@ import { MonthScheduleField, ScheduleRail } from "./month-schedule";
 //     schedule) + Save + Cancel
 //   - Delete (hard delete, UC-20) is a row action next to Deactivate /
 //     Reactivate, same destructive IconButton as income/actual rows
+//   - Committed rows also edit and show the UC-29 last payment month;
+//     Reactivate clears it, so it asks first when one is set
 //   - reacting: while the server action is in flight, the buttons disable
 //
 // All mutations go through server actions invoked via `formAction`. We use
@@ -53,6 +58,9 @@ export function TemplateRow({
   const [error, setError] = useState<string | null>(null);
   const [draftAmount, setDraftAmount] = useState(centsToInputString(template.amountCents));
   const [draftMonths, setDraftMonths] = useState<number[] | null>(template.months);
+  const [draftEnd, setDraftEnd] = useState<EndMonth | null>(template.endMonth);
+  const rawLocale = useLocale();
+  const locale = isAppLocale(rawLocale) ? rawLocale : routing.defaultLocale;
 
   const handleDelete = () => {
     if (!window.confirm(t("actions.confirmDelete"))) return;
@@ -76,6 +84,17 @@ export function TemplateRow({
   };
 
   const handleReactivate = () => {
+    // Reactivating clears the last payment month (PRD C29) — say so first.
+    if (
+      template.endMonth &&
+      !window.confirm(
+        t("actions.confirmReactivateEnded", {
+          month: monthYear(locale, template.endMonth.year, template.endMonth.month),
+        }),
+      )
+    ) {
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const result = await reactivateTemplateAction({ id: template.id });
@@ -94,10 +113,15 @@ export function TemplateRow({
       amount: draftAmount.trim(),
       kind: template.kind,
       months: draftMonths,
+      endMonth: template.kind === "committed" ? draftEnd : null,
     };
     setError(null);
     if (draftMonths !== null && draftMonths.length === 0) {
       setError(mapError("emptySchedule", tv));
+      return;
+    }
+    if (payload.endMonth !== null && !isValidEndMonth(payload.endMonth)) {
+      setError(mapError("invalidEndMonth", tv));
       return;
     }
     startTransition(async () => {
@@ -186,6 +210,7 @@ export function TemplateRow({
                 setError(null);
                 setDraftAmount(centsToInputString(template.amountCents));
                 setDraftMonths(template.months);
+                setDraftEnd(template.endMonth);
               }}
             />
           </div>
@@ -194,6 +219,13 @@ export function TemplateRow({
             value={draftMonths}
             onChange={setDraftMonths}
           />
+          {template.kind === "committed" && (
+            <EndMonthField
+              idPrefix={`edit-${template.id}`}
+              value={draftEnd}
+              onChange={setDraftEnd}
+            />
+          )}
           {error && (
             <p role="alert" className="text-destructive text-xs">
               {error}
@@ -222,6 +254,7 @@ export function TemplateRow({
           </span>
         )}
         <ScheduleRail months={template.months} />
+        <EndMonthNote end={template.endMonth} />
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {!template.active && (
@@ -238,6 +271,7 @@ export function TemplateRow({
             setError(null);
             setDraftAmount(centsToInputString(template.amountCents));
             setDraftMonths(template.months);
+            setDraftEnd(template.endMonth);
           }}
         />
         {template.active ? (
@@ -291,6 +325,10 @@ function mapError(
       return tv("emptySchedule");
     case "invalidSchedule":
       return tv("invalidSchedule");
+    case "endMonthOnEstimated":
+      return tv("endMonthOnEstimated");
+    case "invalidEndMonth":
+      return tv("invalidEndMonth");
     case "alreadyInactive":
     case "alreadyActive":
       // UI already enforces this; if we hit it, the row state changed

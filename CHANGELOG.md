@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-11
+
+### Added
+- Committed fixed expenses can have a last payment month, for loans and instalments: turn on "Has a last payment" and pick the month and year. The expense is copied into new months up to and including that month, and the app deactivates it (it is not deleted) as soon as you create that month or any later one. Reactivating it clears the last payment month (UC-29).
+
+### Changed
+- The overspend warning keeps counting a fixed expense with a last payment month in the plan of every month up to that month, even after it has been deactivated, so the final instalment does not raise a false warning (UC-29).
+
 ## [0.15.1] - 2026-11-04
 
 ### Changed

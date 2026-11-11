@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { AmountInput } from "@/components/amount-input";
 import type { CategoryOption } from "./templates-screen";
 import { MonthScheduleField } from "./month-schedule";
+import { EndMonthField } from "./end-month";
+import { isValidEndMonth, type EndMonth } from "@/lib/template-end";
 
 // ============================================================================
 // Add template form (UC-05).
@@ -76,6 +78,8 @@ function AddTemplateFormBody({
   const [bumpOnSuccess, setBumpOnSuccess] = useState(0);
   const [draftAmount, setDraftAmount] = useState("");
   const [draftMonths, setDraftMonths] = useState<number[] | null>(null);
+  // UC-29: only committed fixed expenses can have a last payment month.
+  const [draftEnd, setDraftEnd] = useState<EndMonth | null>(null);
   const boundAction = bindKind(createTemplateAction, kind);
 
   const [state, formAction, pending] = useActionState<TemplateActionResult | null, FormData>(
@@ -86,16 +90,21 @@ function AddTemplateFormBody({
         observations: readObservations(formData),
         amount: draftAmount.trim(),
         months: draftMonths,
+        endMonth: kind === "committed" ? draftEnd : null,
         kind,
       };
       if (draftMonths !== null && draftMonths.length === 0) {
         return { ok: false, error: "emptySchedule" } satisfies TemplateActionResult;
+      }
+      if (payload.endMonth !== null && !isValidEndMonth(payload.endMonth)) {
+        return { ok: false, error: "invalidEndMonth" } satisfies TemplateActionResult;
       }
       const result = await boundAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
         setDraftAmount("");
         setDraftMonths(null);
+        setDraftEnd(null);
       }
       return result;
     },
@@ -180,6 +189,9 @@ function AddTemplateFormBody({
         value={draftMonths}
         onChange={setDraftMonths}
       />
+      {kind === "committed" && (
+        <EndMonthField idPrefix={`new-${kind}`} value={draftEnd} onChange={setDraftEnd} />
+      )}
       {errorMessage && (
         <p role="alert" className="text-destructive text-xs">
           {errorMessage}
@@ -200,6 +212,7 @@ function bindKind(
     amount: string;
     kind: Kind;
     months: number[] | null;
+    endMonth: EndMonth | null;
   }) => Promise<TemplateActionResult>,
   kind: Kind,
 ): (input: {
@@ -208,6 +221,7 @@ function bindKind(
   observations?: string;
   amount: string;
   months: number[] | null;
+  endMonth: EndMonth | null;
 }) => Promise<TemplateActionResult> {
   return (input) => action({ ...input, kind });
 }
@@ -239,6 +253,10 @@ function errorToMessage(
       return tv("emptySchedule");
     case "invalidSchedule":
       return tv("invalidSchedule");
+    case "endMonthOnEstimated":
+      return tv("endMonthOnEstimated");
+    case "invalidEndMonth":
+      return tv("invalidEndMonth");
     case "alreadyInactive":
     case "alreadyActive":
       return null;

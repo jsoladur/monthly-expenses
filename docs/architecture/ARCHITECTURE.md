@@ -187,6 +187,7 @@ Invariants enforced by the schema and service layer:
 - Category name unique per `(user_id, kind)` **among active rows** (partial unique index `WHERE active`) (PRD §6.2).
 - Soft delete on `CATEGORIES`, `TEMPLATES` (and future catalogs). `TEMPLATES` additionally allow an explicit hard delete (PRD C23 / UC-20) — safe because no FK references `template`; month lines are snapshots. Hard delete on all month-scoped money rows (PRD §13).
 - `TEMPLATES.months` (`smallint[]`, nullable, UC-20): `NULL` = every month. Check `template_months_ck` keeps it non-empty, ≤ 11 entries, values 1–12; the service normalizes "all 12" to `NULL`. Clone source = `active AND (months IS NULL OR month = ANY(months))`.
+- `TEMPLATES.end_year` / `end_month` (`smallint`, nullable, UC-29 / PRD C29): last payment month of a **committed** template. Check `template_end_ck` keeps both `NULL` or both set (committed, month 1–12, year 1970–9999). Periods compare by `year * 12 + (month − 1)`. Clone source additionally requires `end_year IS NULL OR new month <= end month`. `createMonth` deactivates, in the same transaction, every active template whose end month is ≤ the new month. Overspend baseline: a template with an end month counts for months ≤ it regardless of `active`.
 - `converted_from_line_id` + `edited_after_conversion` implement PRD §7.5 undo: undo allowed only while the actual is unedited; the conversion and its undo run in **one transaction** each.
 
 ---

@@ -1,0 +1,3 @@
+ALTER TABLE "template" ADD COLUMN "end_year" smallint;--> statement-breakpoint
+ALTER TABLE "template" ADD COLUMN "end_month" smallint;--> statement-breakpoint
+ALTER TABLE "template" ADD CONSTRAINT "template_end_ck" CHECK (("template"."end_year" IS NULL AND "template"."end_month" IS NULL) OR ("template"."end_year" IS NOT NULL AND "template"."end_month" IS NOT NULL AND "template"."kind" = 'committed' AND "template"."end_month" BETWEEN 1 AND 12 AND "template"."end_year" BETWEEN 1970 AND 9999));

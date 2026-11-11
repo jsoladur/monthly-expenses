@@ -155,6 +155,89 @@ test.describe("UC-05 fixed/estimated templates", () => {
       await sql.end({ timeout: 1 });
     }
   });
+
+  test("last payment month ends a loan when its month is created (UC-29 acceptance)", async ({
+    context,
+    page,
+  }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc29-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc29-sub-${uniqueId()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetUserState(DB_URL, user.id);
+    await seedActiveExpenseCategory(DB_URL, user.id, "Loans");
+
+    await page.goto(`${BASE_URL}/en/templates`);
+
+    // Estimated fixed expenses do not offer a last payment.
+    await page.getByRole("tab", { name: "Estimated" }).click();
+    await expect(page.getByLabel("Has a last payment")).toHaveCount(0);
+    await page.getByRole("tab", { name: "Committed" }).click();
+
+    // A year that is not a year blocks the save with a keyed error.
+    await page.locator("#new-committed-name").fill("Car loan");
+    await page.locator("#new-committed-amount").fill("250.00");
+    await page.getByLabel("Has a last payment").check();
+    await page.locator("#new-committed-end-month").selectOption("3");
+    await page.locator("#new-committed-end-year").fill("27");
+    await page.getByRole("button", { name: "Add" }).click();
+    await expect(page.getByText(/four-digit year/)).toBeVisible();
+
+    // React resets the uncontrolled name input after a form action.
+    await page.locator("#new-committed-name").fill("Car loan");
+    await page.locator("#new-committed-end-year").fill("2027");
+    await expect(page.getByText(/Copied for the last time in March 2027/)).toBeVisible();
+    await page.getByRole("button", { name: "Add" }).click();
+    await expect(page.getByText("Last payment: March 2027")).toBeVisible();
+    await expect(page.getByText("Inactive", { exact: true })).toHaveCount(0);
+
+    // Creating the last payment month copies the loan one last time…
+    await page.goto(`${BASE_URL}/en`);
+    // Both fields are controlled: a value typed before hydration is reset to
+    // today's month, so retry until the picked period survives.
+    const year = page.locator('input[name="year"]');
+    const month = page.locator('select[name="month"]');
+    await expect(async () => {
+      await year.fill("");
+      await year.fill("2027");
+      await month.selectOption("3");
+      await page.waitForTimeout(300);
+      await expect(year).toHaveValue("2027", { timeout: 500 });
+      await expect(month).toHaveValue("3", { timeout: 500 });
+    }).toPass({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Create" }).click();
+    await page.waitForURL(/\/months\/2027\/3/);
+    await page.getByRole("button", { name: "Committed 1" }).click();
+    await expect(page.getByText("Car loan").first()).toBeVisible();
+
+    // …and deactivates it in the catalog, without deleting it.
+    await page.goto(`${BASE_URL}/en/templates`);
+    await expect(page.getByText("Inactive", { exact: true })).toBeVisible();
+    await expect(page.getByText("Last payment: March 2027")).toBeVisible();
+
+    // Reactivating asks first, then clears the last payment month.
+    let confirmText = "";
+    page.once("dialog", (dialog) => {
+      confirmText = dialog.message();
+      void dialog.accept();
+    });
+    await page.getByRole("button", { name: "Reactivate" }).click();
+    await expect(page.getByText("Inactive", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Last payment: March 2027")).toHaveCount(0);
+    expect(confirmText).toContain("March 2027");
+
+    const sql = postgres(DB_URL, { max: 1, prepare: false });
+    try {
+      const rows = await sql<
+        { active: boolean; end_year: number | null; end_month: number | null }[]
+      >`SELECT active, end_year, end_month FROM template WHERE user_id = ${user.id}`;
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ active: true, end_year: null, end_month: null });
+    } finally {
+      await sql.end({ timeout: 1 });
+    }
+  });
 });
 
 // ----------------------------------------------------------------------------

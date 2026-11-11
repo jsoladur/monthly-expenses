@@ -19,8 +19,10 @@ import type { Tx } from "@/server/repositories/user";
 // `template.active` is the soft-delete flag — inactive rows are EXCLUDED from
 // `listActiveTemplates*` (the clone source), and INCLUDED in
 // `listTemplatesForManagement` (so the user can scan history and reactivate).
-// `template.months` is the month schedule (UC-20): NULL = every month, so
-// month creation clones from `listActiveTemplatesForMonth`.
+// `template.months` is the month schedule (UC-20): NULL = every month.
+// `template.end_year` / `end_month` is the last payment month of a committed
+// template (UC-29): month creation clones from `listTemplatesToClone` and
+// then calls `deactivateEndedTemplates`.
 //
 // `Tx` is the Drizzle transaction handle; repository functions accept it so
 // the service layer can compose them inside a transaction when needed
@@ -77,10 +79,23 @@ export async function listActiveTemplatesByKind(
   return listTemplatesByKind(userId, kind, { includeInactive: false }, tx);
 }
 
-// Clone source for a month of number `month` (PRD C17 / C23, UC-20): ACTIVE
-// templates whose schedule is NULL (every month) or contains `month`.
-export async function listActiveTemplatesForMonth(
+// Months compare by `year * 12 + (month − 1)` (UC-26 / UC-29).
+const endIndex = sql`(${template.endYear}::int * 12 + ${template.endMonth}::int - 1)`;
+
+function periodIndex(year: number, month: number): number {
+  return year * 12 + (month - 1);
+}
+
+function scheduleApplies(month: number) {
+  return sql`(${template.months} IS NULL OR ${month}::smallint = ANY(${template.months}))`;
+}
+
+// Clone source for the month `year`/`month` being created (PRD C17 / C23 /
+// C29): ACTIVE templates whose schedule is NULL (every month) or contains
+// `month`, and whose last payment month — if any — is not before it.
+export async function listTemplatesToClone(
   userId: string,
+  year: number,
   month: number,
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
@@ -91,10 +106,58 @@ export async function listActiveTemplatesForMonth(
       and(
         eq(template.userId, userId),
         eq(template.active, true),
-        sql`(${template.months} IS NULL OR ${month}::smallint = ANY(${template.months}))`,
+        scheduleApplies(month),
+        sql`(${template.endYear} IS NULL OR ${endIndex} >= ${periodIndex(year, month)})`,
       ),
     )
     .orderBy(asc(template.kind), asc(template.createdAt));
+}
+
+// Overspend baseline for the open month (PRD §7.4 as amended by C29): the
+// templates that apply to its month-number and are either active without a
+// last payment month, or have a last payment month that is not before the
+// open month — active or already deactivated. The second branch keeps an
+// ended loan in the plan of the months it was really paid in.
+export async function listPlanTemplatesForMonth(
+  userId: string,
+  year: number,
+  month: number,
+  tx: Tx | typeof db = db,
+): Promise<Template[]> {
+  return tx
+    .select()
+    .from(template)
+    .where(
+      and(
+        eq(template.userId, userId),
+        scheduleApplies(month),
+        sql`((${template.endYear} IS NULL AND ${template.active} = true) OR (${template.endYear} IS NOT NULL AND ${endIndex} >= ${periodIndex(year, month)}))`,
+      ),
+    )
+    .orderBy(asc(template.kind), asc(template.createdAt));
+}
+
+// Soft-deactivates every ACTIVE template of the user whose last payment month
+// is `year`/`month` or earlier (PRD C29, UC-29). Called by `createMonth`
+// right after the clone, in the same transaction. Never deletes.
+export async function deactivateEndedTemplates(
+  userId: string,
+  year: number,
+  month: number,
+  tx: Tx | typeof db = db,
+): Promise<Template[]> {
+  return tx
+    .update(template)
+    .set({ active: false, deletedAt: sql`now()`, updatedAt: sql`now()` })
+    .where(
+      and(
+        eq(template.userId, userId),
+        eq(template.active, true),
+        sql`${template.endYear} IS NOT NULL`,
+        sql`${endIndex} <= ${periodIndex(year, month)}`,
+      ),
+    )
+    .returning();
 }
 
 export async function findTemplateById(
@@ -131,6 +194,8 @@ export async function updateTemplate(
     amount: string;
     kind: LineKind;
     months: number[] | null;
+    endYear: number | null;
+    endMonth: number | null;
   },
   tx: Tx | typeof db = db,
 ): Promise<Template | null> {
@@ -143,6 +208,8 @@ export async function updateTemplate(
       amount: patch.amount,
       kind: patch.kind,
       months: patch.months,
+      endYear: patch.endYear,
+      endMonth: patch.endMonth,
       updatedAt: sql`now()`,
     })
     .where(and(eq(template.userId, userId), eq(template.id, id)))
@@ -172,6 +239,8 @@ export async function deactivateTemplate(
   return updated ?? null;
 }
 
+// Reactivating also clears the last payment month (PRD C29, UC-29): otherwise
+// an ended loan would be deactivated again by the next created month.
 export async function reactivateTemplate(
   userId: string,
   id: string,
@@ -179,7 +248,13 @@ export async function reactivateTemplate(
 ): Promise<Template | null> {
   const [updated] = await tx
     .update(template)
-    .set({ active: true, deletedAt: null, updatedAt: sql`now()` })
+    .set({
+      active: true,
+      deletedAt: null,
+      endYear: null,
+      endMonth: null,
+      updatedAt: sql`now()`,
+    })
     .where(
       and(
         eq(template.userId, userId),
