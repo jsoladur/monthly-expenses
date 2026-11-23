@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AmountInput } from "@/components/amount-input";
+import { NameAutocomplete } from "@/components/name-autocomplete";
+import type { NameSuggestion } from "@/lib/actual-name-suggestions";
 import { centsToInputString, formatMoney } from "@/i18n/format";
 import {
   addIncomeAction,
@@ -51,6 +53,7 @@ export function IncomesScreen({
   currency,
   initialIncomes,
   incomeCategories,
+  nameSuggestions = [],
 }: {
   monthId: string;
   year: number;
@@ -58,6 +61,7 @@ export function IncomesScreen({
   currency: string;
   initialIncomes: IncomeRowData[];
   incomeCategories: CategoryOption[];
+  nameSuggestions?: NameSuggestion[];
 }) {
   const t = useTranslations("incomes");
 
@@ -69,6 +73,7 @@ export function IncomesScreen({
         month={month}
         currency={currency}
         incomeCategories={incomeCategories}
+        nameSuggestions={nameSuggestions}
       />
 
       {initialIncomes.length === 0 ? (
@@ -102,12 +107,14 @@ function AddIncomeForm({
   month,
   currency,
   incomeCategories,
+  nameSuggestions,
 }: {
   monthId: string;
   year: number;
   month: number;
   currency: string;
   incomeCategories: CategoryOption[];
+  nameSuggestions: NameSuggestion[];
 }) {
   const t = useTranslations("incomes");
   const tv = useTranslations("validation");
@@ -130,6 +137,7 @@ function AddIncomeForm({
       month={month}
       currency={currency}
       incomeCategories={incomeCategories}
+      nameSuggestions={nameSuggestions}
       t={t}
       tv={tv}
     />
@@ -142,6 +150,7 @@ function AddIncomeFormBody({
   month,
   currency,
   incomeCategories,
+  nameSuggestions,
   t,
   tv,
 }: {
@@ -150,6 +159,7 @@ function AddIncomeFormBody({
   month: number;
   currency: string;
   incomeCategories: CategoryOption[];
+  nameSuggestions: NameSuggestion[];
   t: ReturnType<typeof useTranslations<"incomes">>;
   tv: ReturnType<typeof useTranslations<"validation">>;
 }) {
@@ -202,15 +212,14 @@ function AddIncomeFormBody({
         <label htmlFor="new-income-name" className="sr-only">
           {t("name")}
         </label>
-        <input
+        <NameAutocomplete
           id="new-income-name"
           name="name"
-          type="text"
-          autoComplete="off"
+          messages="incomes.autocomplete"
+          suggestions={nameSuggestions}
           placeholder={t("actions.placeholder")}
           required
           maxLength={80}
-          className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-0 flex-1 rounded-md border px-3 py-1 text-sm shadow-xs focus-visible:ring-3 focus-visible:outline-none"
         />
       </div>
       <div className="flex items-stretch gap-2">

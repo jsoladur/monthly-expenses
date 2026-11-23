@@ -263,7 +263,13 @@
       "selectCategory": "Pick a category"
     },
     "noActiveCategories": "Create an active income category first.",
-    "historicalInactiveNote": "The category for this income is inactive. It still shows because the income was added earlier."
+    "historicalInactiveNote": "The category for this income is inactive. It still shows because the income was added earlier.",
+    "autocomplete": {
+      "listLabel": "Recent names",
+      "a11y": {
+        "suggestions": "{count, plural, one {# recent name} other {# recent names}}"
+      }
+    }
   },
   "actuals": {
     "title": "Actuals",

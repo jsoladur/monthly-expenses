@@ -18,6 +18,7 @@ import { getProfileSettings } from "@/server/services/settings";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
 import { listRecentActualNameSuggestions } from "@/server/services/actuals";
+import { listRecentIncomeNameSuggestions } from "@/server/services/incomes";
 import { listUpcomingMonthsForPass } from "@/server/services/pass-to-upcoming";
 import { listMoveTargets, type MoveTargetMonth } from "@/server/services/move-actual";
 import type { MoveTargetOption } from "@/components/move-actual-drawer";
@@ -160,6 +161,7 @@ export default async function MonthWorkspacePage({
     overspendWarnings,
     annualReminders,
     nameSuggestions,
+    incomeNameSuggestions,
     upcomingMonthsRaw,
     estimateCheck,
     moveTargetsRaw,
@@ -169,6 +171,7 @@ export default async function MonthWorkspacePage({
       getOverspendWarnings(userId, workspace.month.id),
       getAnnualReminders(userId, workspace.month.id),
       listRecentActualNameSuggestions(userId, workspace.month.year, workspace.month.month),
+      listRecentIncomeNameSuggestions(userId, workspace.month.year, workspace.month.month),
       cameFromHistory
         ? Promise.resolve([])
         : listUpcomingMonthsForPass(userId, workspace.month.year, workspace.month.month),
@@ -310,6 +313,7 @@ export default async function MonthWorkspacePage({
                 id: c.id,
                 name: c.name,
               }))}
+              nameSuggestions={incomeNameSuggestions}
             />
           }
           reservedTab={

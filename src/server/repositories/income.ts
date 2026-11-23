@@ -8,6 +8,7 @@ import {
   type NewMonthIncome,
 } from "@/server/db/schema";
 import type { Tx } from "@/server/repositories/user";
+import { uniqueRecentNames, type NameSuggestion } from "@/lib/actual-name-suggestions";
 
 // ============================================================================
 // Month income repository (UC-07, PRD §6.5 / §7.8, ARCH §4 / §5).
@@ -136,4 +137,39 @@ export async function listIncomesForMonth(
     .innerJoin(month, eq(monthIncome.monthId, month.id))
     .where(and(eq(month.userId, userId), eq(monthIncome.monthId, monthId)))
     .orderBy(monthIncome.createdAt);
+}
+
+// UC-30 (PRD UC-32 / C13): recent income names for the add-income
+// autocomplete. Same contract as `listRecentActualNames` — newest first,
+// unique on folded name, capped — but over `month_income` only.
+export async function listRecentIncomeNames(
+  userId: string,
+  periods: { year: number; month: number }[],
+  tx: Tx | typeof db = db,
+): Promise<NameSuggestion[]> {
+  if (periods.length === 0) return [];
+
+  const periodTuples = sql.join(
+    periods.map((period) => sql`(${period.year}::int, ${period.month}::int)`),
+    sql`, `,
+  );
+
+  const rows = await tx.execute<{
+    name: string;
+    year: number;
+    month: number;
+  }>(sql`
+    SELECT
+      ${monthIncome.name} AS name,
+      ${month.year} AS year,
+      ${month.month} AS month
+    FROM ${monthIncome}
+    INNER JOIN ${month} ON ${month.id} = ${monthIncome.monthId}
+    WHERE ${month.userId} = ${userId}
+      AND (${month.year}, ${month.month}) IN (${periodTuples})
+    ORDER BY ${monthIncome.createdAt} DESC
+    LIMIT 1000
+  `);
+
+  return uniqueRecentNames(rows);
 }

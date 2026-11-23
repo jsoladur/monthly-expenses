@@ -17,7 +17,7 @@
 - **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); `template` also allows an explicit hard delete (UC-20 / C23); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind. The only catalog change month creation makes is deactivating committed fixed expenses that reached their last payment month (UC-29 / C29).
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03). UC-21 (theme, shipped) added `profile_settings.theme` (migration 0001). UC-22 and UC-23 (shipped) add none. UC-24 adds `category.counts_as_savings` (migration 0006, PO decision 2026-11-03). UC-25…UC-28 add none. UC-29 adds two nullable columns, `template.end_year` / `template.end_month` (migration 0007, PO decision 2026-11-11).
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03). UC-21 (theme, shipped) added `profile_settings.theme` (migration 0001). UC-22 and UC-23 (shipped) add none. UC-24 adds `category.counts_as_savings` (migration 0006, PO decision 2026-11-03). UC-25…UC-28 add none. UC-29 adds two nullable columns, `template.end_year` / `template.end_month` (migration 0007, PO decision 2026-11-11). UC-30 (income name autocomplete) is read-only and adds none.
 
 ## Build order and dependencies
 
@@ -53,6 +53,7 @@
 | UC-27 | Delete a month | PRD **UC-29** / C27 (fulfils §13 month header). THIS file is the detailed slice | UC-06. **No schema change** (cascade FKs exist) |
 | UC-28 | Annual reminder "already added" state | PRD **UC-30** / C28 (amends §7.9 presentation). THIS file is the detailed slice | UC-14, UC-16. **No schema change** |
 | UC-29 | Last payment month for committed fixed expenses (loans & instalments) | PRD **UC-31** / C29 (amends §6.3, §7.4, §7.8). THIS file is the detailed slice | UC-05, UC-06, UC-11, UC-20. **Adds `template.end_year` / `template.end_month` (migration 0007)** — PO decision 2026-11-11 |
+| UC-30 | Income name autocomplete (add-income form) | PRD **UC-32** / C13 (extends UC-22 to incomes). THIS file is the detailed slice | UC-07, UC-17. **No schema change** — PO decision 2026-11-23 |
 
 ```mermaid
 flowchart TD
@@ -81,6 +82,7 @@ flowchart TD
     UC06 --> UC27
     UC14 & UC16 --> UC28
     UC05 & UC06 & UC11 & UC20 --> UC29
+    UC07 & UC17 --> UC30
 ```
 
 ## PRD §15 test-scenario map
@@ -133,5 +135,6 @@ flowchart TD
 | 58–61 Delete month: cascade, re-create clones current templates, cookie cleared, tenancy | UC-27 |
 | 62–65 Annual reminder matched by category + folded name prefix; un-matched after delete | UC-28 |
 | 66–73 Last payment month: copied up to and including it, deactivated when reached or skipped, back-fill keeps it active, committed only, reactivate clears it, overspend plan, tenancy, schedule interplay | UC-29 + UC-06 + UC-11 |
+| 74–76 Add-income name autocomplete: 3-month window, income-only source, tenant-scoped, name-only fill | UC-30 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.

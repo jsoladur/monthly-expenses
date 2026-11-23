@@ -8,11 +8,13 @@ import {
   insertIncome,
   listIncomesForMonth as repoListIncomesForMonth,
   updateIncome as repoUpdate,
+  listRecentIncomeNames,
 } from "@/server/repositories/income";
 import { findCategoryById } from "@/server/repositories/category";
 import { findMonthById } from "@/server/repositories/month";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
+import { recentMonthWindow, type NameSuggestion } from "@/lib/actual-name-suggestions";
 
 // ============================================================================
 // Month incomes service (UC-07, PRD §6.5 / §7.8 / C15, ARCH §5 rule 3).
@@ -172,6 +174,17 @@ export async function listIncomesForMonth(
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome[]> {
   return repoListIncomesForMonth(userId, monthId, tx);
+}
+
+// UC-30 (PRD UC-32): add-income name autocomplete corpus — open month + the
+// two previous calendar months, same window as the actuals one (UC-17).
+export async function listRecentIncomeNameSuggestions(
+  userId: string,
+  year: number,
+  monthNumber: number,
+  tx: Tx | typeof db = db,
+): Promise<NameSuggestion[]> {
+  return listRecentIncomeNames(userId, recentMonthWindow(year, monthNumber), tx);
 }
 
 // ----------------------------------------------------------------------------

@@ -37,7 +37,7 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C10 | Categories are **per-user global catalogs**, not cloned as category definitions per month. **Logical (soft) delete** for categories and other catalog CRUDs. |
 | C11 | MVP is **online web**. Offline sync is out of scope. PWA install is still required. |
 | C12 | Home never invents a month. User opens an existing month or creates one. **Last opened month** is stored in a cookie. |
-| C13 | Expense **name** is free text. On the add-actual form, names from **this month + the two previous calendar months** may autocomplete after two characters (prefix, case-insensitive, accent-folded). Selecting a suggestion fills the **name only**. |
+| C13 | Expense **name** is free text. On the add-actual form, names from **this month + the two previous calendar months** may autocomplete after two characters (prefix, case-insensitive, accent-folded). Selecting a suggestion fills the **name only**. The add-income form does the same from the user’s **income** names in the same window (UC-32). |
 | C14 | Attachments, merchant, payment method = **future**, not MVP. |
 | C15 | **Hard delete** for month-scoped money rows (incomes, actual expenses, month fixed/estimated lines). |
 | C16 | Reports (year view, category totals) = **not V1**, planned later. |
@@ -507,7 +507,7 @@ Implementation slice: `docs/usecases/UC-17-actual-name-autocomplete.md` (PRD **U
 - Source: this user’s `month_actual_expense.name` in the **open month + the two previous calendar months**. Prefix match after accent-fold and lowercase. Duplicate folded names collapse to the newest spelling.
 - Selecting a suggestion fills the name only. Category, observations, and amount stay as the user left them.
 - User B never sees User A’s names.
-- Does not search observations, incomes, or reserved lines. Does not change Search (UC-21). Missing prior months are skipped (C6).
+- Does not search observations, incomes, or reserved lines. Does not change Search (UC-21). Missing prior months are skipped (C6). Income names autocomplete separately on the add-income form (UC-32).
 
 ### UC-23 — Pass estimated line to an upcoming month
 
@@ -603,6 +603,16 @@ Implementation slice: `docs/usecases/UC-29-committed-last-payment-month.md`.
 - The overspend plan keeps counting the fixed expense for months up to and including its last payment month (§7.4).
 - User B can never set a last payment month on User A's templates, and User B creating a month never deactivates User A's templates.
 
+### UC-32 — Income name autocomplete (add-income form)
+
+Implementation slice: `docs/usecases/UC-30-income-name-autocomplete.md`. Product Owner decision 2026-11-23.
+
+- On the month workspace Incomes tab, the add-income **name** field (`#new-income-name`) offers up to **five** recent names once the user has typed **two** characters — the same control and rules as UC-22.
+- Source: this user’s `month_income.name` in the **open month + the two previous calendar months**. Prefix match after accent-fold and lowercase. Duplicate folded names collapse to the newest spelling.
+- Selecting a suggestion fills the name only. Category and amount stay as the user left them.
+- User B never sees User A’s names.
+- Never suggests actual-expense or reserved-line names, and the add-actual form never suggests income names. Not on the edit-income form. Missing prior months are skipped (C6).
+
 ---
 
 ## 10. Screens (logical)
@@ -610,7 +620,7 @@ Implementation slice: `docs/usecases/UC-29-committed-last-payment-month.md`.
 1. Sign-in  
 2. 403  
 3. Month list / empty + create month  
-4. Month workspace — header actions menu (Delete month) + summary (Spending / Invested / Left over / Total saved) + **annual reminders (when the month-number matches; “Added” rows when matched)** + tabs: Data (incomes, reserved lines, actuals — add-actual name may autocomplete recent names; each actual may be moved to another month), **Estimate check**, Stats, Help  
+4. Month workspace — header actions menu (Delete month) + summary (Spending / Invested / Left over / Total saved) + **annual reminders (when the month-number matches; “Added” rows when matched)** + tabs: Data (incomes, reserved lines, actuals — add-actual and add-income names may autocomplete recent names; each actual may be moved to another month), **Estimate check**, Stats, Help  
 5. Expense categories — with **Counts as savings** switch  
 6. Income categories  
 7. Fixed/estimated templates — with optional month schedule and Delete  
@@ -765,6 +775,9 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 71. Loans “Car loan 250”, last payment Mar 2027, March ticket 250 → no overspend warning in March although the template is inactive; the April plan does not count it.
 72. User B cannot set a last payment month on User A's template; User B creating a month never deactivates User A's templates.
 73. Scheduled Jan/Jul with last payment Mar 2027 → creating Mar 2027 copies nothing and deactivates it. Months created earlier keep their lines.
+74. Add-income name `nó` in Aug 2026 suggests “Nómina” from June; an income only in May is not suggested; an actual named “Nóminas extra” is not suggested.
+75. Income autocomplete corpus is tenant-scoped (user B never sees user A’s income names).
+76. One character → no list; picking an income suggestion fills the name only (category and amount unchanged).
 
 ---
 

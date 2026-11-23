@@ -5,20 +5,24 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
   filterNameSuggestions,
-  type ActualNameSuggestion,
+  type NameSuggestion,
 } from "@/lib/actual-name-suggestions";
 
 // ============================================================================
-// Add-actual name combobox (UC-17, PRD UC-22 / C13).
+// Add-form name combobox: actuals (UC-17, PRD UC-22) and incomes (UC-30,
+// PRD UC-32). `messages` picks the keyed copy for the surface.
 //
 // Uncontrolled input so Playwright `fill` and native FormData keep working
 // (existing UC-08 e2e). Query state only drives the prefix list. Inline list
 // (not overlay) so it stays attached to the field above a phone keyboard.
 // ============================================================================
 
-export function ActualNameAutocomplete({
+export type NameAutocompleteMessages = "actuals.autocomplete" | "incomes.autocomplete";
+
+export function NameAutocomplete({
   id,
   name,
+  messages,
   suggestions,
   placeholder,
   required,
@@ -27,13 +31,14 @@ export function ActualNameAutocomplete({
 }: {
   id: string;
   name: string;
-  suggestions: ActualNameSuggestion[];
+  messages: NameAutocompleteMessages;
+  suggestions: NameSuggestion[];
   placeholder: string;
   required?: boolean;
   maxLength?: number;
   className?: string;
 }) {
-  const t = useTranslations("actuals.autocomplete");
+  const t = useTranslations(messages);
   const listboxId = useId();
   const liveId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +57,7 @@ export function ActualNameAutocomplete({
     setActiveIndex(-1);
   };
 
-  const pick = (item: ActualNameSuggestion) => {
+  const pick = (item: NameSuggestion) => {
     if (inputRef.current) inputRef.current.value = item.name;
     setQuery(item.name);
     setOpen(false);

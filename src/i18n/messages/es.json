@@ -263,7 +263,13 @@
       "selectCategory": "Elige una categoría"
     },
     "noActiveCategories": "Crea primero una categoría de ingreso activa.",
-    "historicalInactiveNote": "La categoría de este ingreso está inactiva. Sigue mostrándose porque el ingreso se añadió antes."
+    "historicalInactiveNote": "La categoría de este ingreso está inactiva. Sigue mostrándose porque el ingreso se añadió antes.",
+    "autocomplete": {
+      "listLabel": "Nombres recientes",
+      "a11y": {
+        "suggestions": "{count, plural, one {# nombre reciente} other {# nombres recientes}}"
+      }
+    }
   },
   "actuals": {
     "title": "Gastos reales",

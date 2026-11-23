@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-23
+
+### Added
+- The add-income name field now suggests income names you used this month or in the two months before, after you type two letters, just like the add-expense name field. Picking a suggestion fills the name only (UC-30).
+
+### Changed
+- The product requirements (`docs/prds/GLOBAL.md`) now include income name autocomplete as PRD UC-32 (C13 extended to the add-income form), with test scenarios #74–#76 (UC-30).
+- The name autocomplete is now one shared component for the add-expense and add-income forms, so both behave the same (UC-17, UC-30).
+
 ## [0.16.0] - 2026-11-11
 
 ### Added

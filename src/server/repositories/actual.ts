@@ -8,10 +8,7 @@ import {
   type NewMonthActualExpense,
 } from "@/server/db/schema";
 import type { Tx } from "@/server/repositories/user";
-import { foldAccents } from "@/server/search/sanitize";
-import {
-  ACTUAL_NAME_CORPUS_LIMIT,
-} from "@/lib/actual-name-suggestions";
+import { uniqueRecentNames } from "@/lib/actual-name-suggestions";
 
 // ============================================================================
 // Month actual-expense repository (UC-08, PRD §6.7 / §7.2 / §7.3 / C15,
@@ -240,18 +237,5 @@ export async function listRecentActualNames(
     LIMIT 1000
   `);
 
-  const seen = new Set<string>();
-  const unique: ActualNameSuggestionRow[] = [];
-  for (const row of rows) {
-    const key = foldAccents(row.name);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    unique.push({
-      name: row.name,
-      year: Number(row.year),
-      month: Number(row.month),
-    });
-    if (unique.length >= ACTUAL_NAME_CORPUS_LIMIT) break;
-  }
-  return unique;
+  return uniqueRecentNames(rows);
 }

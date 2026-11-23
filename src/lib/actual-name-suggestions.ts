@@ -1,10 +1,11 @@
 import { foldAccents } from "@/server/search/sanitize";
 
 // ============================================================================
-// Actual name autocomplete helpers (UC-17, PRD UC-22 / C13).
+// Name autocomplete helpers (UC-17 actuals, UC-30 incomes; PRD UC-22 /
+// UC-32 / C13).
 //
-// Pure functions shared by the RSC service (window) and the client combobox
-// (prefix filter). Accent-folding reuses Search's `foldAccents` so `Café`
+// Pure functions shared by the repositories (unique corpus), the RSC
+// services (window) and the client combobox (prefix filter). Accent-folding reuses Search's `foldAccents` so `Café`
 // matches `ca` the same way Search matches it.
 // ============================================================================
 
@@ -13,11 +14,35 @@ export const ACTUAL_NAME_SUGGESTION_LIMIT = 5;
 export const ACTUAL_NAME_CORPUS_LIMIT = 200;
 export const ACTUAL_NAME_MIN_CHARS = 2;
 
-export type ActualNameSuggestion = {
+export type NameSuggestion = {
   name: string;
   year: number;
   month: number;
 };
+
+/** @deprecated kept for UC-17 call sites; same shape as `NameSuggestion`. */
+export type ActualNameSuggestion = NameSuggestion;
+
+/**
+ * Collapse newest-first rows to one entry per folded name (newest spelling
+ * wins) and cap the corpus. Applied in the repositories instead of
+ * `DISTINCT ON` (see `listRecentActualNames`).
+ */
+export function uniqueRecentNames(
+  rows: Iterable<{ name: string; year: number | string; month: number | string }>,
+  limit: number = ACTUAL_NAME_CORPUS_LIMIT,
+): NameSuggestion[] {
+  const seen = new Set<string>();
+  const unique: NameSuggestion[] = [];
+  for (const row of rows) {
+    const key = foldAccents(row.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push({ name: row.name, year: Number(row.year), month: Number(row.month) });
+    if (unique.length >= limit) break;
+  }
+  return unique;
+}
 
 export function recentMonthWindow(
   year: number,
@@ -39,13 +64,13 @@ export function recentMonthWindow(
 }
 
 export function filterNameSuggestions(
-  corpus: ActualNameSuggestion[],
+  corpus: NameSuggestion[],
   rawQuery: string,
   limit: number = ACTUAL_NAME_SUGGESTION_LIMIT,
-): ActualNameSuggestion[] {
+): NameSuggestion[] {
   const prefix = foldAccents(rawQuery).trim();
   if (prefix.length < ACTUAL_NAME_MIN_CHARS) return [];
-  const matches: ActualNameSuggestion[] = [];
+  const matches: NameSuggestion[] = [];
   for (const item of corpus) {
     const folded = foldAccents(item.name);
     if (folded === prefix) continue;

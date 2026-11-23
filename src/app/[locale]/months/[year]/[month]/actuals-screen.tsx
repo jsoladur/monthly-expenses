@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AmountInput } from "@/components/amount-input";
-import { ActualNameAutocomplete } from "@/components/actual-name-autocomplete";
+import { NameAutocomplete } from "@/components/name-autocomplete";
 import { centsToInputString, formatMoney } from "@/i18n/format";
 import {
   addActualAction,
@@ -271,9 +271,10 @@ function AddActualFormBody({
         <label htmlFor="new-actual-name" className="sr-only">
           {t("name")}
         </label>
-        <ActualNameAutocomplete
+        <NameAutocomplete
           id="new-actual-name"
           name="name"
+          messages="actuals.autocomplete"
           suggestions={nameSuggestions}
           placeholder={t("actions.placeholder")}
           required
