@@ -163,6 +163,37 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await expect(page.getByRole("heading", { name: "2025" })).toBeVisible();
   });
 
+  test("Home lists current and later years; History lists only earlier years", async ({
+    context,
+    page,
+  }) => {
+    const user = await ensureUser(DB_URL, AUTH_SECRET, {
+      email: `e2e-uc06-years-${uniqueId()}@example.com`,
+      googleSub: `e2e-uc06-years-sub-${uniqueId()}`,
+    });
+    await attachSessionCookie(context, user);
+    await resetMonthState(DB_URL, user.id);
+    const currentYear = new Date().getFullYear();
+    await seedMonth(DB_URL, user.id, currentYear - 1, 5);
+    await seedMonth(DB_URL, user.id, currentYear, 6);
+    await seedMonth(DB_URL, user.id, currentYear + 1, 1);
+
+    await page.goto(`${BASE_URL}/en`);
+    const list = page.locator("section[aria-labelledby='month-list'] ul");
+    await expect(list.getByRole("link")).toHaveCount(2);
+    await expect(list.getByRole("link").nth(0)).toContainText(`January ${currentYear + 1}`);
+    await expect(list.getByRole("link").nth(1)).toContainText(`June ${currentYear}`);
+    await expect(page.getByRole("link", { name: new RegExp(`May ${currentYear - 1}`) })).toHaveCount(0);
+
+    await page.goto(`${BASE_URL}/en/history`);
+    await expect(page.getByRole("link", { name: String(currentYear - 1), exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: String(currentYear), exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: String(currentYear + 1), exact: true })).toHaveCount(0);
+
+    await page.goto(`${BASE_URL}/en/history/${currentYear + 1}`);
+    await page.waitForURL(/\/en\/history$/);
+  });
+
   test("stats tab pie charts expose Show data table accordions", async ({
     context,
     page,

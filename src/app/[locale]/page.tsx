@@ -10,6 +10,7 @@ import { AppShell } from "@/components/app-shell";
 import { ExportExpensesDrawer } from "@/components/export-expenses-drawer";
 import { Link } from "@/i18n/navigation";
 import { uniqueYearsDescending } from "@/lib/export-selection";
+import { isHomeYear } from "@/lib/month-buckets";
 import { Trash2 } from "lucide-react";
 
 export default async function LocaleHome({
@@ -40,8 +41,10 @@ export default async function LocaleHome({
     !allMonths.some((m) => m.year === deletedPeriod.year && m.month === deletedPeriod.month)
       ? monthYear(locale as AppLocale, deletedPeriod.year, deletedPeriod.month)
       : null;
-  const currentYear = new Date().getFullYear();
-  const months = allMonths.filter((m) => m.year === currentYear);
+  // Home: current year and any later year (newest first); earlier years live
+  // in History (PRD UC-14).
+  const now = new Date();
+  const months = allMonths.filter((m) => isHomeYear(m.year, now));
   const session = await auth();
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;

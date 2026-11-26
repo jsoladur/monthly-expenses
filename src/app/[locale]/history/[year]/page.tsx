@@ -7,6 +7,7 @@ import { isAppLocale, monthYear } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
 import { Link } from "@/i18n/navigation";
+import { isHistoryYear } from "@/lib/month-buckets";
 
 export default async function HistoryYearPage({
   params,
@@ -26,9 +27,7 @@ export default async function HistoryYearPage({
 
   const userId = await requireUserId(locale);
   const t = await getTranslations({ locale, namespace: "history" });
-  const currentYear = new Date().getFullYear();
-
-  if (year >= currentYear) {
+  if (!isHistoryYear(year)) {
     redirect({ href: "/history", locale });
   }
 

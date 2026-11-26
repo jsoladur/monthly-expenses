@@ -7,6 +7,7 @@ import { isAppLocale } from "@/i18n/format";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
 import { Link } from "@/i18n/navigation";
+import { isHistoryYear } from "@/lib/month-buckets";
 
 export default async function HistoryPage({
   params,
@@ -21,10 +22,10 @@ export default async function HistoryPage({
 
   const userId = await requireUserId(locale);
   const t = await getTranslations({ locale, namespace: "history" });
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
 
   const years = await getMonthYears(userId);
-  const previousYears = years.filter((y) => y < currentYear);
+  const previousYears = years.filter((y) => isHistoryYear(y, now));
 
   const session = await auth();
   const email = session?.user?.email ?? "";

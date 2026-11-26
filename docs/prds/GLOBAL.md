@@ -456,6 +456,7 @@ potential_savings already subtracts all remainings
 
 - Never auto-create.
 - Cookie last-opened month if it exists; else month list (newest first) + create.
+- Home month list = every created month of the **current calendar year or any later year** (e.g. January of next year created ahead of time). **History** = only years **before** the current year. Each month appears in exactly one of the two.
 - Empty state: create month only.
 - Summary: income, actuals, remaining reserved, potential savings.
 
@@ -778,6 +779,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 74. Add-income name `nó` in Aug 2026 suggests “Nómina” from June; an income only in May is not suggested; an actual named “Nóminas extra” is not suggested.
 75. Income autocomplete corpus is tenant-scoped (user B never sees user A’s income names).
 76. One character → no list; picking an income suggestion fills the name only (category and amount unchanged).
+77. In Nov 2026, months Jun 2025, Jun 2026 and Jan 2027 exist → Home lists Jan 2027 then Jun 2026; History lists only 2025; `/history/2027` redirects to History.
 
 ---
 

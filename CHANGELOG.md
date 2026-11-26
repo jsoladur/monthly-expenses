@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-11-26
+
+### Fixed
+- Months of a later year (for example January 2027 created in 2026) now show on Home. Before, they appeared neither on Home nor in History. Home lists the current year and any later year; History keeps only earlier years (UC-14).
+
 ## [0.17.0] - 2026-11-23
 
 ### Added
