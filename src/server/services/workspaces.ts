@@ -32,6 +32,7 @@ import {
   type WorkspaceForUser,
 } from "@/server/repositories/workspace";
 import { normalizeEmail, parseAllowlist } from "@/server/auth/allowlist";
+import { deleteOffersForUser } from "@/server/repositories/workspace-transfer";
 import { loadWorkspaceAccess } from "@/server/auth/workspace-access";
 import {
   ASSIGNABLE_ROLES,
@@ -488,6 +489,8 @@ export async function removeMember(
   await db.transaction(async (tx) => {
     await requireNonOwnerMember(workspaceId, input.userId, tx);
     await deleteMember(workspaceId, input.userId, tx);
+    // UC-32 rule 8: an ownership offer to (or from) them goes too.
+    await deleteOffersForUser(workspaceId, input.userId, tx);
   });
 }
 
@@ -495,8 +498,12 @@ export async function leaveWorkspace(access: WorkspaceAccess): Promise<void> {
   assertShared(access);
   if (access.role === "owner") throw new OwnerCannotLeaveError();
   const workspaceId = authorize(access, "leaveWorkspace");
-  const removed = await deleteMember(workspaceId, access.userId);
-  if (!removed) throw new WorkspaceNotFoundError();
+  await db.transaction(async (tx) => {
+    const removed = await deleteMember(workspaceId, access.userId, tx);
+    if (!removed) throw new WorkspaceNotFoundError();
+    // UC-32 rule 8: an ownership offer to (or from) them goes too.
+    await deleteOffersForUser(workspaceId, access.userId, tx);
+  });
 }
 
 function isUniqueViolation(err: unknown): boolean {

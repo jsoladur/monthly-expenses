@@ -106,7 +106,14 @@
     "ownerCannotLeave": "Transfiere la propiedad o elimina este espacio primero.",
     "workspaceNameMismatch": "Escribe el nombre del espacio tal como aparece.",
     "workspaceInvitationExists": "Esta persona ya está invitada.",
-    "workspaceInvitationNotFound": "Esa invitación ya no existe. Recarga la página."
+    "workspaceInvitationNotFound": "Esa invitación ya no existe. Recarga la página.",
+    "transferTargetNotMember": "La propiedad solo puede pasar a un miembro actual de este espacio.",
+    "transferTargetNotAllowed": "Esa persona ya no puede usar la aplicación. Elige otro miembro.",
+    "transferToSelf": "Ya eres el propietario de este espacio.",
+    "transferAlreadyPending": "Ya hay una oferta esperando respuesta. Cancélala para ofrecer la propiedad a otra persona.",
+    "transferNotFound": "Esa oferta ya no existe. Recarga la página.",
+    "transferNoLongerValid": "Esta oferta ya no es válida y se ha eliminado.",
+    "privateWorkspaceNotTransferable": "Un espacio privado no se puede transferir."
   },
   "warnings": {
     "title": "Avisos",
@@ -982,6 +989,25 @@
       "current": "Espacio actual",
       "manage": "Gestionar espacios"
     },
-    "back": "Todos los espacios"
+    "back": "Todos los espacios",
+    "transfer": {
+      "title": "Propiedad",
+      "button": "Transferir la propiedad",
+      "pick": "Nuevo propietario",
+      "choose": "Elige a un miembro",
+      "confirmOffer": "Ofrecer la propiedad",
+      "afterAccept": "Cuando acepte, pasarás a ser Administrador de este espacio. Puedes cancelar mientras no acepte.",
+      "waitsInApp": "No se envía ningún correo: la oferta espera en la aplicación hasta que se responda.",
+      "pending": "Ofrecida a {name}. Esperando su respuesta.",
+      "cancel": "Cancelar la oferta",
+      "noCandidates": "Añade primero un miembro: la propiedad solo puede pasar a alguien que ya esté en este espacio.",
+      "incomingBadge": "Te ofrecen la propiedad",
+      "incomingBanner": "{owner} te ofrece ser propietario de {workspace}.",
+      "accept": "Aceptar la propiedad",
+      "acceptConfirm": "Pasarás a ser el Propietario. {owner} pasará a ser Administrador. Después podrás eliminar este espacio u ofrecerlo a otra persona.",
+      "confirmAccept": "Sí, ser el Propietario",
+      "decline": "Rechazar",
+      "done": "Ahora eres el Propietario de {workspace}."
+    }
   }
 }

@@ -7,6 +7,7 @@ import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
 import { requireWorkspaceAccess } from "@/server/auth/require-workspace-access";
 import { getWorkspaceDetails, listMemberCandidates } from "@/server/services/workspaces";
+import { getOfferForWorkspace } from "@/server/services/workspace-transfer";
 import { WorkspaceNotFoundError, roleAllows } from "@/lib/workspace-roles";
 import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 import { WorkspaceDetailsScreen } from "./workspace-details-screen";
@@ -38,9 +39,10 @@ export default async function WorkspaceDetailsPage({
   if (access.kind !== "shared") notFound();
 
   const canManageMembers = roleAllows(access.role, "manageMembers");
-  const [details, candidates, t, session] = await Promise.all([
+  const [details, candidates, offer, t, session] = await Promise.all([
     getWorkspaceDetails(access),
     canManageMembers ? listMemberCandidates(access) : Promise.resolve([]),
+    getOfferForWorkspace(access),
     getTranslations({ locale, namespace: "workspaces" }),
     auth(),
   ]);
@@ -80,6 +82,24 @@ export default async function WorkspaceDetailsPage({
           members={details.members}
           invitations={details.invitations.map((i) => ({ email: i.email, role: i.role }))}
           candidates={candidates}
+          offer={
+            offer
+              ? {
+                  fromUserId: offer.fromUserId,
+                  fromLabel: offer.fromLabel,
+                  toUserId: offer.toUserId,
+                  toLabel: offer.toLabel,
+                }
+              : null
+          }
+          transferCandidates={details.members
+            .filter((m) => m.role !== "owner")
+            .map((m) => ({
+              userId: m.userId,
+              label: m.displayName?.trim() ? m.displayName : m.email,
+              email: m.email,
+              role: m.role,
+            }))}
           counts={details.counts}
           can={{
             manageWorkspace: roleAllows(access.role, "manageWorkspace"),

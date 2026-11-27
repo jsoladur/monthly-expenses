@@ -181,6 +181,16 @@ Copy: active voice, no apology. "Waiting for their answer" rather than "pending 
 
 ---
 
+## 9b. Implementation notes (2026-11-27)
+
+Changes against this file, following later PO decisions on UC-31:
+
+- **No Home badge.** The PO removed the Home workspace cards (UC-31 §4.12, 2026-11-27). The incoming offer shows as "Ownership offered to you" on that workspace in the **header workspace switcher** (with a dot on the trigger) and on its row in the **Workspaces screen**, plus the banner on the details page.
+- **The offer form is a bottom sheet**, not an inline form (AGENTS.md §2 "create new" pattern): a "Transfer ownership" button (crown icon) opens it. With no other member, the hint "Add a member first" shows instead of the button.
+- **Recipient services take a `WorkspaceAccess`** (`declineOwnershipTransfer(access)`, `acceptOwnershipTransfer(access)`) instead of `(userId, workspaceId)`: the recipient is a member, so the ADR-12 membership check applies; non-addressees get `TransferNotFoundError`.
+- An invalid offer found at accept time is deleted and **committed** before `TransferNoLongerValidError` is thrown (otherwise the rollback would bring it back).
+- `deleteOffersForUser` also drops an offer *from* the user (harmless; only the Owner can be `from_user_id`).
+
 ## 10. Non-goals
 
 - Transfer between workspaces, or of a private workspace.

@@ -146,6 +146,31 @@ export const workspaceInvitation = pgTable(
   ],
 );
 
+// Pending ownership offer (UC-32, PRD C32, migration 0009). At most one per
+// workspace; a row means "pending" — it is deleted when accepted, declined,
+// cancelled or no longer valid. No history (UC-32 §3).
+export const workspaceTransfer = pgTable(
+  "workspace_transfer",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    fromUserId: uuid("from_user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    toUserId: uuid("to_user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("workspace_transfer_workspace_uk").on(table.workspaceId),
+    index("workspace_transfer_to_user_idx").on(table.toUserId),
+    check("workspace_transfer_not_self_ck", sql`${table.fromUserId} <> ${table.toUserId}`),
+  ],
+);
+
 // ============================================================================
 // Global per-workspace catalogs — SOFT delete only (PRD §13)
 // ============================================================================
@@ -373,6 +398,7 @@ export type Workspace = typeof workspace.$inferSelect;
 export type NewWorkspace = typeof workspace.$inferInsert;
 export type WorkspaceMember = typeof workspaceMember.$inferSelect;
 export type WorkspaceInvitation = typeof workspaceInvitation.$inferSelect;
+export type WorkspaceTransfer = typeof workspaceTransfer.$inferSelect;
 export type NewProfileSettings = typeof profileSettings.$inferInsert;
 export type Category = typeof category.$inferSelect;
 export type NewCategory = typeof category.$inferInsert;

@@ -1,0 +1,6 @@
+[
+  "e2e-uc32-owner-chromium@example.com",
+  "e2e-uc32-target-chromium@example.com",
+  "e2e-uc32-owner-mobile-safari@example.com",
+  "e2e-uc32-target-mobile-safari@example.com"
+]

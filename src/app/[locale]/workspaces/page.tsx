@@ -8,6 +8,7 @@ import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
 import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { listMyWorkspaces } from "@/server/services/workspaces";
+import { listOffersForUser } from "@/server/services/workspace-transfer";
 import { getProfileSettings } from "@/server/services/settings";
 import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 import { CreateWorkspaceForm } from "./create-workspace-form";
@@ -31,13 +32,15 @@ export default async function WorkspacesPage({
   setRequestLocale(locale);
 
   const access = await resolveActiveWorkspace(locale);
-  const [workspaces, profile, t, session] = await Promise.all([
+  const [workspaces, offers, profile, t, session] = await Promise.all([
     listMyWorkspaces(access.userId),
+    listOffersForUser(access.userId),
     getProfileSettings(access.userId),
     getTranslations({ locale, namespace: "workspaces" }),
     auth(),
   ]);
   if (workspaces.length === 0) notFound();
+  const offered = new Set(offers.map((o) => o.workspaceId));
 
   async function startSignOut() {
     "use server";
@@ -74,6 +77,9 @@ export default async function WorkspacesPage({
                   {w.kind === "shared" ? t("shared") : t("privateTag")} · {w.currency}
                   {w.id === access.workspaceId ? ` · ${t("active")}` : ""}
                 </span>
+                {offered.has(w.id) && (
+                  <span className="text-one-off text-xs font-medium">{t("transfer.incomingBadge")}</span>
+                )}
               </span>
             );
             return (

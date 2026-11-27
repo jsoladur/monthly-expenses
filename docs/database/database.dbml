@@ -115,6 +115,16 @@ Table workspace_invitation {
   Note: 'Pending share with an allowlisted person who has not signed in yet (PO decision 2026-11-27, migration 0008). At their first sign-in every row for their email becomes a workspace_member with that role and is deleted, in the sign-in transaction.'
 }
 
+Table workspace_transfer {
+  id uuid [pk, default: `gen_random_uuid()`]
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE. Unique index workspace_transfer_workspace_uk: at most one pending offer per workspace (UC-32 rule 4).']
+  from_user_id uuid [not null, ref: > app_user.id, note: 'The Owner who offered (ON DELETE CASCADE)']
+  to_user_id uuid [not null, ref: > app_user.id, note: 'The member who may accept (ON DELETE CASCADE). Index workspace_transfer_to_user_idx.']
+  created_at timestamptz [not null, default: `now()`]
+
+  Note: 'UC-32 (PRD C32, migration 0009). A row means "pending": deleted when accepted, declined, cancelled, or no longer valid (target left, removed, off the allowlist). Check workspace_transfer_not_self_ck: from_user_id <> to_user_id. No status column, no history.'
+}
+
 // ----------- Global per-workspace catalogs (SOFT delete, PRD §13) -----------
 
 Table category {

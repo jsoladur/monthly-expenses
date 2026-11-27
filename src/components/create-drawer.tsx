@@ -31,6 +31,7 @@ export function CreateDrawer({
   description,
   testId,
   openOnHash,
+  icon,
   children,
 }: {
   /** Trigger button text, e.g. "New expense". */
@@ -41,6 +42,8 @@ export function CreateDrawer({
   testId?: string;
   /** Opens on load (and on hash change) when the URL hash matches, e.g. "create" for `#create` links. */
   openOnHash?: string;
+  /** Trigger icon; defaults to a plus. */
+  icon?: ReactNode;
   /** A render function receiving `close`, or plain nodes (e.g. from an RSC) for forms that navigate away on success. */
   children: ReactNode | ((close: () => void) => ReactNode);
 }) {
@@ -63,7 +66,7 @@ export function CreateDrawer({
         data-testid={testId}
         className="h-11 self-end"
       >
-        <Plus className="size-4" aria-hidden />
+        {icon ?? <Plus className="size-4" aria-hidden />}
         {label}
       </Button>
       <DrawerPortal>

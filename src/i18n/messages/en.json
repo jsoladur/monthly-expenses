@@ -106,7 +106,14 @@
     "ownerCannotLeave": "Transfer ownership or delete this workspace first.",
     "workspaceNameMismatch": "Type the workspace name exactly as shown.",
     "workspaceInvitationExists": "This person is already invited.",
-    "workspaceInvitationNotFound": "That invitation no longer exists. Reload the page."
+    "workspaceInvitationNotFound": "That invitation no longer exists. Reload the page.",
+    "transferTargetNotMember": "Ownership can only go to a current member of this workspace.",
+    "transferTargetNotAllowed": "That person is no longer allowed to use the app. Pick another member.",
+    "transferToSelf": "You already own this workspace.",
+    "transferAlreadyPending": "An offer is already waiting for an answer. Cancel it to offer ownership to someone else.",
+    "transferNotFound": "That offer no longer exists. Reload the page.",
+    "transferNoLongerValid": "This offer is no longer valid and was removed.",
+    "privateWorkspaceNotTransferable": "A private workspace cannot be transferred."
   },
   "warnings": {
     "title": "Warnings",
@@ -982,6 +989,25 @@
       "current": "Current workspace",
       "manage": "Manage workspaces"
     },
-    "back": "All workspaces"
+    "back": "All workspaces",
+    "transfer": {
+      "title": "Ownership",
+      "button": "Transfer ownership",
+      "pick": "New owner",
+      "choose": "Choose a member",
+      "confirmOffer": "Offer ownership",
+      "afterAccept": "After they accept, you become an Admin of this workspace. You can cancel until they accept.",
+      "waitsInApp": "No email is sent: the offer waits in the app until it is answered.",
+      "pending": "Offered to {name}. Waiting for their answer.",
+      "cancel": "Cancel offer",
+      "noCandidates": "Add a member first: ownership can only go to someone already in this workspace.",
+      "incomingBadge": "Ownership offered to you",
+      "incomingBanner": "{owner} offers you ownership of {workspace}.",
+      "accept": "Accept ownership",
+      "acceptConfirm": "You become the Owner. {owner} becomes an Admin. You can then delete this workspace or offer it on.",
+      "confirmAccept": "Yes, become the Owner",
+      "decline": "Decline",
+      "done": "You are now the Owner of {workspace}."
+    }
   }
 }

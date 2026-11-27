@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The Owner of a shared workspace can offer ownership to a member. Nothing changes until that member accepts; then they become the Owner and the previous Owner becomes an Admin. The member sees the offer on the workspace page, in the workspace switcher and on the Workspaces screen, and can accept or decline; the Owner can cancel while it waits. An offer goes away if its member leaves, is removed or is no longer allowed to use the app (UC-32).
+
+### Fixed
+- On phones, a long workspace name in the top bar is shortened instead of running into the profile button (UC-31).
+
 ## [0.18.0] - 2026-11-27
 
 ### Added

@@ -1,5 +1,6 @@
 import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { listMyWorkspaces } from "@/server/services/workspaces";
+import { listOffersForUser } from "@/server/services/workspace-transfer";
 import {
   AppShellClient,
   type AppShellProps,
@@ -17,12 +18,23 @@ import {
 
 export async function AppShell(props: AppShellProps) {
   const access = await resolveActiveWorkspace();
-  const workspaces = await listMyWorkspaces(access.userId);
+  const [workspaces, offers] = await Promise.all([
+    listMyWorkspaces(access.userId),
+    listOffersForUser(access.userId),
+  ]);
+  const offered = new Set(offers.map((o) => o.workspaceId));
   let workspace: WorkspaceSwitcherInfo | null = null;
   if (workspaces.length > 1) {
     workspace = {
       activeId: access.workspaceId,
-      workspaces: workspaces.map((w) => ({ id: w.id, kind: w.kind, name: w.name, role: w.role })),
+      workspaces: workspaces.map((w) => ({
+        id: w.id,
+        kind: w.kind,
+        name: w.name,
+        role: w.role,
+        // UC-32: an ownership offer waits for this user here.
+        ownershipOffered: offered.has(w.id),
+      })),
     };
   }
   return <AppShellClient {...props} workspace={workspace} />;

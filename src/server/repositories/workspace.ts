@@ -10,6 +10,7 @@ import {
   workspace,
   workspaceInvitation,
   workspaceMember,
+  workspaceTransfer,
   type Workspace,
   type WorkspaceKind,
   type WorkspaceMember,
@@ -184,6 +185,8 @@ export async function deleteWorkspaceCascade(
   await tx.delete(annual).where(eq(annual.workspaceId, workspaceId));
   await tx.delete(category).where(eq(category.workspaceId, workspaceId));
   await tx.delete(workspaceInvitation).where(eq(workspaceInvitation.workspaceId, workspaceId));
+  // UC-32: the pending ownership offer (the FK cascades too).
+  await tx.delete(workspaceTransfer).where(eq(workspaceTransfer.workspaceId, workspaceId));
   await tx.delete(workspaceMember).where(eq(workspaceMember.workspaceId, workspaceId));
   const deleted = await tx
     .delete(workspace)

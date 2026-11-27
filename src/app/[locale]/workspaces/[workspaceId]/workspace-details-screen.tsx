@@ -22,6 +22,13 @@ import { ASSIGNABLE_ROLES, type WorkspaceRole } from "@/lib/workspace-roles";
 import { WORKSPACE_NAME_MAX, matchesWorkspaceName } from "@/lib/workspace-name";
 import { workspaceErrorMessage } from "../workspace-error";
 import { CreateDrawer } from "@/components/create-drawer";
+import {
+  OwnershipOfferBanner,
+  OwnershipSection,
+  type OfferView,
+  type TransferCandidate,
+} from "./ownership-transfer";
+import { CheckCircle2 } from "lucide-react";
 
 // ============================================================================
 // Workspace details (UC-31 §7.2): members + role controls and add form
@@ -63,6 +70,8 @@ export function WorkspaceDetailsScreen({
   candidates,
   counts,
   can,
+  offer,
+  transferCandidates,
 }: {
   workspaceId: string;
   name: string;
@@ -75,9 +84,34 @@ export function WorkspaceDetailsScreen({
   candidates: Candidate[];
   counts: { months: number; categories: number; templates: number; annuals: number; members: number };
   can: { manageWorkspace: boolean; manageMembers: boolean; leave: boolean; delete: boolean };
+  /** UC-32: the pending ownership offer, as the Owner or the addressee sees it. */
+  offer: OfferView | null;
+  /** UC-32: members the Owner may offer ownership to (everyone but the Owner). */
+  transferCandidates: TransferCandidate[];
 }) {
+  const tt = useTranslations("workspaces.transfer");
+  // Survives the post-accept revalidation (same route, same component).
+  const [justAccepted, setJustAccepted] = useState(false);
+  const incoming = offer && offer.toUserId === viewerId ? offer : null;
   return (
     <div className="flex flex-col gap-6">
+      {justAccepted && viewerRole === "owner" && (
+        <p
+          role="status"
+          className="bg-success/10 text-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-sm"
+        >
+          <CheckCircle2 className="text-success-foreground size-4 shrink-0" aria-hidden />
+          {tt("done", { workspace: name })}
+        </p>
+      )}
+      {incoming && (
+        <OwnershipOfferBanner
+          workspaceId={workspaceId}
+          workspaceName={name}
+          offer={incoming}
+          onAccepted={() => setJustAccepted(true)}
+        />
+      )}
       {can.manageMembers && (
         <AddMemberDrawer workspaceId={workspaceId} candidates={candidates} />
       )}
@@ -88,6 +122,13 @@ export function WorkspaceDetailsScreen({
         invitations={invitations}
         canManage={can.manageMembers}
       />
+      {viewerRole === "owner" && (
+        <OwnershipSection
+          workspaceId={workspaceId}
+          offer={offer && offer.fromUserId === viewerId ? offer : null}
+          candidates={transferCandidates}
+        />
+      )}
       {can.manageWorkspace && (
         <SettingsSection
           workspaceId={workspaceId}

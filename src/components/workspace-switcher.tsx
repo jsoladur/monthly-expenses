@@ -24,6 +24,8 @@ export interface SwitcherWorkspace {
   kind: "private" | "shared";
   name: string | null;
   role: WorkspaceRole;
+  /** UC-32: an ownership offer to the viewer waits in this workspace. */
+  ownershipOffered?: boolean;
 }
 
 export function WorkspaceSwitcher({
@@ -61,13 +63,22 @@ export function WorkspaceSwitcher({
         data-testid="workspace-switcher"
         disabled={pending}
         className={cn(
-          "focus-visible:ring-ring/50 inline-flex min-h-11 max-w-[14rem] cursor-pointer items-center gap-1 rounded-full px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-3 disabled:cursor-wait",
+          "focus-visible:ring-ring/50 inline-flex min-h-11 min-w-0 cursor-pointer items-center gap-1 rounded-full px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-3 disabled:cursor-wait",
+          // In the phone top bar the name must truncate before it reaches the
+          // profile button; on desktop there is room for a longer name.
           tone === "bar"
-            ? "text-sidebar-foreground/90 hover:bg-sidebar-accent/40 data-popup-open:bg-sidebar-accent/40"
-            : "text-foreground bg-card hover:bg-accent data-popup-open:bg-accent border",
+            ? "text-sidebar-foreground/90 hover:bg-sidebar-accent/40 data-popup-open:bg-sidebar-accent/40 max-w-[42vw]"
+            : "text-foreground bg-card hover:bg-accent data-popup-open:bg-accent max-w-[14rem] border",
         )}
       >
         <span className="truncate">{label(active)}</span>
+        {workspaces.some((w) => w.ownershipOffered) && (
+          <span
+            className="bg-one-off size-2 shrink-0 rounded-full"
+            aria-label={t("transfer.incomingBadge")}
+            data-testid="switcher-offer-dot"
+          />
+        )}
         <ChevronDown className="size-4 shrink-0 opacity-70" aria-hidden />
       </Menu.Trigger>
       <Menu.Portal>
@@ -103,6 +114,11 @@ export function WorkspaceSwitcher({
                           ? `${t("shared")} · ${t(`roles.${w.role}`)}`
                           : t("privateTag")}
                       </span>
+                      {w.ownershipOffered && (
+                        <span className="text-one-off text-xs font-medium">
+                          {t("transfer.incomingBadge")}
+                        </span>
+                      )}
                     </span>
                   </Menu.RadioItem>
                 ))}
