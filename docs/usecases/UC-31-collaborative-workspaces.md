@@ -92,7 +92,8 @@ Member rules that come with the matrix:
 ### 4.2 Shared workspace
 
 1. Any allowlisted user may create one. The creator becomes its Owner. No cap on the number of shared workspaces in V1.
-2. Name: trimmed, 1–60 characters, not required to be unique. Currency: chosen at creation, pre-selected from `profile_settings.currency`, editable by Admin+ later (label only, no FX — C9).
+2. Name: trimmed, 1–60 characters, not required to be unique. Currency: chosen at creation, pre-selected from `profile_settings.currency` (inherited from it when none is given), editable by Admin+ later (label only, no FX — C9).
+4. **The currency belongs to the workspace** (`workspace.currency`), not to any user (PO decision 2026-11-27). It is copied from the creator's `profile_settings.currency` only once, at creation. Afterwards no user's profile currency affects it, and handing the workspace to another Owner (UC-32) leaves it unchanged. Changing a shared workspace's currency never writes any `profile_settings`. For a **private** workspace, `profile_settings.currency` mirrors the workspace currency: changing one in Settings updates the other, so new shared workspaces inherit the currency the user works with privately.
 3. Starts empty: no categories, templates, annuals or months are copied from any other workspace. The Owner builds it the same way a new user builds their private one.
 
 ### 4.3 Adding members
@@ -375,7 +376,7 @@ The request fixed the four roles and the "private by default" rule. These detail
 4. **Members must have signed in once.** No pending invitations in V1.
 5. **Admin can remove another Admin** (but never the Owner).
 6. **The Owner cannot leave**; they transfer ownership (UC-32) or delete the workspace.
-7. **Currency is per workspace.** The private workspace inherits the current currency; `profile_settings.currency` becomes only the default for new shared workspaces.
+7. **Currency is per workspace** (confirmed by the PO 2026-11-27). It is stored on `workspace.currency` and inherited from `profile_settings.currency` at creation. `profile_settings.currency` mirrors the private workspace's currency and is the default for new shared workspaces. A shared workspace keeps its currency across owner changes (UC-32). See §4.2.4.
 8. **Private workspace has no name and no members.**
 9. **No cap on shared workspaces per user.**
 

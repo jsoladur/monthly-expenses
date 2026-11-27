@@ -205,13 +205,23 @@ export async function listMyWorkspaces(userId: string): Promise<WorkspaceForUser
 // Shared workspace lifecycle
 // ----------------------------------------------------------------------------
 
+/**
+ * UC-31 §4.2: the currency belongs to the WORKSPACE (`workspace.currency`).
+ * It is inherited from the creator's `profile_settings.currency` when none is
+ * chosen, and from then on it is independent of any user: changing a
+ * member's profile currency, or (UC-32) handing the workspace to another
+ * Owner, never changes it.
+ */
 export async function createSharedWorkspace(
   userId: string,
-  input: { name: string; currency: string },
+  input: { name: string; currency?: string | null },
 ): Promise<Workspace> {
   const name = normalizeName(input.name);
-  const currency = normalizeCurrency(input.currency);
-  return db.transaction((tx) => insertWorkspace({ name, currency, ownerUserId: userId }, tx));
+  return db.transaction(async (tx) => {
+    const inherited = input.currency ?? (await getProfileSettings(userId, tx))?.currency ?? "EUR";
+    const currency = normalizeCurrency(inherited);
+    return insertWorkspace({ name, currency, ownerUserId: userId }, tx);
+  });
 }
 
 export interface WorkspaceDetails {
@@ -270,9 +280,10 @@ export async function renameWorkspace(
 }
 
 /**
- * Currency of the workspace being viewed (UC-31 §7.3, decision 7). For the
- * private workspace the value is also kept as the user's
- * `profile_settings.currency`, the default for new shared workspaces.
+ * Currency of the workspace being viewed (UC-31 §7.3, decision 7). Only that
+ * workspace's row changes. For the user's own PRIVATE workspace the value is
+ * mirrored into `profile_settings.currency` (PO decision 2026-11-27), which is
+ * what new shared workspaces inherit; a shared workspace never writes it.
  */
 export async function setWorkspaceCurrency(
   access: WorkspaceAccess,

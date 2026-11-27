@@ -105,7 +105,9 @@ async function run(fn: () => Promise<unknown>): Promise<WorkspaceActionResult> {
 
 // ----------------------------------------------------------------------------
 
-const createSchema = z.object({ name: nameSchema, currency: currencySchema });
+// Currency is optional: when omitted, the service inherits the creator's
+// profile currency (UC-31 §4.2).
+const createSchema = z.object({ name: nameSchema, currency: currencySchema.optional() });
 
 export type CreateWorkspaceResult =
   | { ok: true; workspaceId: string }
@@ -113,7 +115,7 @@ export type CreateWorkspaceResult =
 
 export async function createSharedWorkspaceAction(input: {
   name: string;
-  currency: string;
+  currency?: string;
 }): Promise<CreateWorkspaceResult> {
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "validation" };

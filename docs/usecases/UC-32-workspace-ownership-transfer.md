@@ -43,6 +43,7 @@ The Owner is the only role that can delete a shared workspace. When the person w
 9. **The former Owner becomes Admin.** They keep their data access, may leave the workspace (UC-31 §4.5 now allows it), and may not delete it or offer it again.
 10. **The new Owner** can delete the workspace, offer it again, and do everything else the Owner can do (UC-31 §3).
 11. **No data changes.** Months, catalogs, templates, annuals, incomes, lines, actuals and every `created_by_user_id` stay as they are. No active-workspace cookie changes for anyone (the workspace id is the same).
+    - **The currency stays the workspace's.** `workspace.currency` is not touched by an offer, an accept, a decline or a cancel, even when the new Owner's `profile_settings.currency` differs from the old Owner's. Neither user's `profile_settings` changes (UC-31 §4.2.4, PO decision 2026-11-27). UC-31 already covers this with `tests/integration/workspaces.test.ts` "93b", which swaps the Owner the way accept will (demote, then promote).
 12. **No notifications.** The target finds the offer in the app: on the Workspaces screen and as a badge on their workspace card on Home (UC-31 §7.1). The copy says the offer waits in the app, because no email or push is sent.
 
 ---

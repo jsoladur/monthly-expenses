@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Data now belongs to a workspace instead of a user. Migration 0008 gives every existing user a private workspace that holds all their data and records who added each expense. With only the private workspace, the app looks and works exactly as before (UC-31).
-- The currency in Settings is the currency of the workspace you are viewing (UC-31).
+- The currency in Settings is the currency of the workspace you are viewing. A new shared workspace starts with your currency, then keeps its own: changing your currency later, or handing the workspace to someone else, does not change it (UC-31).
 
 ## [0.17.3] - 2026-11-27
 

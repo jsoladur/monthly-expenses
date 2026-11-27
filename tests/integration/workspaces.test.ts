@@ -28,6 +28,7 @@ import {
   setWorkspaceCurrency,
 } from "@/server/services/workspaces";
 import { loadWorkspaceAccess } from "@/server/auth/workspace-access";
+import { updateMemberRole } from "@/server/repositories/workspace";
 import { WorkspaceNotFoundError, type WorkspaceAccess } from "@/lib/workspace-roles";
 import { createCategory } from "@/server/services/categories";
 import { createTemplate } from "@/server/services/templates";
@@ -308,6 +309,48 @@ suite("UC-31 workspaces", () => {
     expect(mine.find((w) => w.id === shared.id)!.currency).toBe("USD");
     expect(mine.find((w) => w.id === owner.workspaceId)!.currency).toBe("EUR");
   });
+
+  // -------------------------------------------------------------------------
+  it("93b — a shared workspace's currency is its own: inherited from the creator at creation, untouched by profile changes or an owner change (prepares UC-32)", async () => {
+    const owner = await seedOwnerAccess("s93bo", { email: "owner@example.com" });
+    const member = await seedOwnerAccess("s93bm", { email: "member@example.com" });
+    // Owner uses USD privately (mirrored into profile_settings), member keeps EUR.
+    await setWorkspaceCurrency(owner, "USD");
+
+    // No currency given → inherited from the creator's profile currency.
+    const shared = await createSharedWorkspace(owner.userId, { name: "Inherited" });
+    expect(shared.currency).toBe("USD");
+    const ownerShared = await loadWorkspaceAccess(owner.userId, shared.id);
+    await addMember(ownerShared, { email: "member@example.com", role: "admin" }, ALLOW);
+
+    // Later profile / private currency changes do not reach the shared workspace.
+    await setWorkspaceCurrency(owner, "GBP");
+    expect(await currencyOf(shared.id)).toBe("USD");
+    const [ownerProfile] = await db.execute<{ currency: string }>(
+      sql`SELECT currency FROM profile_settings WHERE user_id = ${owner.userId}`,
+    );
+    expect(ownerProfile!.currency).toBe("GBP");
+
+    // Changing the SHARED workspace currency never writes anyone's profile.
+    await setWorkspaceCurrency(ownerShared, "CHF");
+    const [ownerProfileAfter] = await db.execute<{ currency: string }>(
+      sql`SELECT currency FROM profile_settings WHERE user_id = ${owner.userId}`,
+    );
+    expect(ownerProfileAfter!.currency).toBe("GBP");
+
+    // Owner change done the way UC-32's accept will (demote, then promote, one
+    // transaction): the workspace keeps its currency although the new Owner's
+    // profile currency is EUR.
+    await db.transaction(async (tx) => {
+      await updateMemberRole(shared.id, owner.userId, "admin", tx);
+      await updateMemberRole(shared.id, member.userId, "owner", tx);
+    });
+    const newOwner = await loadWorkspaceAccess(member.userId, shared.id);
+    expect(newOwner.role).toBe("owner");
+    expect(await currencyOf(shared.id)).toBe("CHF");
+    expect((await listMyWorkspaces(member.userId)).find((w) => w.id === shared.id)!.currency).toBe("CHF");
+    expect((await listMyWorkspaces(member.userId)).find((w) => w.id === member.workspaceId)!.currency).toBe("EUR");
+  });
 });
 
 // ============================================================================
@@ -468,6 +511,13 @@ async function countTenantRows(workspaceId: string) {
       (SELECT count(*)::int FROM month_actual_expense a JOIN month m ON m.id = a.month_id WHERE m.workspace_id = ${workspaceId}) AS actuals
   `);
   return { ...row! };
+}
+
+async function currencyOf(workspaceId: string): Promise<string> {
+  const [row] = await db.execute<{ currency: string }>(
+    sql`SELECT currency FROM workspace WHERE id = ${workspaceId}`,
+  );
+  return row!.currency;
 }
 
 async function countMembers(workspaceId: string): Promise<number> {
