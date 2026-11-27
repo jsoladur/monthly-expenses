@@ -78,6 +78,9 @@ export function WorkspaceDetailsScreen({
 }) {
   return (
     <div className="flex flex-col gap-6">
+      {can.manageMembers && (
+        <AddMemberDrawer workspaceId={workspaceId} candidates={candidates} />
+      )}
       <MembersSection
         workspaceId={workspaceId}
         viewerId={viewerId}
@@ -85,9 +88,6 @@ export function WorkspaceDetailsScreen({
         invitations={invitations}
         canManage={can.manageMembers}
       />
-      {can.manageMembers && (
-        <AddMemberDrawer workspaceId={workspaceId} candidates={candidates} />
-      )}
       {can.manageWorkspace && (
         <SettingsSection
           workspaceId={workspaceId}

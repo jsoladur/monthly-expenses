@@ -55,6 +55,15 @@ export default async function WorkspacesPage({
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground max-w-prose text-sm leading-relaxed">{t("lead")}</p>
 
+        <div id="create" className="flex scroll-mt-24 justify-end">
+          <CreateDrawer label={t("new")} testId="new-workspace" openOnHash="create">
+            <CreateWorkspaceForm
+              defaultCurrency={profile?.currency ?? "EUR"}
+              currencies={SUPPORTED_CURRENCIES}
+            />
+          </CreateDrawer>
+        </div>
+
         <ul className="flex flex-col gap-2">
           {workspaces.map((w) => {
             const label = w.kind === "private" ? t("privateLabel") : (w.name ?? "");
@@ -90,14 +99,6 @@ export default async function WorkspacesPage({
           })}
         </ul>
 
-        <div id="create" className="scroll-mt-24">
-          <CreateDrawer label={t("new")} testId="new-workspace" openOnHash="create">
-            <CreateWorkspaceForm
-              defaultCurrency={profile?.currency ?? "EUR"}
-              currencies={SUPPORTED_CURRENCIES}
-            />
-          </CreateDrawer>
-        </div>
       </div>
     </AppShell>
   );

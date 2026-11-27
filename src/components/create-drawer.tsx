@@ -18,7 +18,8 @@ import {
 // "Create new" pattern (AGENTS.md §2, PO decision 2026-11-27): every screen
 // that creates something shows a single "New …" button; its form lives in a
 // mobile-first bottom sheet (the same Drawer as move-an-expense / pass to
-// upcoming month). Editing stays inline.
+// upcoming month). The button sits at the TOP of its section, aligned right.
+// Editing stays inline.
 //
 // `children` receives `close`, which the form calls after a successful save
 // (or is plain nodes when the form navigates away on success).
@@ -60,7 +61,7 @@ export function CreateDrawer({
         type="button"
         onClick={() => setOpen(true)}
         data-testid={testId}
-        className="h-11 self-start"
+        className="h-11 self-end"
       >
         <Plus className="size-4" aria-hidden />
         {label}

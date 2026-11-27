@@ -62,27 +62,7 @@ export function EstimatedReservedLinesScreen({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-2">
-        {rows.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("noEstimated")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {rows.map((row) => (
-              <EstimatedReservedLineRow
-                key={row.id}
-                row={row}
-                monthId={monthId}
-                year={year}
-                month={month}
-                currency={currency}
-                upcomingMonths={upcomingMonths}
-                canManage={canManage}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
+      {/* "Create new" button on top, right-aligned (AGENTS.md §2). */}
       {canManage && (
         expenseCategories.length === 0 ? (
           // Nothing to create yet: show the form's "create a category first" hint inline.
@@ -108,6 +88,27 @@ export function EstimatedReservedLinesScreen({
         </CreateDrawer>
         )
       )}
+      <section className="flex flex-col gap-2">
+        {rows.length === 0 ? (
+          <p className="text-muted-foreground text-sm">{t("noEstimated")}</p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {rows.map((row) => (
+              <EstimatedReservedLineRow
+                key={row.id}
+                row={row}
+                monthId={monthId}
+                year={year}
+                month={month}
+                currency={currency}
+                upcomingMonths={upcomingMonths}
+                canManage={canManage}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
     </div>
   );
 }
