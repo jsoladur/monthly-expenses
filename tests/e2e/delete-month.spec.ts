@@ -56,7 +56,7 @@ test.describe("UC-27 delete month", () => {
     expect(await lastOpened(context)).toBeUndefined();
 
     const rows = await withSql(
-      (sql) => sql`SELECT month FROM month WHERE user_id = ${user.id} ORDER BY month`,
+      (sql) => sql`SELECT month FROM month WHERE workspace_id = ${user.id} ORDER BY month`,
     );
     expect(rows.map((r) => r.month)).toEqual([10]);
     const orphans = await withSql(
@@ -76,7 +76,7 @@ test.describe("UC-27 delete month", () => {
     await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByRole("heading", { name: "November 2026" })).toBeVisible();
-    const rows = await withSql((sql) => sql`SELECT 1 FROM month WHERE user_id = ${user.id}`);
+    const rows = await withSql((sql) => sql`SELECT 1 FROM month WHERE workspace_id = ${user.id}`);
     expect(rows).toHaveLength(1);
   });
 
@@ -127,10 +127,10 @@ async function setupUser(context: BrowserContext, tag: string) {
   });
   await context.addCookies([cookie]);
   await withSql(async (sql) => {
-    await sql`DELETE FROM month WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM category WHERE user_id = ${user.id}`;
+    await sql`DELETE FROM month WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${user.id}`;
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${user.id}, 'Health', 'expense', true)
     `;
   });
@@ -149,10 +149,10 @@ async function seedActual(
 ): Promise<void> {
   await withSql(async (sql) => {
     await sql`
-      INSERT INTO month_actual_expense (month_id, category_id, name, amount)
-      SELECT ${monthId}, c.id, ${name}, ${amount}
+      INSERT INTO month_actual_expense (month_id, category_id, name, amount, created_by_user_id)
+      SELECT ${monthId}, c.id, ${name}, ${amount}, ${userId}
       FROM category c
-      WHERE c.user_id = ${userId} AND c.kind = 'expense'
+      WHERE c.workspace_id = ${userId} AND c.kind = 'expense'
       LIMIT 1
     `;
   });

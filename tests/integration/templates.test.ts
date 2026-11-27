@@ -21,6 +21,8 @@ import {
   reactivateTemplate,
   updateTemplate,
 } from "@/server/services/templates";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-05 fixed/estimated templates — integration (PRD §15 #11 + UC-07 / §6.3).
@@ -79,7 +81,7 @@ suite("UC-05 fixed/estimated templates", () => {
       kind: "committed",
     });
 
-    expect(created.userId).toBe(userId);
+    expect(created.workspaceId).toBe(userId.workspaceId);
     expect(created.categoryId).toBe(groceries.id);
     expect(created.kind).toBe("committed");
     expect(created.amount).toBe("150.00");
@@ -334,8 +336,8 @@ suite("UC-05 fixed/estimated templates", () => {
     expect(bobTemplates[0]!.name).toBe("Bob's weekly");
 
     // Tenant ids must never appear in the other tenant's results.
-    expect(aliceTemplates[0]!.userId).toBe(alice);
-    expect(bobTemplates[0]!.userId).toBe(bob);
+    expect(aliceTemplates[0]!.workspaceId).toBe(alice.workspaceId);
+    expect(bobTemplates[0]!.workspaceId).toBe(bob.workspaceId);
 
     // Cross-tenant update is invisible.
     await expect(
@@ -407,17 +409,13 @@ suite("UC-05 fixed/estimated templates", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function countMonthRows(userId: string): Promise<{
+async function countMonthRows(userId: WorkspaceAccess): Promise<{
   month: number;
   month_income: number;
   month_fixed_line: number;
@@ -427,16 +425,16 @@ async function countMonthRows(userId: string): Promise<{
     table_name: string;
     n: string;
   }>(sql`
-    SELECT 'month' AS table_name, COUNT(*)::text AS n FROM month WHERE user_id = ${userId}
+    SELECT 'month' AS table_name, COUNT(*)::text AS n FROM month WHERE workspace_id = ${userId.workspaceId}
     UNION ALL
     SELECT 'month_income' AS table_name, COUNT(*)::text AS n
-      FROM month_income WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+      FROM month_income WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId.workspaceId})
     UNION ALL
     SELECT 'month_fixed_line' AS table_name, COUNT(*)::text AS n
-      FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+      FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId.workspaceId})
     UNION ALL
     SELECT 'month_actual_expense' AS table_name, COUNT(*)::text AS n
-      FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+      FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId.workspaceId})
   `);
   const out = { month: 0, month_income: 0, month_fixed_line: 0, month_actual_expense: 0 };
   for (const row of rows) {

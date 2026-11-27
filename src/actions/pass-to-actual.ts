@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { uuidSchema } from "@/server/validators";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import {
   ActualNotFoundOnUndoError,
   MonthLineNotFoundError,
@@ -20,8 +21,9 @@ import {
 // One action per mutation. Every action:
 //   1. Parses the input with Zod (rejects anything else with
 //      `{ ok: false, error: "validation" }`).
-//   2. Resolves the tenant via `requireUserId()` — the canonical tenancy
-//      check (PRD §5.1, ARCH §3.2 rule 4). The locale is read from the
+//   2. Resolves the active workspace via `resolveActiveWorkspace()` — session
+//      (`requireUserId()`) + membership check (UC-31 §4.9, ARCH §3.2 rule 6);
+//      the service applies the role matrix (`workspaceForbidden`). The locale is read from the
 //      `x-next-intl-locale` header the middleware sets.
 //   3. Calls the service. Domain errors are translated into stable i18n keys
 //      in the action result so the client component renders localized copy
@@ -54,7 +56,8 @@ export type PassToActualActionError =
   | "actualNotFound"
   | "notUndoable"
   | "undoForbiddenAfterEdit"
-  | "validation";
+  | "validation"
+  | "workspaceForbidden";
 
 export type PassToActualActionResult =
   | { ok: true }
@@ -71,10 +74,13 @@ export async function passToActualAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    await servicePass(userId, { lineId: parsed.data.lineId });
+    await servicePass(access, { lineId: parsed.data.lineId });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof MonthLineNotFoundError) {
       return { ok: false, error: "monthLineNotFound" };
     }
@@ -95,10 +101,13 @@ export async function undoPassToActualAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    await serviceUndo(userId, { actualId: parsed.data.actualId });
+    await serviceUndo(access, { actualId: parsed.data.actualId });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof UndoForbiddenAfterEditError) {
       return { ok: false, error: "undoForbiddenAfterEdit" };
     }

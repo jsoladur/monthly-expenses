@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Shared workspaces: besides your private ledger, you can create a shared workspace and add people who are on the app's allowlist and have signed in once, as Reader, Editor or Admin. Each workspace has its own months, categories, fixed expenses, annuals, currency and reports; nothing is shared between workspaces (UC-31).
+- With more than one workspace, Home lists them first and the header shows the active one; picking a workspace switches every screen to it and forgets the last opened month. A Workspaces screen manages members, roles, the name and currency, leaving, and deleting a shared workspace after typing its name (UC-31).
+- In shared workspaces each expense shows who added it. Editors can edit or delete only their own expenses; Readers see everything and change nothing (UC-31).
+- Settings has a "Share with others" row to start your first shared workspace (UC-31).
+
+### Changed
+- Data now belongs to a workspace instead of a user. Migration 0008 gives every existing user a private workspace that holds all their data and records who added each expense. With only the private workspace, the app looks and works exactly as before (UC-31).
+- The currency in Settings is the currency of the workspace you are viewing (UC-31).
+
 ## [0.17.3] - 2026-11-27
 
 ### Fixed

@@ -97,7 +97,7 @@ async function attachSessionCookie(context: BrowserContext, user: { id: string; 
 async function resetUserCategories(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
   } finally {
     await sql.end({ timeout: 1 });
   }

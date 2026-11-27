@@ -46,10 +46,12 @@ export function TemplateRow({
   template,
   currency,
   expenseCategories,
+  canManage = true,
 }: {
   template: TemplateRowData;
   currency: string;
   expenseCategories: CategoryOption[];
+  canManage?: boolean;
 }) {
   const t = useTranslations("templates");
   const tv = useTranslations("validation");
@@ -262,19 +264,21 @@ export function TemplateRow({
             {t("inactive")}
           </span>
         )}
-        <IconButton
-          icon={<Pencil className="size-4" />}
-          label={t("actions.edit")}
-          disabled={pending}
-          onClick={() => {
-            setIsEditing(true);
-            setError(null);
-            setDraftAmount(centsToInputString(template.amountCents));
-            setDraftMonths(template.months);
-            setDraftEnd(template.endMonth);
-          }}
-        />
-        {template.active ? (
+        {canManage && (
+          <IconButton
+            icon={<Pencil className="size-4" />}
+            label={t("actions.edit")}
+            disabled={pending}
+            onClick={() => {
+              setIsEditing(true);
+              setError(null);
+              setDraftAmount(centsToInputString(template.amountCents));
+              setDraftMonths(template.months);
+              setDraftEnd(template.endMonth);
+            }}
+          />
+        )}
+        {!canManage ? null : template.active ? (
           <IconButton
             icon={<CircleOff className="size-4" />}
             label={t("actions.deactivate")}
@@ -289,13 +293,15 @@ export function TemplateRow({
             onClick={handleReactivate}
           />
         )}
-        <IconButton
-          icon={<Trash2 className="size-4" />}
-          label={t("actions.delete")}
-          destructive
-          disabled={pending}
-          onClick={handleDelete}
-        />
+        {canManage && (
+          <IconButton
+            icon={<Trash2 className="size-4" />}
+            label={t("actions.delete")}
+            destructive
+            disabled={pending}
+            onClick={handleDelete}
+          />
+        )}
       </div>
       {error && (
         <p role="alert" className="text-destructive basis-full text-xs">
@@ -334,6 +340,8 @@ function mapError(
       // UI already enforces this; if we hit it, the row state changed
       // between render and click. The next revalidate drops the stale row.
       return "";
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 

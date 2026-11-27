@@ -15,6 +15,8 @@ import {
   listUpcomingMonthsForPass,
   passToUpcomingMonth,
 } from "@/server/services/pass-to-upcoming";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-18 pass estimated line to an upcoming month (PRD UC-23 / C21 / §7.10).
@@ -97,7 +99,7 @@ suite("UC-18 pass to upcoming month", () => {
     expect(gone).toHaveLength(0);
 
     const templates = await db.execute<{ n: string }>(
-      sql`SELECT COUNT(*)::text AS n FROM template WHERE user_id = ${userId}`,
+      sql`SELECT COUNT(*)::text AS n FROM template WHERE workspace_id = ${userId.workspaceId}`,
     );
     expect(templates[0]!.n).toBe("1");
     expect(sourceWorkspace.month.id).toBe(september.id);
@@ -292,26 +294,22 @@ suite("UC-18 pass to upcoming month", () => {
   });
 });
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function getMonthWorkspace(userId: string, year: number, monthValue: number) {
+async function getMonthWorkspace(userId: WorkspaceAccess, year: number, monthValue: number) {
   const { getMonthWorkspace: service } = await import("@/server/services/months");
   return service(userId, year, monthValue);
 }
 
-async function countMonths(userId: string): Promise<number> {
+async function countMonths(userId: WorkspaceAccess): Promise<number> {
   const rows = await db
     .select()
     .from(month)
-    .where(eq(month.userId, userId));
+    .where(eq(month.workspaceId, userId.workspaceId));
   return rows.length;
 }
 

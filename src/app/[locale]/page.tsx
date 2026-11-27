@@ -1,8 +1,11 @@
 import { redirect } from "@/i18n/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { auth, signOut } from "@/auth";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { getMonthList } from "@/server/services/months";
+import { listMyWorkspaces } from "@/server/services/workspaces";
+import { roleAllows } from "@/lib/workspace-roles";
+import { WorkspaceList } from "@/app/[locale]/workspace-list";
 import { isAppLocale, monthYear, monthName } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { MonthCreateForm } from "@/app/[locale]/month-create-form";
@@ -27,12 +30,19 @@ export default async function LocaleHome({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const t = await getTranslations({ locale, namespace: "auth.signedIn" });
   const tm = await getTranslations({ locale, namespace: "months" });
   const tv = await getTranslations({ locale, namespace: "validation" });
 
-  const allMonths = await getMonthList(userId);
+  const [allMonths, myWorkspaces] = await Promise.all([
+    getMonthList(access),
+    listMyWorkspaces(access.userId),
+  ]);
+  // UC-31 §4.11: with one workspace Home is unchanged; with several, the
+  // workspace list comes first (§4.12).
+  const multiWorkspace = myWorkspaces.length > 1;
+  const canCreateMonth = roleAllows(access.role, "createMonth");
   // UC-27: one-shot note after a month delete (`?deleted=YYYY-M`). Shown only
   // when that period really is gone for this tenant.
   const deletedPeriod = parseDeletedPeriod(deletedRaw);
@@ -73,6 +83,18 @@ export default async function LocaleHome({
           <ExportExpensesDrawer years={exportYears} months={exportMonths} />
         </div>
 
+        {multiWorkspace && (
+          <WorkspaceList
+            activeId={access.workspaceId}
+            workspaces={myWorkspaces.map((w) => ({
+              id: w.id,
+              kind: w.kind,
+              name: w.name,
+              role: w.role,
+            }))}
+          />
+        )}
+
         {deletedLabel && (
           <p
             role="status"
@@ -96,6 +118,7 @@ export default async function LocaleHome({
                 {tm("empty.body")}
               </p>
             </div>
+            {canCreateMonth && (
             <MonthCreateForm
               locale={locale}
               labels={{
@@ -106,13 +129,16 @@ export default async function LocaleHome({
                 validationRequired: tv("required"),
                 validationMonth: tv("monthInvalid"),
                 validationYear: tv("yearOutOfRange"),
+                forbidden: tv("workspaceForbidden"),
               }}
               monthNames={monthNames}
               existingMonths={existingMonths}
             />
+            )}
           </section>
         ) : (
           <section aria-labelledby="month-list" className="flex flex-col gap-4">
+            {canCreateMonth && (
             <details className="bg-card text-card-foreground rounded-lg border">
               <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
                 {tm("list.createNew")}
@@ -128,12 +154,14 @@ export default async function LocaleHome({
                     validationRequired: tv("required"),
                     validationMonth: tv("monthInvalid"),
                     validationYear: tv("yearOutOfRange"),
+                    forbidden: tv("workspaceForbidden"),
                   }}
                   monthNames={monthNames}
                   existingMonths={existingMonths}
                 />
               </div>
             </details>
+            )}
             <h2 id="month-list" className="text-lg font-semibold">
               {tm("list.title")}
             </h2>

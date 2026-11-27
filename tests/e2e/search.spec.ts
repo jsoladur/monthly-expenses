@@ -152,20 +152,20 @@ async function seedTicket(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO month (user_id, year, month)
+      INSERT INTO month (workspace_id, year, month)
       VALUES (${userId}, 2026, 3)
     `;
     const [category] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, 'Food', 'expense', true)
       RETURNING id
     `;
     if (!category) throw new Error("seedTicket: category insert failed");
     await sql`
-      INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-      SELECT m.id, ${category.id}, 'Café Central', 'oat milk', '4.50'
+      INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount, created_by_user_id)
+      SELECT m.id, ${category.id}, 'Café Central', 'oat milk', '4.50', ${userId}
         FROM month m
-       WHERE m.user_id = ${userId}
+       WHERE m.workspace_id = ${userId}
          AND m.year = 2026
          AND m.month = 3
     `;

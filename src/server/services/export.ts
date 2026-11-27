@@ -10,7 +10,7 @@ import {
   listExportIncomes,
   listExportLines,
 } from "@/server/repositories/export";
-import { getProfileSettings } from "@/server/services/settings";
+import { findWorkspaceById } from "@/server/repositories/workspace";
 import { parseAmount, sumCents } from "@/server/money";
 import { monthName, monthYear } from "@/i18n/format";
 import type { AppLocale } from "@/i18n/routing";
@@ -29,6 +29,7 @@ import {
   sanitizeSheetName,
   type ExportSelection,
 } from "@/lib/export-selection";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Excel export service (UC-19, PRD UC-24 / C22, ARCH §5).
@@ -47,23 +48,25 @@ export class NothingToExportError extends Error {
 }
 
 export async function exportExpenses(
-  userId: string,
+  access: WorkspaceAccess,
   selection: ExportSelection,
   opts: { locale: AppLocale; copy: ExportCopy },
 ): Promise<{ filename: string; buffer: Buffer }> {
-  const months = await resolveExportMonths(userId, selection);
+  const workspaceId = authorize(access, "read");
+  const months = await resolveExportMonths(access, selection);
   if (months.length === 0) {
     throw new NothingToExportError();
   }
 
-  const settings = await getProfileSettings(userId);
-  const currency = settings?.currency ?? "EUR";
+  const workspaceRow = await findWorkspaceById(workspaceId);
+  // Currency of the workspace being exported (UC-31 §5.7).
+  const currency = workspaceRow?.currency ?? "EUR";
   const monthIds = months.map((row) => row.id);
 
   const [incomes, actuals, lines] = await Promise.all([
-    listExportIncomes(userId, monthIds),
-    listExportActuals(userId, monthIds),
-    listExportLines(userId, monthIds),
+    listExportIncomes(workspaceId, monthIds),
+    listExportActuals(workspaceId, monthIds),
+    listExportLines(workspaceId, monthIds),
   ]);
 
   const sheets: ExportMonthSheet[] = months.map((row) => {
@@ -146,20 +149,21 @@ export async function exportExpenses(
 }
 
 export async function resolveExportMonths(
-  userId: string,
+  access: WorkspaceAccess,
   selection: ExportSelection,
 ): Promise<Month[]> {
+  const workspaceId = authorize(access, "read");
   if (selection.mode === "all") {
-    return listMonths(userId);
+    return listMonths(workspaceId);
   }
   if (selection.mode === "year") {
     const years = dedupeYearsDescending(selection.years);
     if (years.length === 0) return [];
-    return listMonthsByYears(userId, years);
+    return listMonthsByYears(workspaceId, years);
   }
   const periods = dedupePeriods(selection.periods);
   if (periods.length === 0) return [];
-  return listMonthsByPeriods(userId, periods);
+  return listMonthsByPeriods(workspaceId, periods);
 }
 
 function toReservedRow(item: {

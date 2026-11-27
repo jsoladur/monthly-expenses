@@ -12,8 +12,10 @@
 -- so README shots are obviously fake, not a real household.
 -- Reserved lines exist only on the in-progress month (2026-09).
 --
--- Requires exactly one app_user (+ profile_settings). Wipes catalog/money
--- tables first; never touches app_user.
+-- Requires exactly one app_user (+ profile_settings + its private workspace,
+-- created at sign-in or by migration 0008). Rows go to that user's PRIVATE
+-- workspace (UC-31). Wipes catalog/money tables first; never touches
+-- app_user, workspace or workspace_member.
 -- ============================================================================
 
 BEGIN;
@@ -31,6 +33,7 @@ RESTART IDENTITY;
 DO $$
 DECLARE
   v_user_id uuid;
+  v_workspace_id uuid;
   v_month_id uuid;
   v_year int;
   v_month int;
@@ -83,50 +86,54 @@ BEGIN
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'No user found in app_user. Sign in once, then re-run this seed.';
   END IF;
+  SELECT id INTO v_workspace_id FROM workspace WHERE personal_user_id = v_user_id;
+  IF v_workspace_id IS NULL THEN
+    RAISE EXCEPTION 'No private workspace for that user. Apply migration 0008 or sign in again.';
+  END IF;
 
   FOREACH v_name IN ARRAY v_exp_names LOOP
-    INSERT INTO category (user_id, name, kind, active)
-    VALUES (v_user_id, v_name, 'expense', true)
+    INSERT INTO category (workspace_id, name, kind, active)
+    VALUES (v_workspace_id, v_name, 'expense', true)
     RETURNING id INTO v_id;
     v_exp := v_exp || v_id;
   END LOOP;
 
   FOREACH v_name IN ARRAY v_inc_names LOOP
-    INSERT INTO category (user_id, name, kind, active)
-    VALUES (v_user_id, v_name, 'income', true)
+    INSERT INTO category (workspace_id, name, kind, active)
+    VALUES (v_workspace_id, v_name, 'income', true)
     RETURNING id INTO v_id;
     v_inc := v_inc || v_id;
   END LOOP;
 
-  INSERT INTO template (user_id, category_id, name, amount, kind, active) VALUES
-    (v_user_id, v_exp[2], 'Rent', 1850.00, 'committed', true),
-    (v_user_id, v_exp[4], 'Internet', 55.00, 'committed', true),
-    (v_user_id, v_exp[4], 'Phone', 35.00, 'committed', true),
-    (v_user_id, v_exp[2], 'Home insurance', 75.00, 'committed', true),
-    (v_user_id, v_exp[5], 'Health cover', 110.00, 'committed', true),
-    (v_user_id, v_exp[6], 'Streaming', 25.00, 'committed', true),
-    (v_user_id, v_exp[1], 'Groceries envelope', 750.00, 'estimated', true),
-    (v_user_id, v_exp[3], 'Transport envelope', 220.00, 'estimated', true),
-    (v_user_id, v_exp[6], 'Leisure envelope', 180.00, 'estimated', true),
-    (v_user_id, v_exp[9], 'Household envelope', 120.00, 'estimated', true);
+  INSERT INTO template (workspace_id, category_id, name, amount, kind, active) VALUES
+    (v_workspace_id, v_exp[2], 'Rent', 1850.00, 'committed', true),
+    (v_workspace_id, v_exp[4], 'Internet', 55.00, 'committed', true),
+    (v_workspace_id, v_exp[4], 'Phone', 35.00, 'committed', true),
+    (v_workspace_id, v_exp[2], 'Home insurance', 75.00, 'committed', true),
+    (v_workspace_id, v_exp[5], 'Health cover', 110.00, 'committed', true),
+    (v_workspace_id, v_exp[6], 'Streaming', 25.00, 'committed', true),
+    (v_workspace_id, v_exp[1], 'Groceries envelope', 750.00, 'estimated', true),
+    (v_workspace_id, v_exp[3], 'Transport envelope', 220.00, 'estimated', true),
+    (v_workspace_id, v_exp[6], 'Leisure envelope', 180.00, 'estimated', true),
+    (v_workspace_id, v_exp[9], 'Household envelope', 120.00, 'estimated', true);
 
   INSERT INTO annual (
-    user_id, category_id, name, observations, amount, charge_month, is_direct_debit, active
+    workspace_id, category_id, name, observations, amount, charge_month, is_direct_debit, active
   ) VALUES
-    (v_user_id, v_exp[2], 'Building insurance', 'Yearly building policy', 890.00, 1, true, true),
-    (v_user_id, v_exp[3], 'Vehicle tax', 'Annual road tax', 280.00, 3, false, true),
-    (v_user_id, v_exp[8], 'School trip', 'Optional school trip deposit', 450.00, 5, false, true),
-    (v_user_id, v_exp[6], 'Summer camp', 'One week of camp', 1200.00, 7, false, true),
-    (v_user_id, v_exp[2], 'Boiler service', 'Annual service', 180.00, 9, true, true),
-    (v_user_id, v_exp[10], 'Year-end gifts', NULL, NULL, 12, false, true);
+    (v_workspace_id, v_exp[2], 'Building insurance', 'Yearly building policy', 890.00, 1, true, true),
+    (v_workspace_id, v_exp[3], 'Vehicle tax', 'Annual road tax', 280.00, 3, false, true),
+    (v_workspace_id, v_exp[8], 'School trip', 'Optional school trip deposit', 450.00, 5, false, true),
+    (v_workspace_id, v_exp[6], 'Summer camp', 'One week of camp', 1200.00, 7, false, true),
+    (v_workspace_id, v_exp[2], 'Boiler service', 'Annual service', 180.00, 9, true, true),
+    (v_workspace_id, v_exp[10], 'Year-end gifts', NULL, NULL, 12, false, true);
 
   FOR v_year IN 2018..2026 LOOP
     v_last_month := CASE WHEN v_year = 2026 THEN 9 ELSE 12 END;
     v_factor := 1 + (v_year - 2018) * 0.045;
 
     FOR v_month IN 1..v_last_month LOOP
-      INSERT INTO month (user_id, year, month)
-      VALUES (v_user_id, v_year, v_month)
+      INSERT INTO month (workspace_id, year, month)
+      VALUES (v_workspace_id, v_year, v_month)
       RETURNING id INTO v_month_id;
 
       -- Salary lands roughly 10–15k EUR across 2018–2026. Not a real payroll.
@@ -151,8 +158,8 @@ BEGIN
       -- Closed months record rent as an actual. The open month keeps it reserved.
       IF NOT (v_year = 2026 AND v_month = 9) THEN
         v_amt := round((1800 * v_factor)::numeric, 2);
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_id, v_exp[2], 'Rent', 'Monthly rent', v_amt);
+        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount, created_by_user_id)
+        VALUES (v_month_id, v_exp[2], 'Rent', 'Monthly rent', v_amt, v_user_id);
         v_sum := v_amt;
       END IF;
 
@@ -178,8 +185,8 @@ BEGIN
         v_sum := v_sum + v_amt;
         v_name := v_ticket_names[v_cat][1 + (v_i % 5)];
         v_note := v_ticket_notes[1 + (v_i % 5)];
-        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount)
-        VALUES (v_month_id, v_exp[v_cat], v_name, v_note, v_amt);
+        INSERT INTO month_actual_expense (month_id, category_id, name, observations, amount, created_by_user_id)
+        VALUES (v_month_id, v_exp[v_cat], v_name, v_note, v_amt, v_user_id);
       END LOOP;
 
       IF v_year = 2026 AND v_month = 9 THEN

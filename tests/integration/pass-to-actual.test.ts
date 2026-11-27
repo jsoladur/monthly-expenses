@@ -14,6 +14,8 @@ import {
   undoPassToActual,
 } from "@/server/services/pass-to-actual";
 import * as actualRepo from "@/server/repositories/actual";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-10 pass-to-actual & undo — integration (PRD §7.5, §7.2, §13, UC-12, ARCH
@@ -280,7 +282,7 @@ suite("UC-10 pass-to-actual & undo", () => {
     await passToActual(userId, { lineId: line.id });
 
     const { findTemplateById } = await import("@/server/repositories/template");
-    const reloaded = await findTemplateById(userId, template.id);
+    const reloaded = await findTemplateById(userId.workspaceId, template.id);
     expect(reloaded!.amount).toBe("800.00");
     expect(reloaded!.active).toBe(true);
   });
@@ -532,7 +534,7 @@ suite("UC-10 pass-to-actual & undo", () => {
     await undoPassToActual(userId, { actualId: actual.id });
 
     const { findTemplateById } = await import("@/server/repositories/template");
-    const reloaded = await findTemplateById(userId, template.id);
+    const reloaded = await findTemplateById(userId.workspaceId, template.id);
     expect(reloaded!.amount).toBe("800.00");
     expect(reloaded!.active).toBe(true);
   });
@@ -571,17 +573,13 @@ suite("UC-10 pass-to-actual & undo", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function getMonthWorkspace(userId: string, year: number, month: number) {
+async function getMonthWorkspace(userId: WorkspaceAccess, year: number, month: number) {
   const { getMonthWorkspace: service } = await import("@/server/services/months");
   return service(userId, year, month);
 }

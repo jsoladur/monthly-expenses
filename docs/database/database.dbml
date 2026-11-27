@@ -2,13 +2,13 @@
 // Monthly Expenses — Database schema (dbdiagram.io DBML)
 // Behavior source of truth: docs/prd.md  §6 (model), §7 (money rules), §13 (deletes)
 // Tech source of truth:     docs/architecture.md §4 (physical model, ADR-4, ADR-5)
-// Target: PostgreSQL 16 · money = numeric(14,2) · tenancy = user-scoped rows
+// Target: PostgreSQL 16 · money = numeric(14,2) · tenancy = workspace-scoped rows (UC-31, migration 0008)
 // Paste at https://dbdiagram.io/d to visualize.
 // ============================================================================
 
 Project monthly_expenses {
   database_type: 'PostgreSQL'
-  Note: 'Multi-tenant PWA (expenses.jmsola.dev). All money data isolated by user (PRD C1 / §5.1). Soft delete for catalogs; hard delete for month-scoped money rows (PRD §13).'
+  Note: 'Multi-tenant PWA (expenses.jmsola.dev). All money data isolated by workspace (PRD C1 / C30 / §5.1); members and roles in workspace_member (C31). Soft delete for catalogs; hard delete for month-scoped money rows (PRD §13).'
 }
 
 // ------------------------------ Enums ---------------------------------------
@@ -26,6 +26,18 @@ Enum line_kind {
 Enum line_origin {
   cloned     [note: 'Copied from templates at month creation (PRD C17)']
   month_only [note: 'One-off line added directly on the month (PRD UC-18)']
+}
+
+Enum workspace_kind {
+  private [note: 'One per user, created at first sign-in / backfilled by migration 0008. Never deleted, shared or transferred (PRD C30)']
+  shared  [note: 'Created by any allowlisted user, who becomes its owner (PRD C31)']
+}
+
+Enum workspace_role {
+  owner  [note: 'Full access; deletes the workspace; offers ownership (UC-32). Exactly one per workspace']
+  admin  [note: 'Full data + member access except deleting the workspace / transferring ownership']
+  editor [note: 'Creates months, categories and actuals; edits/deletes only own actuals']
+  reader [note: 'Reads everything, writes nothing']
 }
 
 Enum theme_preference {
@@ -57,11 +69,41 @@ Table profile_settings {
   Note: '1:1 with app_user. Inserted with currency = EUR and theme = auto on first login (PRD UC-01, §5.3).'
 }
 
-// ------------- Global per-user catalogs (SOFT delete, PRD §13) --------------
+// ------------------- Workspaces — the tenant (UC-31, 0008) ------------------
+
+Table workspace {
+  id uuid [pk, default: `gen_random_uuid()`]
+  kind workspace_kind [not null]
+  personal_user_id uuid [ref: > app_user.id, note: 'Set only for private workspaces (ON DELETE CASCADE). Partial unique index workspace_personal_user_uk WHERE NOT NULL. Check workspace_private_user_ck: (kind = private) = (personal_user_id IS NOT NULL).']
+  name text [note: 'Shared only, 1-60 chars trimmed. Check workspace_shared_name_ck: kind = private OR name IS NOT NULL. Private shows the localized "My private workspace".']
+  currency char(3) [not null, default: 'EUR', note: 'Per workspace (PRD C9, UC-31 decision 7). Private copies profile_settings.currency at creation.']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  Note: 'The tenant (PRD C30). Every tenant table carries workspace_id ON DELETE CASCADE, so deleting a shared workspace removes exactly its rows (C31).'
+}
+
+Table workspace_member {
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE']
+  user_id uuid [not null, ref: > app_user.id, note: 'ON DELETE CASCADE. Must be allowlisted and have signed in once (C31).']
+  role workspace_role [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (workspace_id, user_id) [pk, name: 'workspace_member_pk']
+    workspace_id [unique, name: 'workspace_member_owner_uk', note: 'PARTIAL unique WHERE role = owner — exactly one Owner per workspace (UC-31 §4.7). Add the WHERE in the migration SQL.']
+    user_id [name: 'workspace_member_user_idx']
+  }
+
+  Note: 'One role per member per workspace. Private workspaces have only their user, as owner (service-enforced).'
+}
+
+// ----------- Global per-workspace catalogs (SOFT delete, PRD §13) -----------
 
 Table category {
   id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null, ref: > app_user.id]
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE (UC-31, migration 0008 — replaced user_id)']
   name text [not null]
   kind category_kind [not null, note: 'Single table for expense + income categories (PRD §6.2)']
   counts_as_savings boolean [not null, default: false, note: 'Savings category (PRD C24, UC-24, migration 0006). Reporting-only: splits invested money from spending. Check category_savings_kind_ck: false OR kind = expense.']
@@ -71,15 +113,15 @@ Table category {
   deleted_at timestamptz [note: 'Set on soft delete; NULL when active. Reactivation allowed (PRD §6.2)']
 
   indexes {
-    (user_id, kind, name) [unique, name: 'category_active_name_uk', note: 'MUST be a PARTIAL unique index (WHERE active = true): names are unique per user+kind among ACTIVE rows only (PRD §6.2). DBML cannot express WHERE — add it in the Drizzle migration SQL.']
+    (workspace_id, kind, name) [unique, name: 'category_active_name_uk', note: 'MUST be a PARTIAL unique index (WHERE active = true): names are unique per workspace+kind among ACTIVE rows only (PRD §6.2). DBML cannot express WHERE — add it in the Drizzle migration SQL.']
   }
 
-  Note: 'Per-user global catalog — never cloned into months (PRD C10). Never physically deleted (PRD §13).'
+  Note: 'Per-workspace global catalog — never cloned into months (PRD C10). Never physically deleted (PRD §13).'
 }
 
 Table template {
   id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null, ref: > app_user.id]
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE (UC-31, migration 0008 — replaced user_id)']
   category_id uuid [not null, ref: > category.id, note: 'Expense category (templates are always expenses)']
   name text [not null]
   observations text
@@ -94,7 +136,7 @@ Table template {
   deleted_at timestamptz
 
   indexes {
-    (user_id, active, kind) [name: 'template_clone_idx', note: 'Clone source at month creation = ACTIVE templates of the user (PRD C17). Overspend baseline = SUM(amount) of active templates per category, committed + estimated (PRD §7.4).']
+    (workspace_id, active, kind) [name: 'template_clone_idx', note: 'Clone source at month creation = ACTIVE templates of the workspace (PRD C17). Overspend baseline = SUM(amount) of active templates per category, committed + estimated (PRD §7.4).']
     category_id [name: 'template_category_idx']
   }
 
@@ -103,7 +145,7 @@ Table template {
 
 Table annual {
   id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null, ref: > app_user.id]
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE (UC-31, migration 0008 — replaced user_id)']
   category_id uuid [not null, ref: > category.id, note: 'Expense category; must be ACTIVE at creation']
   name text [not null]
   observations text [note: 'Optional notes (UC-14)']
@@ -115,7 +157,7 @@ Table annual {
   deleted_at timestamptz
 
   indexes {
-    (user_id, charge_month) [name: 'annual_reminder_idx', note: 'Reminder query: ACTIVE annuals of the user whose charge_month equals the open month number (UC-14).']
+    (workspace_id, charge_month) [name: 'annual_reminder_idx', note: 'Reminder query: ACTIVE annuals of the workspace whose charge_month equals the open month number (UC-14).']
   }
 
   Note: 'UC-14 — yearly recurring expenses used ONLY as reminders in the month workspace. NO amount column by design: the reminder prompts a MANUAL one-off line (UC-09/UC-13); annuals never auto-create anything and are never cloned. Added in migration 0002 — the only post-UC-00 table.'
@@ -125,13 +167,13 @@ Table annual {
 
 Table month {
   id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null, ref: > app_user.id]
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE (UC-31, migration 0008 — replaced user_id)']
   year int [not null]
   month int [not null, note: '1-12. Add CHECK (month BETWEEN 1 AND 12) in the migration SQL.']
   created_at timestamptz [not null, default: `now()`]
 
   indexes {
-    (user_id, year, month) [unique, name: 'month_user_period_uk', note: 'Duplicate month creation is REJECTED (PRD UC-08). List query orders (year, month) DESC — newest first (PRD UC-14).']
+    (workspace_id, year, month) [unique, name: 'month_workspace_period_uk', note: 'Duplicate month creation is REJECTED (PRD UC-08). List query orders (year, month) DESC — newest first (PRD UC-14).']
   }
 
   Note: 'Month instance = isolated working copy (PRD §4). Created ONLY manually — never auto-created (PRD C6 / C12). On creation, active templates are cloned ONCE into month_fixed_line (PRD C17); afterwards the month never syncs with templates or other months (PRD §7.8). No rollover of unused remainings (PRD C7). Header delete not required in V1; if added later, cascade hard-deletes children (PRD §13).'
@@ -150,7 +192,7 @@ Table month_income {
     month_id [name: 'month_income_month_idx']
   }
 
-  Note: 'Money in for one month. NO observations field (PRD §6.5). NOT cloned from templates (PRD §7.8). HARD delete (PRD C15 / §13). Tenancy enforced by joining month.user_id (ARCH §4).'
+  Note: 'Money in for one month. NO observations field (PRD §6.5). NOT cloned from templates (PRD §7.8). HARD delete (PRD C15 / §13). Tenancy enforced by joining month.workspace_id (ARCH §4).'
 }
 
 Table month_fixed_line {
@@ -181,6 +223,7 @@ Table month_actual_expense {
   name text [not null, note: 'Free text; autocomplete is NOT MVP (PRD C13)']
   observations text
   amount numeric(14,2) [not null, note: 'May be negative (PRD UC-16); totals are algebraic sums']
+  created_by_user_id uuid [not null, ref: > app_user.id, note: 'Member who added it (PRD C31, UC-31 §4.14, migration 0008). Editors edit/delete only their own. Pass-to-actual: the user who passed the line. Backfilled with the private workspace owner.']
   converted_from_line_id uuid [note: 'Id of the month_fixed_line row this actual was converted from (PRD §7.5). LOGICAL reference ONLY — no DB-level FK: pass-to-actual hard-deletes the source line in the same transaction. Undo re-inserts the line reusing this id.']
   converted_line_original_amount numeric(14,2) [note: 'Snapshot of the source line original_amount so undo restores it faithfully. NULL for normal tickets.']
   converted_line_origin line_origin [note: 'Snapshot of the source line origin (cloned | month_only). NULL for normal tickets.']

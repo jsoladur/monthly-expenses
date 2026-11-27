@@ -14,6 +14,8 @@ import {
   isPastMonth,
   type OverspendWarning,
 } from "@/server/services/summary";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-11 summary, savings & warnings — integration (PRD §7.1 / §7.4 / §7.7,
@@ -610,19 +612,15 @@ suite("UC-11 summary, savings & warnings", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function getMonthWorkspace(userId: string, year: number, month: number) {
+async function getMonthWorkspace(userId: WorkspaceAccess, year: number, month: number) {
   const { getMonthWorkspace: service } = await import("@/server/services/months");
   return service(userId, year, month);
 }
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

@@ -17,7 +17,7 @@ import type {
 
 // ============================================================================
 // Global Stats repository (UC-15). Aggregated series only — SQL SUM / GROUP BY.
-// Every function takes `userId` first and filters `month.user_id` (PRD §5.1).
+// Every function takes `workspaceId` first and filters `month.workspace_id` (PRD §5.1).
 // Drizzle `sum()` on numeric comes back as a string; parse via integer cents.
 //
 // UC-24 (C24): spend and remaining series cover NON-savings categories only;
@@ -38,7 +38,7 @@ export type GlobalStatsAggregates = {
 };
 
 export async function loadGlobalStatsAggregates(
-  userId: string,
+  workspaceId: string,
 ): Promise<GlobalStatsAggregates> {
   const [
     presence,
@@ -50,14 +50,14 @@ export async function loadGlobalStatsAggregates(
     incomeByCategoryMonth,
     spendByCategoryMonth,
   ] = await Promise.all([
-    listMonthPresence(userId),
-    sumIncomeByMonth(userId),
-    sumSpendByMonth(userId),
-    sumRemainingByMonth(userId),
-    sumInvestedByMonth(userId),
-    sumInvestedRemainingByMonth(userId),
-    sumIncomeByCategoryMonth(userId),
-    sumSpendByCategoryMonth(userId),
+    listMonthPresence(workspaceId),
+    sumIncomeByMonth(workspaceId),
+    sumSpendByMonth(workspaceId),
+    sumRemainingByMonth(workspaceId),
+    sumInvestedByMonth(workspaceId),
+    sumInvestedRemainingByMonth(workspaceId),
+    sumIncomeByCategoryMonth(workspaceId),
+    sumSpendByCategoryMonth(workspaceId),
   ]);
   return {
     presence,
@@ -71,15 +71,15 @@ export async function loadGlobalStatsAggregates(
   };
 }
 
-export async function listMonthPresence(userId: string): Promise<MonthKey[]> {
+export async function listMonthPresence(workspaceId: string): Promise<MonthKey[]> {
   return db
     .select({ year: month.year, month: month.month })
     .from(month)
-    .where(eq(month.userId, userId))
+    .where(eq(month.workspaceId, workspaceId))
     .orderBy(asc(month.year), asc(month.month));
 }
 
-export async function sumIncomeByMonth(userId: string): Promise<MonthCents[]> {
+export async function sumIncomeByMonth(workspaceId: string): Promise<MonthCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -88,29 +88,29 @@ export async function sumIncomeByMonth(userId: string): Promise<MonthCents[]> {
     })
     .from(monthIncome)
     .innerJoin(month, eq(monthIncome.monthId, month.id))
-    .where(eq(month.userId, userId))
+    .where(eq(month.workspaceId, workspaceId))
     .groupBy(month.year, month.month)
     .orderBy(asc(month.year), asc(month.month));
   return rows.map((r) => ({ year: r.year, month: r.month, cents: numericSumToCents(r.total) }));
 }
 
-export async function sumSpendByMonth(userId: string): Promise<MonthCents[]> {
-  return sumActualsByMonth(userId, false);
+export async function sumSpendByMonth(workspaceId: string): Promise<MonthCents[]> {
+  return sumActualsByMonth(workspaceId, false);
 }
 
-export async function sumInvestedByMonth(userId: string): Promise<MonthCents[]> {
-  return sumActualsByMonth(userId, true);
+export async function sumInvestedByMonth(workspaceId: string): Promise<MonthCents[]> {
+  return sumActualsByMonth(workspaceId, true);
 }
 
-export async function sumRemainingByMonth(userId: string): Promise<MonthCents[]> {
-  return sumLineRemainingByMonth(userId, false);
+export async function sumRemainingByMonth(workspaceId: string): Promise<MonthCents[]> {
+  return sumLineRemainingByMonth(workspaceId, false);
 }
 
-export async function sumInvestedRemainingByMonth(userId: string): Promise<MonthCents[]> {
-  return sumLineRemainingByMonth(userId, true);
+export async function sumInvestedRemainingByMonth(workspaceId: string): Promise<MonthCents[]> {
+  return sumLineRemainingByMonth(workspaceId, true);
 }
 
-async function sumActualsByMonth(userId: string, savings: boolean): Promise<MonthCents[]> {
+async function sumActualsByMonth(workspaceId: string, savings: boolean): Promise<MonthCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -122,8 +122,8 @@ async function sumActualsByMonth(userId: string, savings: boolean): Promise<Mont
     .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
     .where(
       and(
-        eq(month.userId, userId),
-        eq(category.userId, userId),
+        eq(month.workspaceId, workspaceId),
+        eq(category.workspaceId, workspaceId),
         eq(category.countsAsSavings, savings),
       ),
     )
@@ -132,7 +132,7 @@ async function sumActualsByMonth(userId: string, savings: boolean): Promise<Mont
   return rows.map((r) => ({ year: r.year, month: r.month, cents: numericSumToCents(r.total) }));
 }
 
-async function sumLineRemainingByMonth(userId: string, savings: boolean): Promise<MonthCents[]> {
+async function sumLineRemainingByMonth(workspaceId: string, savings: boolean): Promise<MonthCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -144,8 +144,8 @@ async function sumLineRemainingByMonth(userId: string, savings: boolean): Promis
     .innerJoin(category, eq(monthFixedLine.categoryId, category.id))
     .where(
       and(
-        eq(month.userId, userId),
-        eq(category.userId, userId),
+        eq(month.workspaceId, workspaceId),
+        eq(category.workspaceId, workspaceId),
         eq(category.countsAsSavings, savings),
       ),
     )
@@ -154,7 +154,7 @@ async function sumLineRemainingByMonth(userId: string, savings: boolean): Promis
   return rows.map((r) => ({ year: r.year, month: r.month, cents: numericSumToCents(r.total) }));
 }
 
-export async function sumIncomeByCategoryMonth(userId: string): Promise<MonthCategoryCents[]> {
+export async function sumIncomeByCategoryMonth(workspaceId: string): Promise<MonthCategoryCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -168,7 +168,7 @@ export async function sumIncomeByCategoryMonth(userId: string): Promise<MonthCat
     .from(monthIncome)
     .innerJoin(month, eq(monthIncome.monthId, month.id))
     .innerJoin(category, eq(monthIncome.categoryId, category.id))
-    .where(and(eq(month.userId, userId), eq(category.userId, userId)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(category.workspaceId, workspaceId)))
     .groupBy(
       month.year,
       month.month,
@@ -181,7 +181,7 @@ export async function sumIncomeByCategoryMonth(userId: string): Promise<MonthCat
   return rows.map(toCategoryCents);
 }
 
-export async function sumSpendByCategoryMonth(userId: string): Promise<MonthCategoryCents[]> {
+export async function sumSpendByCategoryMonth(workspaceId: string): Promise<MonthCategoryCents[]> {
   const rows = await db
     .select({
       year: month.year,
@@ -196,7 +196,7 @@ export async function sumSpendByCategoryMonth(userId: string): Promise<MonthCate
     .from(monthActualExpense)
     .innerJoin(month, eq(monthActualExpense.monthId, month.id))
     .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
-    .where(and(eq(month.userId, userId), eq(category.userId, userId)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(category.workspaceId, workspaceId)))
     .groupBy(
       month.year,
       month.month,

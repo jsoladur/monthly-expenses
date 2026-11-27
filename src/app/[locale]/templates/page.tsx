@@ -1,10 +1,11 @@
 import { redirect } from "@/i18n/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { roleAllows } from "@/lib/workspace-roles";
 import { listTemplatesForManagement } from "@/server/services/templates";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
-import { getProfileSettings } from "@/server/services/settings";
+import { getWorkspaceCurrency } from "@/server/services/workspaces";
 import { TemplatesScreen } from "./templates-screen";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
@@ -21,16 +22,16 @@ export default async function TemplatesPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const [templates, expenseCategories, profileSettings, t, session] = await Promise.all([
-    listTemplatesForManagement(userId, undefined),
-    listActiveCategoriesForPicker(userId, "expense"),
-    getProfileSettings(userId),
+    listTemplatesForManagement(access, undefined),
+    listActiveCategoriesForPicker(access, "expense"),
+    getWorkspaceCurrency(access),
     getTranslations({ locale, namespace: "templates" }),
     auth(),
   ]);
 
-  const currency = profileSettings?.currency ?? "EUR";
+  const currency = profileSettings;
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
   const avatarUrl = session?.user?.image ?? null;
@@ -47,6 +48,7 @@ export default async function TemplatesPage({
         <TemplatesScreen
           locale={locale}
           currency={currency}
+          canManage={roleAllows(access.role, "manageTemplates")}
           initialTemplates={templates.map((row) => ({
             id: row.id,
             categoryId: row.categoryId,

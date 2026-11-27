@@ -13,16 +13,16 @@ import { uniqueRecentNames, type NameSuggestion } from "@/lib/actual-name-sugges
 // ============================================================================
 // Month income repository (UC-07, PRD §6.5 / §7.8, ARCH §4 / §5).
 //
-// `month_income` has no direct `user_id` column — tenancy flows through the
+// `month_income` has no direct `workspace_id` column — tenancy flows through the
 // `month` parent (FK `month_income.month_id → month.id`). Every function
 // here either:
 //
 //   (a) takes the resolved `monthId` (which the caller has already verified
 //       belongs to the tenant), OR
-//   (b) joins on `month` to filter by `month.user_id = userId` directly.
+//   (b) joins on `month` to filter by `month.workspace_id = workspaceId` directly.
 //
 // We never run a `WHERE month_id = ?` without the join — that would be the
-// canonical "missing user_id filter is a P0 bug" mistake (PRD §5.1).
+// canonical "missing workspace_id filter is a P0 bug" mistake (PRD §5.1).
 //
 // Money columns live as `numeric(14,2)` strings end-to-end (ADR-5, ARCH §8) —
 // this repository NEVER converts them.
@@ -43,7 +43,7 @@ export async function insertIncome(
 }
 
 export async function findIncomeById(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome | null> {
@@ -61,13 +61,13 @@ export async function findIncomeById(
     })
     .from(monthIncome)
     .innerJoin(month, eq(monthIncome.monthId, month.id))
-    .where(and(eq(month.userId, userId), eq(monthIncome.id, id)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(monthIncome.id, id)))
     .limit(1);
   return rows[0] ?? null;
 }
 
 export async function updateIncome(
-  userId: string,
+  workspaceId: string,
   id: string,
   patch: {
     categoryId: string;
@@ -78,7 +78,7 @@ export async function updateIncome(
 ): Promise<MonthIncome | null> {
   // PG supports `UPDATE ... FROM other_table WHERE ...`. Drizzle exposes
   // `.from()` on update builders, so we filter by both the income row id
-  // AND the parent month's user_id in one statement.
+  // AND the parent month's workspace_id in one statement.
   const updated = await tx
     .update(monthIncome)
     .set({
@@ -91,7 +91,7 @@ export async function updateIncome(
     .where(
       and(
         eq(monthIncome.monthId, month.id),
-        eq(month.userId, userId),
+        eq(month.workspaceId, workspaceId),
         eq(monthIncome.id, id),
       ),
     )
@@ -100,7 +100,7 @@ export async function updateIncome(
 }
 
 export async function deleteIncome(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<boolean> {
@@ -111,7 +111,7 @@ export async function deleteIncome(
     DELETE FROM ${monthIncome}
     WHERE ${monthIncome.id} = ${id}
       AND ${monthIncome.monthId} IN (
-        SELECT id FROM ${month} WHERE user_id = ${userId}
+        SELECT id FROM ${month} WHERE workspace_id = ${workspaceId}
       )
     RETURNING id
   `);
@@ -119,7 +119,7 @@ export async function deleteIncome(
 }
 
 export async function listIncomesForMonth(
-  userId: string,
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome[]> {
@@ -135,7 +135,7 @@ export async function listIncomesForMonth(
     })
     .from(monthIncome)
     .innerJoin(month, eq(monthIncome.monthId, month.id))
-    .where(and(eq(month.userId, userId), eq(monthIncome.monthId, monthId)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(monthIncome.monthId, monthId)))
     .orderBy(monthIncome.createdAt);
 }
 
@@ -143,7 +143,7 @@ export async function listIncomesForMonth(
 // autocomplete. Same contract as `listRecentActualNames` — newest first,
 // unique on folded name, capped — but over `month_income` only.
 export async function listRecentIncomeNames(
-  userId: string,
+  workspaceId: string,
   periods: { year: number; month: number }[],
   tx: Tx | typeof db = db,
 ): Promise<NameSuggestion[]> {
@@ -165,7 +165,7 @@ export async function listRecentIncomeNames(
       ${month.month} AS month
     FROM ${monthIncome}
     INNER JOIN ${month} ON ${month.id} = ${monthIncome.monthId}
-    WHERE ${month.userId} = ${userId}
+    WHERE ${month.workspaceId} = ${workspaceId}
       AND (${month.year}, ${month.month}) IN (${periodTuples})
     ORDER BY ${monthIncome.createdAt} DESC
     LIMIT 1000

@@ -57,6 +57,13 @@
       "when": 1794395379754,
       "tag": "0007_template_end_month",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795783620998,
+      "tag": "0008_workspaces",
+      "breakpoints": true
     }
   ]
 }

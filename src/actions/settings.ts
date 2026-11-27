@@ -5,20 +5,25 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { currencySchema } from "@/server/validators";
 import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import {
-  InvalidCurrencyError,
   InvalidThemeError,
   ProfileSettingsNotFoundError,
   getProfileSettings as serviceGet,
-  updateCurrency as serviceUpdateCurrency,
   updateTheme as serviceUpdateTheme,
 } from "@/server/services/settings";
+import {
+  InvalidWorkspaceCurrencyError,
+  setWorkspaceCurrency,
+} from "@/server/services/workspaces";
 import type { ThemePreference } from "@/server/db/schema";
 
 // ============================================================================
 // Settings server actions (UC-04, ADR-6).
 //
-// One action per mutation: `updateCurrencyAction`. Follows the same pattern
+// `updateCurrencyAction` (the active workspace's currency, UC-31 §7.3) and
+// `updateThemeAction` (per user, UC-21). Follows the same pattern
 // as `src/actions/categories.ts` (ARCH §5 rule 3):
 //   1. Zod-parse the input. Failure → `{ ok: false, error: "validation" }`.
 //   2. Resolve the tenant via `requireUserId()` (PRD §5.1, ARCH §3.2 rule 4).
@@ -39,7 +44,11 @@ import type { ThemePreference } from "@/server/db/schema";
 
 const updateSchema = z.object({ currency: currencySchema });
 
-export type SettingsActionError = "validation" | "currencyInvalid" | "notFound";
+export type SettingsActionError =
+  | "validation"
+  | "currencyInvalid"
+  | "notFound"
+  | "workspaceForbidden";
 
 export type SettingsActionResult =
   | { ok: true }
@@ -52,22 +61,21 @@ export async function updateCurrencyAction(input: {
   if (!parsed.success) {
     return { ok: false, error: "validation" };
   }
-  const userId = await requireUserId(await getLocaleFromHeaders());
+  // UC-31 §7.3: the currency belongs to the ACTIVE workspace (Admin+).
+  const access = await resolveActiveWorkspace(await getLocaleFromHeaders());
   try {
-    await serviceUpdateCurrency(userId, parsed.data.currency);
+    await setWorkspaceCurrency(access, parsed.data.currency);
   } catch (err) {
-    if (err instanceof InvalidCurrencyError) {
+    if (err instanceof InvalidWorkspaceCurrencyError) {
       return { ok: false, error: "currencyInvalid" };
     }
-    if (err instanceof ProfileSettingsNotFoundError) {
-      return { ok: false, error: "notFound" };
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
     }
     throw err;
   }
-  // Invalidate BOTH the settings page and any other surface that may have
-  // cached the old currency label (UC-06 month workspace, UC-11 summary).
-  revalidatePath("/[locale]/settings", "page");
-  revalidatePath("/[locale]", "page");
+  // Every screen that renders amounts reads the workspace currency label.
+  revalidatePath("/[locale]", "layout");
   return { ok: true };
 }
 

@@ -23,6 +23,7 @@ import {
   deactivateEndedTemplates,
   listTemplatesToClone,
 } from "@/server/repositories/template";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Months service (UC-06, PRD UC-08 / UC-14 / UC-19 / C6 / C7 / C12 / §7.8).
@@ -32,10 +33,10 @@ import {
 // (ARCH §5 rule: services own transactions).
 //
 // Domain rules:
-//   - `createMonth(userId, year, month)` runs in ONE transaction: insert the
+//   - `createMonth(access, year, month)` runs in ONE transaction: insert the
 //     `month` row, then bulk-insert one `month_fixed_line` row per ACTIVE
 //     template (kind, observations, remaining_amount = original_amount =
-//     template amount, origin = 'cloned'). The `month_user_period_uk`
+//     template amount, origin = 'cloned'). The `month_workspace_period_uk`
 //     unique index backstops the duplicate check (PRD UC-08) and surfaces
 //     as `DuplicateMonthError` if a parallel request slips through.
 //   - Incomes are NOT cloned (PRD §7.8).
@@ -51,9 +52,9 @@ import {
 //   - After creation the month is INDEPENDENT: edits to templates after the
 //     fact never rewrite the cloned lines; months never sync with each other
 //     (PRD §7.8). No rollover of unused remainings (PRD C7).
-//   - `getMonthList(userId)` returns the user's months newest first
+//   - `getMonthList(access)` returns the user's months newest first
 //     (PRD UC-14).
-//   - `getMonthWorkspace(userId, year, month)` returns the month header +
+//   - `getMonthWorkspace(access, year, month)` returns the month header +
 //     reserved lines (grouped by kind), incomes, and actuals. UC-06 ships
 //     the reserved-lines skeleton; UC-07/08/11 fill in the other blocks.
 //
@@ -95,13 +96,14 @@ export interface CreateMonthInput {
 // ----------------------------------------------------------------------------
 
 export async function createMonth(
-  userId: string,
+  access: WorkspaceAccess,
   input: CreateMonthInput,
 ): Promise<Month> {
+  const workspaceId = authorize(access, "createMonth");
   // Pre-flight duplicate check so a guaranteed-dup never even opens a
   // transaction. The unique index is the backstop, but checking first keeps
   // the error type stable and avoids wasting a tx round-trip.
-  const existing = await findMonthByPeriod(userId, input.year, input.month);
+  const existing = await findMonthByPeriod(workspaceId, input.year, input.month);
   if (existing) {
     throw new DuplicateMonthError();
   }
@@ -112,7 +114,7 @@ export async function createMonth(
   const created = await db.transaction(async (tx) => {
     const insertedMonth = await insertMonth(
       {
-        userId,
+        workspaceId,
         year: input.year,
         month: input.month,
       },
@@ -122,7 +124,7 @@ export async function createMonth(
     // Only templates whose schedule covers this month-number (PRD C23) and
     // whose last payment month, if any, is not before this month (PRD C29).
     const activeTemplates = await listTemplatesToClone(
-      userId,
+      workspaceId,
       input.year,
       input.month,
       tx,
@@ -146,7 +148,7 @@ export async function createMonth(
 
     // AFTER the clone, so the last payment month itself still gets its line:
     // loans that reached their last payment stop being copied (PRD C29).
-    await deactivateEndedTemplates(userId, input.year, input.month, tx);
+    await deactivateEndedTemplates(workspaceId, input.year, input.month, tx);
 
     return insertedMonth;
   });
@@ -170,10 +172,11 @@ export interface DeleteMonthInput {
 // are never touched. Re-creating the same period afterwards clones TODAY's
 // templates (PRD C17 still holds — it is a brand-new month).
 export async function deleteMonth(
-  userId: string,
+  access: WorkspaceAccess,
   input: DeleteMonthInput,
 ): Promise<{ year: number; month: number }> {
-  const deleted = await db.transaction((tx) => deleteMonthRow(userId, input.monthId, tx));
+  const workspaceId = authorize(access, "deleteMonth");
+  const deleted = await db.transaction((tx) => deleteMonthRow(workspaceId, input.monthId, tx));
   if (!deleted) {
     throw new MonthNotFoundError();
   }
@@ -184,27 +187,28 @@ export async function deleteMonth(
 // Reads
 // ----------------------------------------------------------------------------
 
-export async function getMonthList(userId: string): Promise<Month[]> {
-  return listMonths(userId);
+export async function getMonthList(access: WorkspaceAccess): Promise<Month[]> {
+  return listMonths(authorize(access, "read"));
 }
 
-export async function getMonthYears(userId: string): Promise<number[]> {
-  return listMonthYears(userId);
+export async function getMonthYears(access: WorkspaceAccess): Promise<number[]> {
+  return listMonthYears(authorize(access, "read"));
 }
 
 export async function getMonthsByYear(
-  userId: string,
+  access: WorkspaceAccess,
   year: number,
 ): Promise<Month[]> {
-  return listMonthsByYear(userId, year);
+  return listMonthsByYear(authorize(access, "read"), year);
 }
 
 export async function getMonthWorkspace(
-  userId: string,
+  access: WorkspaceAccess,
   year: number,
   monthValue: number,
 ): Promise<MonthWorkspace> {
-  const found = await findMonthByPeriod(userId, year, monthValue);
+  const workspaceId = authorize(access, "read");
+  const found = await findMonthByPeriod(workspaceId, year, monthValue);
   if (!found) {
     throw new MonthNotFoundError();
   }
@@ -213,9 +217,9 @@ export async function getMonthWorkspace(
   // Run them in parallel — the schema is month_id-keyed so we don't need a
   // single SQL with a JOIN.
   const [lines, incomes, actuals] = await Promise.all([
-    listMonthFixedLines(found.id),
-    listMonthIncomes(found.id),
-    listMonthActuals(found.id),
+    listMonthFixedLines(workspaceId, found.id),
+    listMonthIncomes(workspaceId, found.id),
+    listMonthActuals(workspaceId, found.id),
   ]);
 
   return { month: found, lines, incomes, actuals };

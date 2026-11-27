@@ -167,12 +167,12 @@ async function attachSessionCookie(context: BrowserContext, user: { id: string; 
 async function resetWorkspace(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month WHERE user_id = ${userId}`;
-    await sql`DELETE FROM template WHERE user_id = ${userId}`;
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
+    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM template WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
   } finally {
     await sql.end({ timeout: 1 });
   }
@@ -187,7 +187,7 @@ async function seedMonth(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO month (user_id, year, month)
+      INSERT INTO month (workspace_id, year, month)
       VALUES (${userId}, ${year}, ${month})
     `;
   } finally {
@@ -203,7 +203,7 @@ async function seedExpenseCategory(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, ${name}, 'expense', true)
     `;
   } finally {
@@ -220,11 +220,11 @@ async function seedReservedLine(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     const [category] = await sql<{ id: string }[]>`
-      SELECT id FROM category WHERE user_id = ${userId} AND active = true LIMIT 1
+      SELECT id FROM category WHERE workspace_id = ${userId} AND active = true LIMIT 1
     `;
     if (!category) throw new Error("seedReservedLine: no category seeded first");
     const [month] = await sql<{ id: string }[]>`
-      SELECT id FROM month WHERE user_id = ${userId} ORDER BY created_at LIMIT 1
+      SELECT id FROM month WHERE workspace_id = ${userId} ORDER BY created_at LIMIT 1
     `;
     if (!month) throw new Error("seedReservedLine: no month seeded first");
     await sql`
@@ -241,7 +241,7 @@ async function countActualRows(dbUrl: string, userId: string): Promise<number> {
   try {
     const rows = await sql<{ n: string }[]>`
       SELECT COUNT(*)::text AS n FROM month_actual_expense
-        WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+        WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})
     `;
     return Number.parseInt(rows[0]?.n ?? "0", 10);
   } finally {
@@ -259,7 +259,7 @@ async function loadReservedAmounts(
       SELECT month_fixed_line.id::text AS id, month_fixed_line.remaining_amount::text AS "remainingAmount"
       FROM month_fixed_line
       INNER JOIN month ON month.id = month_fixed_line.month_id
-      WHERE month.user_id = ${userId}
+      WHERE month.workspace_id = ${userId}
       ORDER BY month_fixed_line.created_at
     `;
   } finally {

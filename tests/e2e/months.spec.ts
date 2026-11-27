@@ -267,9 +267,9 @@ async function attachSessionCookie(context: BrowserContext, user: { id: string; 
 async function resetMonthState(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM template WHERE user_id = ${userId}`;
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
-    await sql`DELETE FROM month WHERE user_id = ${userId}`;
+    await sql`DELETE FROM template WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM month WHERE workspace_id = ${userId}`;
   } finally {
     await sql.end({ timeout: 1 });
   }
@@ -284,7 +284,7 @@ async function seedCategory(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, ${name}, ${kind}, true)
     `;
   } finally {
@@ -302,11 +302,11 @@ async function seedTemplate(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     const [category] = await sql<{ id: string }[]>`
-      SELECT id FROM category WHERE user_id = ${userId} AND active = true LIMIT 1
+      SELECT id FROM category WHERE workspace_id = ${userId} AND active = true LIMIT 1
     `;
     if (!category) throw new Error("seedTemplate: no category seeded first");
     await sql`
-      INSERT INTO template (user_id, category_id, name, amount, kind, active)
+      INSERT INTO template (workspace_id, category_id, name, amount, kind, active)
       VALUES (${userId}, ${category.id}, ${name}, ${amount}, ${kind}, true)
     `;
   } finally {
@@ -323,7 +323,7 @@ async function seedMonth(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO month (user_id, year, month)
+      INSERT INTO month (workspace_id, year, month)
       VALUES (${userId}, ${year}, ${month})
     `;
   } finally {

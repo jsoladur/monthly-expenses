@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { uuidSchema } from "@/server/validators";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import {
   CommittedLineCannotPassToUpcomingError,
   MonthLineNotFoundError,
@@ -34,7 +35,8 @@ export type PassToUpcomingActionError =
   | "notCurrentYear"
   | "targetMonthNotFound"
   | "targetNotUpcoming"
-  | "validation";
+  | "validation"
+  | "workspaceForbidden";
 
 export type PassToUpcomingActionResult =
   | { ok: true }
@@ -51,14 +53,17 @@ export async function passToUpcomingMonthAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   let result;
   try {
-    result = await servicePass(userId, {
+    result = await servicePass(access, {
       lineId: parsed.data.lineId,
       targetMonthId: parsed.data.targetMonthId,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof MonthLineNotFoundError) {
       return { ok: false, error: "monthLineNotFound" };
     }

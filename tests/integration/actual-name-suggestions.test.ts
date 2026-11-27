@@ -10,6 +10,8 @@ import {
 } from "@/server/services/actuals";
 import { addIncome } from "@/server/services/incomes";
 import { addMonthOnlyLine } from "@/server/services/reserved-lines";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 const reachable = await pingDatabase();
 const suite = reachable ? describe : describe.skip;
@@ -164,20 +166,16 @@ suite("UC-17 actual name suggestions", () => {
     const names = await listRecentActualNameSuggestions(userId, 2026, 8);
     expect(names.map((n) => n.name)).toEqual(["Bread"]);
     const monthCount = await db.execute<{ n: string }>(
-      sql`SELECT COUNT(*)::text AS n FROM month WHERE user_id = ${userId}`,
+      sql`SELECT COUNT(*)::text AS n FROM month WHERE workspace_id = ${userId.workspaceId}`,
     );
     expect(monthCount[0]?.n).toBe("1");
   });
 });
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

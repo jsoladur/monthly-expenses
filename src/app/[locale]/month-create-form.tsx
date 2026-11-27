@@ -15,12 +15,16 @@ interface MonthCreateFormProps {
     validationRequired: string;
     validationMonth: string;
     validationYear: string;
+    forbidden: string;
   };
   monthNames: string[];
   existingMonths: Array<{ year: number; month: number }>;
 }
 
-type FormState = { ok: true } | { ok: false; error: "duplicate" | "validation" } | null;
+type FormState =
+  | { ok: true }
+  | { ok: false; error: "duplicate" | "validation" | "workspaceForbidden" }
+  | null;
 
 export function MonthCreateForm({ labels, monthNames, existingMonths }: MonthCreateFormProps) {
   const router = useRouter();
@@ -104,7 +108,9 @@ export function MonthCreateForm({ labels, monthNames, existingMonths }: MonthCre
         >
           {state.error === "duplicate"
             ? labels.duplicate
-            : state.error === "validation"
+            : state.error === "workspaceForbidden"
+              ? labels.forbidden
+              : state.error === "validation"
               ? `${labels.validationRequired} ${labels.validationMonth} / ${labels.validationYear}`
               : labels.validationRequired}
         </p>

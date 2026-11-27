@@ -128,12 +128,12 @@ async function attachSessionCookie(context: BrowserContext, user: { id: string; 
 async function resetWorkspace(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month WHERE user_id = ${userId}`;
-    await sql`DELETE FROM template WHERE user_id = ${userId}`;
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
+    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM template WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
   } finally {
     await sql.end({ timeout: 1 });
   }
@@ -148,7 +148,7 @@ async function seedMonth(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO month (user_id, year, month)
+      INSERT INTO month (workspace_id, year, month)
       VALUES (${userId}, ${year}, ${month})
     `;
   } finally {
@@ -164,7 +164,7 @@ async function seedIncomeCategory(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, ${name}, 'income', true)
     `;
   } finally {
@@ -177,7 +177,7 @@ async function countIncomeRows(dbUrl: string, userId: string): Promise<number> {
   try {
     const rows = await sql<{ n: string }[]>`
       SELECT COUNT(*)::text AS n FROM month_income
-        WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+        WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})
     `;
     return Number.parseInt(rows[0]?.n ?? "0", 10);
   } finally {

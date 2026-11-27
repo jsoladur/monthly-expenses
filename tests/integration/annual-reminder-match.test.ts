@@ -6,6 +6,8 @@ import { createAnnual, getAnnualReminders } from "@/server/services/annuals";
 import { createMonth, MonthNotFoundError } from "@/server/services/months";
 import { addActual, deleteActual } from "@/server/services/actuals";
 import { addMonthOnlyLine, deleteMonthLine } from "@/server/services/reserved-lines";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-28 annual reminder "already added" state (proposed PRD §15 #62–#65).
@@ -190,12 +192,8 @@ async function truncateAllTenantTables(): Promise<void> {
   await db.execute(sql`TRUNCATE TABLE app_user CASCADE`);
 }
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }

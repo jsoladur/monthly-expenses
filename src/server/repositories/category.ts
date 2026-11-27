@@ -12,11 +12,11 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 // Category repository (UC-03, PRD §6.2, ARCH §4).
 //
-// Soft-delete-only catalog. Every function takes `userId` as its FIRST
+// Soft-delete-only catalog. Every function takes `workspaceId` as its FIRST
 // argument and applies it in every `WHERE` (PRD §5.1, ARCH §5 rule 1).
 //
 // The schema enforces the partial unique index
-// `category_active_name_uk ON (user_id, kind, name) WHERE active` so the
+// `category_active_name_uk ON (workspace_id, kind, name) WHERE active` so the
 // repository never has to check uniqueness itself — the service layer
 // catches Postgres 23505 and translates it to `DuplicateCategoryNameError`.
 //
@@ -26,15 +26,15 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 
 export async function listCategories(
-  userId: string,
+  workspaceId: string,
   kind: CategoryKind,
   { includeInactive }: { includeInactive?: boolean } = {},
   tx: Tx | typeof db = db,
 ): Promise<Category[]> {
   const where = includeInactive
-    ? and(eq(category.userId, userId), eq(category.kind, kind))
+    ? and(eq(category.workspaceId, workspaceId), eq(category.kind, kind))
     : and(
-        eq(category.userId, userId),
+        eq(category.workspaceId, workspaceId),
         eq(category.kind, kind),
         eq(category.active, true),
       );
@@ -46,22 +46,22 @@ export async function listCategories(
 }
 
 export async function listActiveCategories(
-  userId: string,
+  workspaceId: string,
   kind: CategoryKind,
   tx: Tx | typeof db = db,
 ): Promise<Category[]> {
-  return listCategories(userId, kind, { includeInactive: false }, tx);
+  return listCategories(workspaceId, kind, { includeInactive: false }, tx);
 }
 
 export async function findCategoryById(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Category | null> {
   const rows = await tx
     .select()
     .from(category)
-    .where(and(eq(category.userId, userId), eq(category.id, id)))
+    .where(and(eq(category.workspaceId, workspaceId), eq(category.id, id)))
     .limit(1);
   return rows[0] ?? null;
 }
@@ -78,7 +78,7 @@ export async function insertCategory(
 }
 
 export async function updateCategoryName(
-  userId: string,
+  workspaceId: string,
   id: string,
   name: string,
   tx: Tx | typeof db = db,
@@ -86,13 +86,13 @@ export async function updateCategoryName(
   const [updated] = await tx
     .update(category)
     .set({ name, updatedAt: sql`now()` })
-    .where(and(eq(category.userId, userId), eq(category.id, id)))
+    .where(and(eq(category.workspaceId, workspaceId), eq(category.id, id)))
     .returning();
   return updated ?? null;
 }
 
 export async function updateCategorySavings(
-  userId: string,
+  workspaceId: string,
   id: string,
   countsAsSavings: boolean,
   tx: Tx | typeof db = db,
@@ -100,13 +100,13 @@ export async function updateCategorySavings(
   const [updated] = await tx
     .update(category)
     .set({ countsAsSavings, updatedAt: sql`now()` })
-    .where(and(eq(category.userId, userId), eq(category.id, id)))
+    .where(and(eq(category.workspaceId, workspaceId), eq(category.id, id)))
     .returning();
   return updated ?? null;
 }
 
 export async function deactivateCategory(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Category | null> {
@@ -118,7 +118,7 @@ export async function deactivateCategory(
     .set({ active: false, deletedAt: sql`now()`, updatedAt: sql`now()` })
     .where(
       and(
-        eq(category.userId, userId),
+        eq(category.workspaceId, workspaceId),
         eq(category.id, id),
         eq(category.active, true),
       ),
@@ -128,7 +128,7 @@ export async function deactivateCategory(
 }
 
 export async function reactivateCategory(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Category | null> {
@@ -137,7 +137,7 @@ export async function reactivateCategory(
     .set({ active: true, deletedAt: null, updatedAt: sql`now()` })
     .where(
       and(
-        eq(category.userId, userId),
+        eq(category.workspaceId, workspaceId),
         eq(category.id, id),
         eq(category.active, false),
       ),

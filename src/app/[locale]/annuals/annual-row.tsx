@@ -17,10 +17,12 @@ export function AnnualRow({
   annual,
   currency,
   expenseCategories,
+  canManage = true,
 }: {
   annual: AnnualRowData;
   currency: string;
   expenseCategories: CategoryOption[];
+  canManage?: boolean;
 }) {
   const t = useTranslations("annuals");
   const tv = useTranslations("validation");
@@ -219,16 +221,18 @@ export function AnnualRow({
           {t("inactive")}
         </span>
       )}
-      <IconButton
-        icon={<Pencil className="size-4" />}
-        label={t("actions.edit")}
-        disabled={pending}
-        onClick={() => {
-          setIsEditing(true);
-          setError(null);
-        }}
-      />
-      {annual.active ? (
+      {canManage && (
+        <IconButton
+          icon={<Pencil className="size-4" />}
+          label={t("actions.edit")}
+          disabled={pending}
+          onClick={() => {
+            setIsEditing(true);
+            setError(null);
+          }}
+        />
+      )}
+      {!canManage ? null : annual.active ? (
         <IconButton
           icon={<CircleOff className="size-4" />}
           label={t("actions.deactivate")}
@@ -260,7 +264,8 @@ function mapError(
     | "alreadyInactive"
     | "alreadyActive"
     | "invalidChargeMonth"
-    | "validation",
+    | "validation"
+    | "workspaceForbidden",
   tv: ReturnType<typeof useTranslations<"validation">>,
 ): string {
   switch (error) {
@@ -277,6 +282,8 @@ function mapError(
     case "alreadyInactive":
     case "alreadyActive":
       return "";
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 

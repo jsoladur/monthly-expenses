@@ -19,7 +19,7 @@ export type SearchActualRow = {
 };
 
 export async function searchActualsByText(
-  userId: string,
+  workspaceId: string,
   sanitizedTerm: string,
   tx: Tx | typeof db = db,
 ): Promise<SearchActualRow[]> {
@@ -46,7 +46,7 @@ export async function searchActualsByText(
     .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
     .where(
       and(
-        eq(month.userId, userId),
+        eq(month.workspaceId, workspaceId),
         or(
           sql`${foldedName} LIKE ${pattern} ESCAPE ${escapeChar}`,
           sql`${foldedObs} LIKE ${pattern} ESCAPE ${escapeChar}`,

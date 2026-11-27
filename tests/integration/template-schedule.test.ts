@@ -15,6 +15,8 @@ import {
 import { createMonth } from "@/server/services/months";
 import { addActual } from "@/server/services/actuals";
 import { getOverspendWarnings } from "@/server/services/summary";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-20 fixed expense hard delete & month schedule — integration
@@ -257,14 +259,10 @@ suite("UC-20 fixed expense delete & month schedule", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function lineNames(monthId: string): Promise<string[]> {

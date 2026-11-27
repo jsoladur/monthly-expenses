@@ -38,9 +38,11 @@ import type { CategoryRowData } from "./categories-screen";
 export function CategoryRow({
   category,
   kind,
+  canManage = true,
 }: {
   category: CategoryRowData;
   kind: "expense" | "income";
+  canManage?: boolean;
 }) {
   const t = useTranslations("categories");
   const tv = useTranslations("validation");
@@ -150,7 +152,13 @@ export function CategoryRow({
           {t("expense.inactive")}
         </span>
       )}
-      {kind === "expense" && (
+      {kind === "expense" && !canManage && category.countsAsSavings && (
+        <span className="border-success/40 bg-success/15 text-success-foreground inline-flex h-8 items-center gap-1 rounded-full border px-2 text-xs font-medium">
+          <PiggyBank className="size-4" aria-hidden />
+          <span>{t("savings.badge")}</span>
+        </span>
+      )}
+      {kind === "expense" && canManage && (
         <HoverTooltip
           label={t(category.countsAsSavings ? "savings.unmark" : "savings.mark")}
         >
@@ -175,13 +183,15 @@ export function CategoryRow({
           </button>
         </HoverTooltip>
       )}
-      <IconButton
-        icon={<Pencil className="size-4" />}
-        label={t("actions.edit")}
-        disabled={pending}
-        onClick={() => setIsEditing(true)}
-      />
-      {category.active ? (
+      {canManage && (
+        <IconButton
+          icon={<Pencil className="size-4" />}
+          label={t("actions.edit")}
+          disabled={pending}
+          onClick={() => setIsEditing(true)}
+        />
+      )}
+      {!canManage ? null : category.active ? (
         <IconButton
           icon={<CircleOff className="size-4" />}
           label={t("actions.deactivate")}
@@ -223,5 +233,7 @@ function mapError(
       // UI already enforces this; if we hit it, the row state changed
       // between render and click. The next revalidate drops the stale row.
       return "";
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }

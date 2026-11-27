@@ -1,11 +1,11 @@
 import { redirect } from "@/i18n/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { auth, signOut } from "@/auth";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { isAppLocale } from "@/i18n/format";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
-import { getProfileSettings } from "@/server/services/settings";
+import { getWorkspaceCurrency } from "@/server/services/workspaces";
 import { searchActuals } from "@/server/services/search";
 import { SearchScreen } from "@/app/[locale]/search/search-screen";
 
@@ -22,15 +22,15 @@ export default async function SearchPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const sp = await searchParams;
   const rawQuery = firstString(sp.q);
   const [result, settings, session] = await Promise.all([
-    searchActuals(userId, rawQuery),
-    getProfileSettings(userId),
+    searchActuals(access, rawQuery),
+    getWorkspaceCurrency(access),
     auth(),
   ]);
-  const currency = settings?.currency ?? "EUR";
+  const currency = settings;
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
   const avatarUrl = session?.user?.image ?? null;

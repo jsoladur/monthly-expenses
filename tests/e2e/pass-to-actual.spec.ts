@@ -169,12 +169,12 @@ async function attachSessionCookie(context: BrowserContext, user: { id: string; 
 async function resetWorkspace(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month WHERE user_id = ${userId}`;
-    await sql`DELETE FROM template WHERE user_id = ${userId}`;
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
+    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM template WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
   } finally {
     await sql.end({ timeout: 1 });
   }
@@ -202,7 +202,7 @@ async function seedExpenseCategory(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, ${name}, 'expense', true)
     `;
   } finally {
@@ -220,11 +220,11 @@ async function seedTemplate(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     const [category] = await sql<{ id: string }[]>`
-      SELECT id FROM category WHERE user_id = ${userId} AND active = true LIMIT 1
+      SELECT id FROM category WHERE workspace_id = ${userId} AND active = true LIMIT 1
     `;
     if (!category) throw new Error("seedTemplate: no expense category seeded first");
     await sql`
-      INSERT INTO template (user_id, category_id, name, amount, kind, active)
+      INSERT INTO template (workspace_id, category_id, name, amount, kind, active)
       VALUES (${userId}, ${category.id}, ${name}, ${amount}, ${kind}, true)
     `;
   } finally {
@@ -237,7 +237,7 @@ async function countFixedLineRows(dbUrl: string, userId: string): Promise<number
   try {
     const rows = await sql<{ n: string }[]>`
       SELECT COUNT(*)::text AS n FROM month_fixed_line
-        WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+        WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})
     `;
     return Number.parseInt(rows[0]?.n ?? "0", 10);
   } finally {
@@ -250,7 +250,7 @@ async function countActualRows(dbUrl: string, userId: string): Promise<number> {
   try {
     const rows = await sql<{ n: string }[]>`
       SELECT COUNT(*)::text AS n FROM month_actual_expense
-        WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+        WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})
     `;
     return Number.parseInt(rows[0]?.n ?? "0", 10);
   } finally {

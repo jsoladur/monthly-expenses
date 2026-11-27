@@ -12,6 +12,7 @@ import {
   updateCategorySavings as repoUpdateSavings,
 } from "@/server/repositories/category";
 import type { Tx } from "@/server/repositories/user";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Categories service (UC-03, PRD §6.2 / §13, ARCH §5 rule 3).
@@ -111,19 +112,21 @@ function isCategoryActiveNameUniqueViolation(err: unknown): boolean {
 // ----------------------------------------------------------------------------
 
 export async function listCategoriesForManagement(
-  userId: string,
+  access: WorkspaceAccess,
   kind: CategoryKind,
   tx: Tx | typeof db = db,
 ): Promise<Category[]> {
-  return listCategories(userId, kind, { includeInactive: true }, tx);
+  const workspaceId = authorize(access, "read");
+  return listCategories(workspaceId, kind, { includeInactive: true }, tx);
 }
 
 export async function listActiveCategoriesForPicker(
-  userId: string,
+  access: WorkspaceAccess,
   kind: CategoryKind,
   tx: Tx | typeof db = db,
 ): Promise<Category[]> {
-  return listActiveCategories(userId, kind, tx);
+  const workspaceId = authorize(access, "read");
+  return listActiveCategories(workspaceId, kind, tx);
 }
 
 // ----------------------------------------------------------------------------
@@ -131,17 +134,18 @@ export async function listActiveCategoriesForPicker(
 // ----------------------------------------------------------------------------
 
 export async function createCategory(
-  userId: string,
+  access: WorkspaceAccess,
   input: { kind: CategoryKind; name: string; countsAsSavings?: boolean },
   tx: Tx | typeof db = db,
 ): Promise<Category> {
+  const workspaceId = authorize(access, "createCategory");
   const countsAsSavings = input.countsAsSavings ?? false;
   if (countsAsSavings && input.kind !== "expense") {
     throw new SavingsOnIncomeCategoryError();
   }
   try {
     return await insertCategory(
-      { userId, kind: input.kind, name: input.name, countsAsSavings, active: true },
+      { workspaceId, kind: input.kind, name: input.name, countsAsSavings, active: true },
       tx,
     );
   } catch (err) {
@@ -153,11 +157,12 @@ export async function createCategory(
 }
 
 export async function renameCategory(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string; name: string },
   tx: Tx | typeof db = db,
 ): Promise<Category> {
-  const existing = await findCategoryById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageCategories");
+  const existing = await findCategoryById(workspaceId, input.id, tx);
   if (!existing) {
     throw new CategoryNotFoundError();
   }
@@ -168,7 +173,7 @@ export async function renameCategory(
     return existing;
   }
   try {
-    const updated = await repoRename(userId, input.id, input.name, tx);
+    const updated = await repoRename(workspaceId, input.id, input.name, tx);
     if (!updated) {
       throw new CategoryNotFoundError();
     }
@@ -184,11 +189,12 @@ export async function renameCategory(
 // Savings flag (PRD C24, UC-24). Catalog metadata: flipping it reclassifies
 // every month on the next read and never rewrites a money row.
 export async function setCategorySavings(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string; countsAsSavings: boolean },
   tx: Tx | typeof db = db,
 ): Promise<Category> {
-  const existing = await findCategoryById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageCategories");
+  const existing = await findCategoryById(workspaceId, input.id, tx);
   if (!existing) {
     throw new CategoryNotFoundError();
   }
@@ -198,7 +204,7 @@ export async function setCategorySavings(
   if (existing.countsAsSavings === input.countsAsSavings) {
     return existing;
   }
-  const updated = await repoUpdateSavings(userId, input.id, input.countsAsSavings, tx);
+  const updated = await repoUpdateSavings(workspaceId, input.id, input.countsAsSavings, tx);
   if (!updated) {
     throw new CategoryNotFoundError();
   }
@@ -206,18 +212,19 @@ export async function setCategorySavings(
 }
 
 export async function deactivateCategory(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Category> {
-  const existing = await findCategoryById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageCategories");
+  const existing = await findCategoryById(workspaceId, input.id, tx);
   if (!existing) {
     throw new CategoryNotFoundError();
   }
   if (!existing.active) {
     throw new CategoryAlreadyInactiveError();
   }
-  const updated = await repoDeactivate(userId, input.id, tx);
+  const updated = await repoDeactivate(workspaceId, input.id, tx);
   if (!updated) {
     // The repo's WHERE clause also requires `active = true`; if the row was
     // raced by another request, treat as already-inactive.
@@ -227,11 +234,12 @@ export async function deactivateCategory(
 }
 
 export async function reactivateCategory(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Category> {
-  const existing = await findCategoryById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageCategories");
+  const existing = await findCategoryById(workspaceId, input.id, tx);
   if (!existing) {
     throw new CategoryNotFoundError();
   }
@@ -239,7 +247,7 @@ export async function reactivateCategory(
     throw new CategoryAlreadyActiveError();
   }
   try {
-    const updated = await repoReactivate(userId, input.id, tx);
+    const updated = await repoReactivate(workspaceId, input.id, tx);
     if (!updated) {
       throw new CategoryAlreadyActiveError();
     }

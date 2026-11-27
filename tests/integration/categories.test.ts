@@ -14,6 +14,8 @@ import {
   reactivateCategory,
   renameCategory,
 } from "@/server/services/categories";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-03 categories — integration (PRD §15 #16 + the picker half of #11).
@@ -64,7 +66,7 @@ suite("UC-03 categories", () => {
       name: "Groceries",
     });
 
-    expect(created.userId).toBe(userId);
+    expect(created.workspaceId).toBe(userId.workspaceId);
     expect(created.kind).toBe("expense");
     expect(created.name).toBe("Groceries");
     expect(created.active).toBe(true);
@@ -208,9 +210,9 @@ suite("UC-03 categories", () => {
     expect(bobIncome).toHaveLength(1);
     expect(aliceIncome).toHaveLength(0);
     // Tenant ids must never appear in the other tenant's results.
-    expect(aliceExpense[0]!.userId).toBe(alice);
-    expect(bobExpense[0]!.userId).toBe(bob);
-    expect(bobIncome[0]!.userId).toBe(bob);
+    expect(aliceExpense[0]!.workspaceId).toBe(alice.workspaceId);
+    expect(bobExpense[0]!.workspaceId).toBe(bob.workspaceId);
+    expect(bobIncome[0]!.workspaceId).toBe(bob.workspaceId);
   });
 
   it("soft-deleted rows are hidden from pickers but keep their id+name for historical month rows (PRD §6.2)", async () => {
@@ -251,21 +253,17 @@ suite("UC-03 categories", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function firstIdFor(userId: string, name: string): Promise<string | null> {
+async function firstIdFor(userId: WorkspaceAccess, name: string): Promise<string | null> {
   const rows = await db
     .select({ id: category.id })
     .from(category)
-    .where(sql`user_id = ${userId} AND name = ${name} AND active = true`);
+    .where(sql`workspace_id = ${userId.workspaceId} AND name = ${name} AND active = true`);
   return rows[0]?.id ?? null;
 }
 

@@ -8,6 +8,8 @@ import { addActual, deleteActual } from "@/server/services/actuals";
 import { addMonthOnlyLine } from "@/server/services/reserved-lines";
 import { getGlobalStatsPage } from "@/server/services/global-stats";
 import { loadGlobalStatsAggregates } from "@/server/repositories/global-stats";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 const reachable = await pingDatabase();
 const suite = reachable ? describe : describe.skip;
@@ -51,7 +53,7 @@ suite("UC-15 global stats integration", () => {
     expect(bobPage.meta.empty).toBe(true);
     expect(bobPage.overview).toBeNull();
 
-    const bobAgg = await loadGlobalStatsAggregates(bob);
+    const bobAgg = await loadGlobalStatsAggregates(bob.workspaceId);
     expect(bobAgg.presence).toEqual([]);
     expect(bobAgg.incomeByMonth).toEqual([]);
     expect(bobAgg.spendByMonth).toEqual([]);
@@ -123,12 +125,10 @@ suite("UC-15 global stats integration", () => {
   });
 });
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) throw new Error("seedUser returned no id");
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

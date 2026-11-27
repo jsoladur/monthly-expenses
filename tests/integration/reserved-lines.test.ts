@@ -18,6 +18,8 @@ import {
   MonthNotFoundError,
   updateRemainingAmount,
 } from "@/server/services/reserved-lines";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-09 reserved lines (remaining, month-only) — integration
@@ -399,7 +401,7 @@ suite("UC-09 reserved lines (remaining, month-only)", () => {
     // amount, not the edited 350.00 — proves the edit lived on the
     // month-instance clone only (PRD §6.6 / §7.8).
     const { findTemplateById } = await import("@/server/repositories/template");
-    const reloaded = await findTemplateById(userId, template.id);
+    const reloaded = await findTemplateById(userId.workspaceId, template.id);
     expect(reloaded!.amount).toBe("400.00");
   });
 
@@ -529,17 +531,13 @@ suite("UC-09 reserved lines (remaining, month-only)", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function getMonthWorkspace(userId: string, year: number, month: number) {
+async function getMonthWorkspace(userId: WorkspaceAccess, year: number, month: number) {
   const { getMonthWorkspace: service } = await import("@/server/services/months");
   return service(userId, year, month);
 }

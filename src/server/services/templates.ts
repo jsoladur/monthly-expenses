@@ -31,6 +31,7 @@ export {
   InvalidEndMonthError,
   normalizeEndMonth,
 } from "@/lib/template-end";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Templates service (UC-05, PRD §6.3 / §7.4 / §13, ARCH §5 rule 3).
@@ -109,29 +110,32 @@ export class TemplateAlreadyActiveError extends Error {
 // ----------------------------------------------------------------------------
 
 export async function listTemplatesForManagement(
-  userId: string,
+  access: WorkspaceAccess,
   kind: LineKind | undefined,
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
+  const workspaceId = authorize(access, "read");
   if (kind) {
-    return listTemplatesByKind(userId, kind, { includeInactive: true }, tx);
+    return listTemplatesByKind(workspaceId, kind, { includeInactive: true }, tx);
   }
-  return listTemplates(userId, { includeInactive: true }, tx);
+  return listTemplates(workspaceId, { includeInactive: true }, tx);
 }
 
 export async function listActiveTemplates(
-  userId: string,
+  access: WorkspaceAccess,
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
-  return listActiveTemplatesFromRepo(userId, tx);
+  const workspaceId = authorize(access, "read");
+  return listActiveTemplatesFromRepo(workspaceId, tx);
 }
 
 export async function listActiveTemplatesByKind(
-  userId: string,
+  access: WorkspaceAccess,
   kind: LineKind,
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
-  return listActiveTemplatesByKindFromRepo(userId, kind, tx);
+  const workspaceId = authorize(access, "read");
+  return listActiveTemplatesByKindFromRepo(workspaceId, kind, tx);
 }
 
 // ----------------------------------------------------------------------------
@@ -149,14 +153,15 @@ export interface TemplateInput {
 }
 
 export async function createTemplate(
-  userId: string,
+  access: WorkspaceAccess,
   input: TemplateInput,
   tx: Tx | typeof db = db,
 ): Promise<Template> {
+  const workspaceId = authorize(access, "manageTemplates");
   const amount = parseAmountOrThrow(input.amount);
   const months = normalizeMonths(input.months);
   const end = normalizeEndMonth(input.kind, input.endMonth);
-  const category = await findCategoryById(userId, input.categoryId, tx);
+  const category = await findCategoryById(workspaceId, input.categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }
@@ -169,7 +174,7 @@ export async function createTemplate(
 
   return insertTemplate(
     {
-      userId,
+      workspaceId,
       categoryId: input.categoryId,
       name: input.name,
       observations: input.observations ?? null,
@@ -185,18 +190,19 @@ export async function createTemplate(
 }
 
 export async function updateTemplate(
-  userId: string,
+  access: WorkspaceAccess,
   input: TemplateInput & { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Template> {
+  const workspaceId = authorize(access, "manageTemplates");
   const amount = parseAmountOrThrow(input.amount);
   const months = normalizeMonths(input.months);
   const end = normalizeEndMonth(input.kind, input.endMonth);
-  const existing = await findTemplateById(userId, input.id, tx);
+  const existing = await findTemplateById(workspaceId, input.id, tx);
   if (!existing) {
     throw new TemplateNotFoundError();
   }
-  const category = await findCategoryById(userId, input.categoryId, tx);
+  const category = await findCategoryById(workspaceId, input.categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }
@@ -208,7 +214,7 @@ export async function updateTemplate(
   }
 
   const updated = await repoUpdate(
-    userId,
+    workspaceId,
     input.id,
     {
       categoryId: input.categoryId,
@@ -223,7 +229,7 @@ export async function updateTemplate(
     tx,
   );
   if (!updated) {
-    // The repo WHERE clause also filters by userId+id; if a concurrent
+    // The repo WHERE clause also filters by workspaceId+id; if a concurrent
     // request deleted the row, surface as not-found.
     throw new TemplateNotFoundError();
   }
@@ -231,18 +237,19 @@ export async function updateTemplate(
 }
 
 export async function deactivateTemplate(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Template> {
-  const existing = await findTemplateById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageTemplates");
+  const existing = await findTemplateById(workspaceId, input.id, tx);
   if (!existing) {
     throw new TemplateNotFoundError();
   }
   if (!existing.active) {
     throw new TemplateAlreadyInactiveError();
   }
-  const updated = await repoDeactivate(userId, input.id, tx);
+  const updated = await repoDeactivate(workspaceId, input.id, tx);
   if (!updated) {
     throw new TemplateAlreadyInactiveError();
   }
@@ -250,18 +257,19 @@ export async function deactivateTemplate(
 }
 
 export async function reactivateTemplate(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Template> {
-  const existing = await findTemplateById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageTemplates");
+  const existing = await findTemplateById(workspaceId, input.id, tx);
   if (!existing) {
     throw new TemplateNotFoundError();
   }
   if (existing.active) {
     throw new TemplateAlreadyActiveError();
   }
-  const updated = await repoReactivate(userId, input.id, tx);
+  const updated = await repoReactivate(workspaceId, input.id, tx);
   if (!updated) {
     throw new TemplateAlreadyActiveError();
   }
@@ -269,11 +277,12 @@ export async function reactivateTemplate(
 }
 
 export async function deleteTemplate(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Template> {
-  const deleted = await repoDelete(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageTemplates");
+  const deleted = await repoDelete(workspaceId, input.id, tx);
   if (!deleted) {
     throw new TemplateNotFoundError();
   }

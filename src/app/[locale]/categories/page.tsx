@@ -1,7 +1,8 @@
 import { redirect } from "@/i18n/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { roleAllows } from "@/lib/workspace-roles";
 import {
   listCategoriesForManagement,
 } from "@/server/services/categories";
@@ -21,10 +22,10 @@ export default async function CategoriesPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const [expenseCategories, incomeCategories, t, session] = await Promise.all([
-    listCategoriesForManagement(userId, "expense"),
-    listCategoriesForManagement(userId, "income"),
+    listCategoriesForManagement(access, "expense"),
+    listCategoriesForManagement(access, "income"),
     getTranslations({ locale, namespace: "categories" }),
     auth(),
   ]);
@@ -46,6 +47,8 @@ export default async function CategoriesPage({
           locale={locale}
           initialExpense={expenseCategories.map(serializeCategory)}
           initialIncome={incomeCategories.map(serializeCategory)}
+          canCreate={roleAllows(access.role, "createCategory")}
+          canManage={roleAllows(access.role, "manageCategories")}
         />
       </div>
     </AppShell>

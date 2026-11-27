@@ -12,15 +12,15 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 // Month reserved-lines repository (UC-09, PRD §6.6 / §7.3 / §7.8, ARCH §4 / §5).
 //
-// `month_fixed_line` has no direct `user_id` column — tenancy flows through
+// `month_fixed_line` has no direct `workspace_id` column — tenancy flows through
 // the `month` parent (FK `month_fixed_line.month_id → month.id`). Every
 // function here either:
 //   (a) takes the resolved `monthId` (which the caller has already verified
 //       belongs to the tenant), OR
-//   (b) joins on `month` to filter by `month.user_id = userId` directly.
+//   (b) joins on `month` to filter by `month.workspace_id = workspaceId` directly.
 //
 // We never run a `WHERE id = ?` or `WHERE month_id = ?` without the join —
-// that would be the canonical "missing user_id filter is a P0 bug" mistake
+// that would be the canonical "missing workspace_id filter is a P0 bug" mistake
 // (PRD §5.1, ARCH §5 rule 1).
 //
 // Money columns live as `numeric(14,2)` strings end-to-end (ADR-5, ARCH §8)
@@ -43,7 +43,7 @@ export async function insertMonthLine(
 }
 
 export async function findMonthLineById(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthFixedLine | null> {
@@ -65,20 +65,20 @@ export async function findMonthLineById(
     })
     .from(monthFixedLine)
     .innerJoin(month, eq(monthFixedLine.monthId, month.id))
-    .where(and(eq(month.userId, userId), eq(monthFixedLine.id, id)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(monthFixedLine.id, id)))
     .limit(1);
   return rows[0] ?? null;
 }
 
 export async function updateMonthLineRemaining(
-  userId: string,
+  workspaceId: string,
   id: string,
   remainingAmount: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthFixedLine | null> {
   // PG supports `UPDATE ... FROM other_table WHERE ...`. Drizzle exposes
   // `.from()` on update builders, so we filter by both the line row id AND
-  // the parent month's user_id in one statement.
+  // the parent month's workspace_id in one statement.
   //
   // Only `remaining_amount` is patched — `original_amount`, `kind`, `origin`,
   // `category_id`, `name` and `observations` are immutable for the life of
@@ -94,7 +94,7 @@ export async function updateMonthLineRemaining(
     .where(
       and(
         eq(monthFixedLine.monthId, month.id),
-        eq(month.userId, userId),
+        eq(month.workspaceId, workspaceId),
         eq(monthFixedLine.id, id),
       ),
     )
@@ -103,7 +103,7 @@ export async function updateMonthLineRemaining(
 }
 
 export async function deleteMonthLine(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<boolean> {
@@ -114,7 +114,7 @@ export async function deleteMonthLine(
     DELETE FROM ${monthFixedLine}
     WHERE ${monthFixedLine.id} = ${id}
       AND ${monthFixedLine.monthId} IN (
-        SELECT id FROM ${month} WHERE user_id = ${userId}
+        SELECT id FROM ${month} WHERE workspace_id = ${workspaceId}
       )
     RETURNING id
   `);

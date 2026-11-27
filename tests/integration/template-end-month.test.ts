@@ -15,6 +15,8 @@ import {
 import { DuplicateMonthError, createMonth } from "@/server/services/months";
 import { addActual } from "@/server/services/actuals";
 import { getOverspendWarnings } from "@/server/services/summary";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-29 last payment month for committed fixed expenses — integration
@@ -326,17 +328,13 @@ suite("UC-29 last payment month", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function seedLoan(userId: string) {
+async function seedLoan(userId: WorkspaceAccess) {
   const cat = await createCategory(userId, { kind: "expense", name: "Loans" });
   return createTemplate(userId, {
     categoryId: cat.id,

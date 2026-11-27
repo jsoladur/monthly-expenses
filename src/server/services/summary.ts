@@ -16,6 +16,7 @@ import { findMonthById } from "@/server/repositories/month";
 import { listPlanTemplatesForMonth } from "@/server/repositories/template";
 import { MonthNotFoundError } from "@/server/services/months";
 import { parseAmount, sumCents } from "@/server/money";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Summary service (UC-11, PRD §7.1 / §7.4 / §7.7 / UC-13, ARCH §8 / §5).
@@ -74,10 +75,11 @@ export interface MonthSummary {
 }
 
 export async function getMonthSummary(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
 ): Promise<MonthSummary> {
-  const owned = await findMonthById(userId, monthId);
+  const workspaceId = authorize(access, "read");
+  const owned = await findMonthById(workspaceId, monthId);
   if (!owned) {
     throw new MonthNotFoundError();
   }
@@ -155,10 +157,11 @@ export interface OverspendWarning {
 }
 
 export async function getOverspendWarnings(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
 ): Promise<OverspendWarning[]> {
-  const owned = await findMonthById(userId, monthId);
+  const workspaceId = authorize(access, "read");
+  const owned = await findMonthById(workspaceId, monthId);
   if (!owned) {
     throw new MonthNotFoundError();
   }
@@ -190,7 +193,7 @@ export async function getOverspendWarnings(
   // RIGHT side: per-category templates (committed + estimated) that apply to
   // this month — schedule (PRD C23) and last payment month (PRD C29).
   const activeTemplates = await listPlanTemplatesForMonth(
-    userId,
+    workspaceId,
     owned.year,
     owned.month,
   );

@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { nonEmptyStringSchema, uuidSchema, monthSchema, amountSchema } from "@/server/validators";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import {
   InactiveCategoryError,
@@ -25,8 +26,9 @@ import {
 // One action per mutation. Every action:
 //   1. Parses the input with Zod (rejects anything else with
 //      `{ ok: false, error: "validation" }`).
-//   2. Resolves the tenant via `requireUserId()` — the canonical tenancy
-//      check (PRD §5.1, ARCH §3.2 rule 4). The locale is read from the
+//   2. Resolves the active workspace via `resolveActiveWorkspace()` — session
+//      (`requireUserId()`) + membership check (UC-31 §4.9, ARCH §3.2 rule 6);
+//      the service applies the role matrix (`workspaceForbidden`). The locale is read from the
 //      `x-next-intl-locale` header the middleware sets, so unauthenticated
 //      callers land on a locale-prefixed sign-in URL.
 //   3. Calls the service. Domain errors are translated into stable i18n keys
@@ -67,7 +69,8 @@ export type AnnualActionError =
   | "alreadyInactive"
   | "alreadyActive"
   | "invalidChargeMonth"
-  | "validation";
+  | "validation"
+  | "workspaceForbidden";
 
 export type AnnualActionResult =
   | { ok: true }
@@ -85,9 +88,9 @@ export async function createAnnualAction(input: {
   if (!parsed.success) {
     return { ok: false, error: "validation" };
   }
-  const userId = await requireUserId(await getLocaleFromHeaders());
+  const access = await resolveActiveWorkspace(await getLocaleFromHeaders());
   try {
-    await serviceCreate(userId, {
+    await serviceCreate(access, {
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
       observations: parsed.data.observations ?? null,
@@ -96,6 +99,9 @@ export async function createAnnualAction(input: {
       isDirectDebit: parsed.data.isDirectDebit,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof IncomeCategoryError) {
       return { ok: false, error: "incomeCategory" };
     }
@@ -127,9 +133,9 @@ export async function updateAnnualAction(input: {
   if (!parsed.success) {
     return { ok: false, error: "validation" };
   }
-  const userId = await requireUserId(await getLocaleFromHeaders());
+  const access = await resolveActiveWorkspace(await getLocaleFromHeaders());
   try {
-    await serviceUpdate(userId, {
+    await serviceUpdate(access, {
       id: parsed.data.id,
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
@@ -139,6 +145,9 @@ export async function updateAnnualAction(input: {
       isDirectDebit: parsed.data.isDirectDebit,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof IncomeCategoryError) {
       return { ok: false, error: "incomeCategory" };
     }
@@ -167,10 +176,13 @@ export async function deactivateAnnualAction(input: {
   if (!parsed.success) {
     return { ok: false, error: "validation" };
   }
-  const userId = await requireUserId(await getLocaleFromHeaders());
+  const access = await resolveActiveWorkspace(await getLocaleFromHeaders());
   try {
-    await serviceDeactivate(userId, parsed.data);
+    await serviceDeactivate(access, parsed.data);
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof AnnualNotFoundError) {
       return { ok: false, error: "notFound" };
     }
@@ -190,10 +202,13 @@ export async function reactivateAnnualAction(input: {
   if (!parsed.success) {
     return { ok: false, error: "validation" };
   }
-  const userId = await requireUserId(await getLocaleFromHeaders());
+  const access = await resolveActiveWorkspace(await getLocaleFromHeaders());
   try {
-    await serviceReactivate(userId, parsed.data);
+    await serviceReactivate(access, parsed.data);
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof AnnualNotFoundError) {
       return { ok: false, error: "notFound" };
     }

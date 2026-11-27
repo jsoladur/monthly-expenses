@@ -14,6 +14,8 @@ import { addActual } from "@/server/services/actuals";
 import { addIncome } from "@/server/services/incomes";
 import { addMonthOnlyLine } from "@/server/services/reserved-lines";
 import { searchActuals } from "@/server/services/search";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-27 delete a month (proposed PRD §15 #58, #59, #61). #60 (cookie) is an
@@ -136,7 +138,7 @@ suite("UC-27 delete month", () => {
   });
 });
 
-async function seedNovDec(userId: string) {
+async function seedNovDec(userId: WorkspaceAccess) {
   const food = await createCategory(userId, { kind: "expense", name: "Food" });
   const housing = await createCategory(userId, { kind: "expense", name: "Housing" });
   const salary = await createCategory(userId, { kind: "income", name: "Salary" });
@@ -188,24 +190,20 @@ async function countChildren(monthId: string) {
   return row;
 }
 
-async function countCatalogs(userId: string) {
+async function countCatalogs(userId: WorkspaceAccess) {
   const [row] = await db.execute<{ templates: number; categories: number; annuals: number }>(sql`
     SELECT
-      (SELECT count(*)::int FROM template WHERE user_id = ${userId}) AS templates,
-      (SELECT count(*)::int FROM category WHERE user_id = ${userId}) AS categories,
-      (SELECT count(*)::int FROM annual WHERE user_id = ${userId}) AS annuals
+      (SELECT count(*)::int FROM template WHERE workspace_id = ${userId.workspaceId}) AS templates,
+      (SELECT count(*)::int FROM category WHERE workspace_id = ${userId.workspaceId}) AS categories,
+      (SELECT count(*)::int FROM annual WHERE workspace_id = ${userId.workspaceId}) AS annuals
   `);
   return row;
 }
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

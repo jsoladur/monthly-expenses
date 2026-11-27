@@ -60,7 +60,8 @@
     "templates": "Fixed",
     "search": "Search",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "workspaces": "Workspaces"
   },
   "validation": {
     "required": "Required.",
@@ -92,7 +93,19 @@
     "endMonthOnEstimated": "Only committed fixed expenses can have a last payment month.",
     "invalidEndMonth": "Pick a month and a four-digit year for the last payment.",
     "savingsOnIncomeCategory": "Only expense categories can count as savings.",
-    "moveTargetOutOfWindow": "Pick a month you already created: any later month, or up to 3 months back."
+    "moveTargetOutOfWindow": "Pick a month you already created: any later month, or up to 3 months back.",
+    "workspaceNameRequired": "Give the workspace a name.",
+    "workspaceNameTooLong": "Use 60 characters or fewer.",
+    "workspaceEmailInvalid": "Enter a valid email address.",
+    "workspaceEmailNotAllowed": "This email is not allowed to use the app. Ask the administrator to add it first.",
+    "workspaceMemberNeverSignedIn": "This person has not signed in yet. Ask them to sign in once, then add them again.",
+    "workspaceMemberExists": "This person is already a member.",
+    "workspaceMemberNotFound": "That member is no longer in this workspace. Reload the page.",
+    "workspaceForbidden": "Your role in this workspace does not allow this.",
+    "workspaceNotFound": "That workspace does not exist or you are not a member.",
+    "cannotRemoveOwner": "The owner cannot be changed or removed here.",
+    "ownerCannotLeave": "Transfer ownership or delete this workspace first.",
+    "workspaceNameMismatch": "Type the workspace name exactly as shown."
   },
   "warnings": {
     "title": "Warnings",
@@ -520,7 +533,12 @@
     "status": {
       "saved": "Currency saved.",
       "themeSaved": "Theme saved."
-    }
+    },
+    "share": {
+      "title": "Share with others",
+      "help": "Create a shared ledger and invite people with a role. Your current data stays private."
+    },
+    "currencyFor": "Currency of {name}"
   },
   "stats": {
     "title": "Stats",
@@ -865,5 +883,88 @@
     "ticketFromLine": "comes from a fixed expense, not counted",
     "overlapHint": "If these tickets were not planned, the reservation is right and there is nothing to do.",
     "noEstimates": "This month has no estimated lines to check."
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "new": "New shared workspace",
+    "active": "Active",
+    "shared": "Shared",
+    "privateLabel": "My private workspace",
+    "privateTag": "Private",
+    "switchTo": "Switch to {name}",
+    "manage": "Manage",
+    "lead": "Each workspace has its own months, categories, fixed expenses, annuals and currency. Nothing is shared between workspaces.",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "editor": "Editor",
+      "reader": "Reader"
+    },
+    "roleHelp": {
+      "owner": "Full access. Deletes the workspace.",
+      "admin": "Full access to the data and the members, except deleting the workspace.",
+      "editor": "Creates months, categories and expenses. Edits or deletes only their own expenses.",
+      "reader": "Sees everything. Changes nothing."
+    },
+    "create": {
+      "title": "New shared workspace",
+      "name": "Name",
+      "currency": "Currency",
+      "submit": "Create workspace",
+      "pending": "Creating…",
+      "help": "You become its owner. It starts empty: add categories, fixed expenses and months as usual."
+    },
+    "members": {
+      "title": "Members",
+      "you": "you",
+      "email": "Email",
+      "role": "Role",
+      "add": "Add member",
+      "adding": "Adding…",
+      "addHelp": "Only people on the app's allowlist who have signed in at least once can be added.",
+      "remove": "Remove",
+      "confirmRemove": "Remove {name} from this workspace? Their expenses stay.",
+      "changeRole": "Role of {name}",
+      "saved": "Saved."
+    },
+    "leave": {
+      "action": "Leave workspace",
+      "confirm": "Leave {name}? You lose access to its data. Your expenses stay in the workspace.",
+      "ownerBlocked": "Transfer ownership or delete this workspace first"
+    },
+    "rename": {
+      "title": "Name",
+      "save": "Save name",
+      "saved": "Name saved."
+    },
+    "currency": {
+      "title": "Currency",
+      "save": "Save currency",
+      "saved": "Currency saved."
+    },
+    "delete": {
+      "title": "Delete workspace",
+      "action": "Delete workspace…",
+      "lead": "This permanently deletes {name} and everything in it:",
+      "counts": {
+        "months": "{count, plural, one {# month} other {# months}}",
+        "categories": "{count, plural, one {# category} other {# categories}}",
+        "templates": "{count, plural, one {# fixed expense} other {# fixed expenses}}",
+        "annuals": "{count, plural, one {# annual} other {# annuals}}",
+        "members": "{count, plural, one {# member} other {# members}}"
+      },
+      "irreversible": "This cannot be undone. Other workspaces are not touched.",
+      "prompt": "Type {name} to confirm",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "pending": "Deleting…",
+      "error": "Could not delete the workspace."
+    },
+    "addedBy": "Added by {name}",
+    "switcher": {
+      "open": "Switch workspace (current: {name})",
+      "current": "Current workspace"
+    },
+    "back": "All workspaces"
   }
 }

@@ -25,11 +25,14 @@ export function AnnualsScreen({
   initialAnnuals,
   expenseCategories,
   currency,
+  canManage = true,
 }: {
   locale: string;
   currency: string;
   initialAnnuals: AnnualRowData[];
   expenseCategories: CategoryOption[];
+  /** UC-31 §3: the annuals catalog is Admin+. */
+  canManage?: boolean;
 }) {
   const t = useTranslations("annuals");
 
@@ -38,10 +41,12 @@ export function AnnualsScreen({
 
   return (
     <section className="flex flex-col gap-4">
-      <AddAnnualForm
-        currency={currency}
-        expenseCategories={expenseCategories}
-      />
+      {canManage && (
+        <AddAnnualForm
+          currency={currency}
+          expenseCategories={expenseCategories}
+        />
+      )}
 
       {!hasData ? (
         <p className="text-muted-foreground px-1 py-6 text-center text-sm">
@@ -61,6 +66,7 @@ export function AnnualsScreen({
                     annual={row}
                     currency={currency}
                     expenseCategories={expenseCategories}
+                    canManage={canManage}
                   />
                 ))}
               </ul>

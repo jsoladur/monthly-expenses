@@ -12,7 +12,7 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 // Estimate-check repository (UC-25, ARCH §5 rule 1).
 //
-// Read-only. Both queries join `month` and filter `month.user_id = userId`
+// Read-only. Both queries join `month` and filter `month.workspace_id = workspaceId`
 // (PRD §5.1) — the caller still pre-checks the month with `findMonthById`
 // so a foreign month surfaces as `MonthNotFoundError`, not an empty check.
 // Money stays as `numeric(14,2)` strings here; the service converts.
@@ -28,7 +28,7 @@ export interface EstimatedLineRow {
 }
 
 export async function listEstimatedLinesForMonth(
-  userId: string,
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<EstimatedLineRow[]> {
@@ -46,7 +46,7 @@ export async function listEstimatedLinesForMonth(
     .innerJoin(category, eq(monthFixedLine.categoryId, category.id))
     .where(
       and(
-        eq(month.userId, userId),
+        eq(month.workspaceId, workspaceId),
         eq(monthFixedLine.monthId, monthId),
         eq(monthFixedLine.kind, "estimated"),
       ),
@@ -62,7 +62,7 @@ export interface ActualTicketRow {
 }
 
 export async function listActualsForMonth(
-  userId: string,
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<ActualTicketRow[]> {
@@ -76,5 +76,5 @@ export async function listActualsForMonth(
     })
     .from(monthActualExpense)
     .innerJoin(month, eq(monthActualExpense.monthId, month.id))
-    .where(and(eq(month.userId, userId), eq(monthActualExpense.monthId, monthId)));
+    .where(and(eq(month.workspaceId, workspaceId), eq(monthActualExpense.monthId, monthId)));
 }

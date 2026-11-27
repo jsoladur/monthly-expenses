@@ -14,6 +14,7 @@ import {
   findMonthLineById,
   insertMonthLine,
 } from "@/server/repositories/reserved-line";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Pass-to-upcoming-month service (UC-18, PRD UC-23 / C21 / §7.10, ARCH §5).
@@ -91,15 +92,16 @@ export interface PassToUpcomingMonthResult {
 }
 
 export async function listUpcomingMonthsForPass(
-  userId: string,
+  access: WorkspaceAccess,
   year: number,
   monthValue: number,
   now: Date = new Date(),
 ): Promise<UpcomingMonthOption[]> {
+  const workspaceId = authorize(access, "read");
   if (!isPassToUpcomingAllowedYear(year, now)) {
     return [];
   }
-  const rows = await listUpcomingMonthsInYear(userId, year, monthValue);
+  const rows = await listUpcomingMonthsInYear(workspaceId, year, monthValue);
   return rows.map((row) => ({
     id: row.id,
     year: row.year,
@@ -108,11 +110,12 @@ export async function listUpcomingMonthsForPass(
 }
 
 export async function passToUpcomingMonth(
-  userId: string,
+  access: WorkspaceAccess,
   input: PassToUpcomingMonthInput,
   now: Date = new Date(),
 ): Promise<PassToUpcomingMonthResult> {
-  const line = await findMonthLineById(userId, input.lineId);
+  const workspaceId = authorize(access, "manageMonthMoney");
+  const line = await findMonthLineById(workspaceId, input.lineId);
   if (!line) {
     throw new MonthLineNotFoundError();
   }
@@ -120,7 +123,7 @@ export async function passToUpcomingMonth(
     throw new CommittedLineCannotPassToUpcomingError();
   }
 
-  const sourceMonth = await findMonthById(userId, line.monthId);
+  const sourceMonth = await findMonthById(workspaceId, line.monthId);
   if (!sourceMonth) {
     throw new MonthLineNotFoundError();
   }
@@ -128,7 +131,7 @@ export async function passToUpcomingMonth(
     throw new NotCurrentYearError();
   }
 
-  const targetMonth = await findMonthById(userId, input.targetMonthId);
+  const targetMonth = await findMonthById(workspaceId, input.targetMonthId);
   if (!targetMonth) {
     throw new TargetMonthNotFoundError();
   }
@@ -148,7 +151,7 @@ export async function passToUpcomingMonth(
       },
       tx,
     );
-    const deleted = await deleteMonthLine(userId, line.id, tx);
+    const deleted = await deleteMonthLine(workspaceId, line.id, tx);
     if (!deleted) {
       throw new MonthLineNotFoundError();
     }

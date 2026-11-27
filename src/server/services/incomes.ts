@@ -15,6 +15,7 @@ import { findMonthById } from "@/server/repositories/month";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
 import { recentMonthWindow, type NameSuggestion } from "@/lib/actual-name-suggestions";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Month incomes service (UC-07, PRD §6.5 / §7.8 / C15, ARCH §5 rule 3).
@@ -98,18 +99,19 @@ export interface EditIncomeInput {
 // ----------------------------------------------------------------------------
 
 export async function addIncome(
-  userId: string,
+  access: WorkspaceAccess,
   input: AddIncomeInput,
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome> {
+  const workspaceId = authorize(access, "manageMonthMoney");
   const cents = parseAmountOrThrow(input.amount);
   // Tenancy pre-flight (PRD §5.1): the month must belong to this tenant
   // BEFORE we touch its incomes.
-  const monthRow = await findMonthById(userId, input.monthId, tx);
+  const monthRow = await findMonthById(workspaceId, input.monthId, tx);
   if (!monthRow) {
     throw new MonthNotFoundError();
   }
-  await assertIncomeCategory(userId, input.categoryId, tx);
+  await assertIncomeCategory(workspaceId, input.categoryId, tx);
   return insertIncome(
     {
       monthId: monthRow.id,
@@ -122,22 +124,23 @@ export async function addIncome(
 }
 
 export async function editIncome(
-  userId: string,
+  access: WorkspaceAccess,
   input: EditIncomeInput,
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome> {
+  const workspaceId = authorize(access, "manageMonthMoney");
   const cents = parseAmountOrThrow(input.amount);
   // The repo's JOIN on `month.user_id` is the tenancy gate for edit/delete
   // (PRD §5.1). A null result means either the row never existed or the
   // parent month belongs to another tenant — surface as not-found in both
   // cases (don't leak the difference).
-  const existing = await findIncomeById(userId, input.id, tx);
+  const existing = await findIncomeById(workspaceId, input.id, tx);
   if (!existing) {
     throw new IncomeNotFoundError();
   }
-  await assertIncomeCategory(userId, input.categoryId, tx);
+  await assertIncomeCategory(workspaceId, input.categoryId, tx);
   const updated = await repoUpdate(
-    userId,
+    workspaceId,
     input.id,
     {
       categoryId: input.categoryId,
@@ -154,11 +157,12 @@ export async function editIncome(
 }
 
 export async function deleteIncome(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<void> {
-  const removed = await repoDelete(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageMonthMoney");
+  const removed = await repoDelete(workspaceId, input.id, tx);
   if (!removed) {
     throw new IncomeNotFoundError();
   }
@@ -169,22 +173,24 @@ export async function deleteIncome(
 // ----------------------------------------------------------------------------
 
 export async function listIncomesForMonth(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome[]> {
-  return repoListIncomesForMonth(userId, monthId, tx);
+  const workspaceId = authorize(access, "read");
+  return repoListIncomesForMonth(workspaceId, monthId, tx);
 }
 
 // UC-30 (PRD UC-32): add-income name autocomplete corpus — open month + the
 // two previous calendar months, same window as the actuals one (UC-17).
 export async function listRecentIncomeNameSuggestions(
-  userId: string,
+  access: WorkspaceAccess,
   year: number,
   monthNumber: number,
   tx: Tx | typeof db = db,
 ): Promise<NameSuggestion[]> {
-  return listRecentIncomeNames(userId, recentMonthWindow(year, monthNumber), tx);
+  const workspaceId = authorize(access, "read");
+  return listRecentIncomeNames(workspaceId, recentMonthWindow(year, monthNumber), tx);
 }
 
 // ----------------------------------------------------------------------------
@@ -192,11 +198,11 @@ export async function listRecentIncomeNameSuggestions(
 // ----------------------------------------------------------------------------
 
 async function assertIncomeCategory(
-  userId: string,
+  workspaceId: string,
   categoryId: string,
   tx: Tx | typeof db,
 ): Promise<void> {
-  const category = await findCategoryById(userId, categoryId, tx);
+  const category = await findCategoryById(workspaceId, categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }

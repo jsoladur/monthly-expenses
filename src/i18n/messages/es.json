@@ -60,7 +60,8 @@
     "templates": "Fijos",
     "search": "Buscar",
     "settings": "Ajustes",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "workspaces": "Espacios"
   },
   "validation": {
     "required": "Obligatorio.",
@@ -92,7 +93,19 @@
     "endMonthOnEstimated": "Solo los gastos fijos comprometidos pueden tener un mes de último pago.",
     "invalidEndMonth": "Elige un mes y un año de cuatro cifras para el último pago.",
     "savingsOnIncomeCategory": "Solo las categorías de gasto pueden contar como ahorro.",
-    "moveTargetOutOfWindow": "Solo puedes moverlo a un mes ya creado: cualquiera posterior o hasta 3 meses antes."
+    "moveTargetOutOfWindow": "Solo puedes moverlo a un mes ya creado: cualquiera posterior o hasta 3 meses antes.",
+    "workspaceNameRequired": "Ponle un nombre al espacio.",
+    "workspaceNameTooLong": "Usa 60 caracteres como máximo.",
+    "workspaceEmailInvalid": "Escribe un correo electrónico válido.",
+    "workspaceEmailNotAllowed": "Este correo no tiene permiso para usar la aplicación. Pide al administrador que lo añada primero.",
+    "workspaceMemberNeverSignedIn": "Esta persona aún no ha iniciado sesión. Pídele que entre una vez y vuelve a añadirla.",
+    "workspaceMemberExists": "Esta persona ya es miembro.",
+    "workspaceMemberNotFound": "Ese miembro ya no está en este espacio. Recarga la página.",
+    "workspaceForbidden": "Tu rol en este espacio no permite hacer esto.",
+    "workspaceNotFound": "Ese espacio no existe o no eres miembro.",
+    "cannotRemoveOwner": "El propietario no se puede cambiar ni quitar aquí.",
+    "ownerCannotLeave": "Transfiere la propiedad o elimina este espacio primero.",
+    "workspaceNameMismatch": "Escribe el nombre del espacio tal como aparece."
   },
   "warnings": {
     "title": "Avisos",
@@ -520,7 +533,12 @@
     "status": {
       "saved": "Moneda guardada.",
       "themeSaved": "Tema guardado."
-    }
+    },
+    "share": {
+      "title": "Compartir con otras personas",
+      "help": "Crea un libro compartido e invita a personas con un rol. Tus datos actuales siguen siendo privados."
+    },
+    "currencyFor": "Moneda de {name}"
   },
   "stats": {
     "title": "Estadísticas",
@@ -865,5 +883,88 @@
     "ticketFromLine": "viene de un gasto fijo, no se cuenta",
     "overlapHint": "Si estos gastos no estaban previstos, la reserva es correcta y no tienes que hacer nada.",
     "noEstimates": "Este mes no tiene gastos estimados que revisar."
+  },
+  "workspaces": {
+    "title": "Espacios de trabajo",
+    "new": "Nuevo espacio compartido",
+    "active": "Activo",
+    "shared": "Compartido",
+    "privateLabel": "Mi espacio privado",
+    "privateTag": "Privado",
+    "switchTo": "Cambiar a {name}",
+    "manage": "Gestionar",
+    "lead": "Cada espacio tiene sus propios meses, categorías, gastos fijos, anuales y moneda. No se comparte nada entre espacios.",
+    "roles": {
+      "owner": "Propietario",
+      "admin": "Administrador",
+      "editor": "Editor",
+      "reader": "Lector"
+    },
+    "roleHelp": {
+      "owner": "Acceso total. Puede eliminar el espacio.",
+      "admin": "Acceso total a los datos y a los miembros, salvo eliminar el espacio.",
+      "editor": "Crea meses, categorías y gastos. Edita o elimina solo sus propios gastos.",
+      "reader": "Ve todo. No cambia nada."
+    },
+    "create": {
+      "title": "Nuevo espacio compartido",
+      "name": "Nombre",
+      "currency": "Moneda",
+      "submit": "Crear espacio",
+      "pending": "Creando…",
+      "help": "Serás su propietario. Empieza vacío: añade categorías, gastos fijos y meses como siempre."
+    },
+    "members": {
+      "title": "Miembros",
+      "you": "tú",
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "add": "Añadir miembro",
+      "adding": "Añadiendo…",
+      "addHelp": "Solo se pueden añadir personas de la lista de acceso de la aplicación que hayan iniciado sesión al menos una vez.",
+      "remove": "Quitar",
+      "confirmRemove": "¿Quitar a {name} de este espacio? Sus gastos se quedan.",
+      "changeRole": "Rol de {name}",
+      "saved": "Guardado."
+    },
+    "leave": {
+      "action": "Salir del espacio",
+      "confirm": "¿Salir de {name}? Perderás el acceso a sus datos. Tus gastos se quedan en el espacio.",
+      "ownerBlocked": "Transfiere la propiedad o elimina este espacio primero"
+    },
+    "rename": {
+      "title": "Nombre",
+      "save": "Guardar nombre",
+      "saved": "Nombre guardado."
+    },
+    "currency": {
+      "title": "Moneda",
+      "save": "Guardar moneda",
+      "saved": "Moneda guardada."
+    },
+    "delete": {
+      "title": "Eliminar espacio",
+      "action": "Eliminar espacio…",
+      "lead": "Esto elimina para siempre {name} y todo su contenido:",
+      "counts": {
+        "months": "{count, plural, one {# mes} other {# meses}}",
+        "categories": "{count, plural, one {# categoría} other {# categorías}}",
+        "templates": "{count, plural, one {# gasto fijo} other {# gastos fijos}}",
+        "annuals": "{count, plural, one {# anual} other {# anuales}}",
+        "members": "{count, plural, one {# miembro} other {# miembros}}"
+      },
+      "irreversible": "No se puede deshacer. Los demás espacios no se tocan.",
+      "prompt": "Escribe {name} para confirmar",
+      "confirm": "Eliminar",
+      "cancel": "Cancelar",
+      "pending": "Eliminando…",
+      "error": "No se pudo eliminar el espacio."
+    },
+    "addedBy": "Añadido por {name}",
+    "switcher": {
+      "open": "Cambiar de espacio (actual: {name})",
+      "current": "Espacio actual"
+    },
+    "back": "Todos los espacios"
   }
 }

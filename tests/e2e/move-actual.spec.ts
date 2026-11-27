@@ -115,10 +115,10 @@ async function setupUser(context: BrowserContext, tag: string) {
   });
   await context.addCookies([cookie]);
   await withSql(async (sql) => {
-    await sql`DELETE FROM month WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM category WHERE user_id = ${user.id}`;
+    await sql`DELETE FROM month WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${user.id}`;
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${user.id}, 'Health', 'expense', true)
     `;
   });
@@ -137,10 +137,10 @@ async function seedActual(
 ): Promise<void> {
   await withSql(async (sql) => {
     await sql`
-      INSERT INTO month_actual_expense (month_id, category_id, name, amount)
-      SELECT ${monthId}, c.id, ${name}, ${amount}
+      INSERT INTO month_actual_expense (month_id, category_id, name, amount, created_by_user_id)
+      SELECT ${monthId}, c.id, ${name}, ${amount}, ${userId}
       FROM category c
-      WHERE c.user_id = ${userId} AND c.kind = 'expense'
+      WHERE c.workspace_id = ${userId} AND c.kind = 'expense'
       LIMIT 1
     `;
   });

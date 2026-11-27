@@ -17,10 +17,15 @@ export interface CategoryRowData {
 export function CategoriesScreen({
   initialExpense,
   initialIncome,
+  canCreate = true,
+  canManage = true,
 }: {
   locale: string;
   initialExpense: CategoryRowData[];
   initialIncome: CategoryRowData[];
+  /** UC-31 §3: create = Editor+; rename/deactivate/savings = Admin+. */
+  canCreate?: boolean;
+  canManage?: boolean;
 }) {
   const t = useTranslations("categories");
   const [kind, setKind] = useState<Kind>("expense");
@@ -56,9 +61,9 @@ export function CategoriesScreen({
         })}
       </div>
 
-      <AddCategoryForm kind={kind} />
+      {canCreate && <AddCategoryForm kind={kind} />}
 
-      {kind === "expense" && (
+      {kind === "expense" && canManage && (
         <p id="savings-help" className="text-muted-foreground px-1 text-xs leading-relaxed">
           {t("savings.help")}
         </p>
@@ -71,7 +76,7 @@ export function CategoriesScreen({
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (
-            <CategoryRow key={row.id} category={row} kind={kind} />
+            <CategoryRow key={row.id} category={row} kind={kind} canManage={canManage} />
           ))}
         </ul>
       )}

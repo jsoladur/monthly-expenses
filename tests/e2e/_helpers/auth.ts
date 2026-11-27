@@ -16,6 +16,13 @@ import postgres from "postgres";
 //
 // All operations are idempotent; the helper inserts the user only if it
 // doesn't already exist.
+//
+// UC-31: like sign-in, the helper also provisions the user's PRIVATE
+// workspace and its Owner membership. Test-only convenience: the private
+// workspace is created with `id = app_user.id`, so specs that seed rows in
+// SQL can write `workspace_id = ${user.id}` (or `user.workspaceId`). The app
+// never relies on that equality — it always resolves the workspace by
+// membership.
 // ============================================================================
 
 const COOKIE_NAME = "authjs.session-token";
@@ -25,6 +32,8 @@ const DEFAULT_SUB = "e2e-categories-sub";
 export interface E2EUser {
   id: string;
   email: string;
+  /** The user's private workspace (UC-31). Equals `id` for helper-seeded users. */
+  workspaceId: string;
 }
 
 export async function ensureUser(
@@ -43,7 +52,22 @@ export async function ensureUser(
       RETURNING id, email
     `;
     if (!rows[0]) throw new Error("ensureUser: insert returned no row");
-    return { id: rows[0].id, email: rows[0].email };
+    const userId = rows[0].id;
+    await db`
+      INSERT INTO workspace (id, kind, personal_user_id, currency)
+      VALUES (${userId}, 'private', ${userId}, 'EUR')
+      ON CONFLICT DO NOTHING
+    `;
+    const [ws] = await db<{ id: string }[]>`
+      SELECT id FROM workspace WHERE personal_user_id = ${userId}
+    `;
+    if (!ws) throw new Error("ensureUser: private workspace missing");
+    await db`
+      INSERT INTO workspace_member (workspace_id, user_id, role)
+      VALUES (${ws.id}, ${userId}, 'owner')
+      ON CONFLICT DO NOTHING
+    `;
+    return { id: userId, email: rows[0].email, workspaceId: ws.id };
   } finally {
     await db.end({ timeout: 1 });
   }

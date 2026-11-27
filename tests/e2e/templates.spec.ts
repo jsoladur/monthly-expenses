@@ -149,7 +149,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
 
     const sql = postgres(DB_URL, { max: 1, prepare: false });
     try {
-      const rows = await sql`SELECT id FROM template WHERE user_id = ${user.id}`;
+      const rows = await sql`SELECT id FROM template WHERE workspace_id = ${user.id}`;
       expect(rows.length).toBe(0);
     } finally {
       await sql.end({ timeout: 1 });
@@ -231,7 +231,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
     try {
       const rows = await sql<
         { active: boolean; end_year: number | null; end_month: number | null }[]
-      >`SELECT active, end_year, end_month FROM template WHERE user_id = ${user.id}`;
+      >`SELECT active, end_year, end_month FROM template WHERE workspace_id = ${user.id}`;
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({ active: true, end_year: null, end_month: null });
     } finally {
@@ -256,8 +256,8 @@ async function attachSessionCookie(context: BrowserContext, user: { id: string; 
 async function resetUserState(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM template WHERE user_id = ${userId}`;
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
+    await sql`DELETE FROM template WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
   } finally {
     await sql.end({ timeout: 1 });
   }
@@ -271,7 +271,7 @@ async function seedActiveExpenseCategory(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     await sql`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, ${name}, 'expense', true)
     `;
   } finally {

@@ -28,6 +28,7 @@ export function EstimateCheckPanel({
   currency,
   check,
   isPast,
+  canApply = true,
 }: {
   monthId: string;
   year: number;
@@ -35,6 +36,8 @@ export function EstimateCheckPanel({
   currency: string;
   check: EstimateCheck;
   isPast: boolean;
+  /** UC-31 §3: applying a fix is Admin+; others see the check only. */
+  canApply?: boolean;
 }) {
   const t = useTranslations("estimateCheck");
 
@@ -68,6 +71,7 @@ export function EstimateCheckPanel({
             category={category}
             currency={currency}
             isPast={isPast}
+            canApply={canApply}
             onApply={(mode) =>
               applyEstimateSuggestionAction({
                 monthId,
@@ -88,11 +92,13 @@ function CategoryCard({
   category,
   currency,
   isPast,
+  canApply,
   onApply,
 }: {
   category: EstimateCheckCategory;
   currency: string;
   isPast: boolean;
+  canApply: boolean;
   onApply: (mode: EstimateCheckMode) => Promise<{ ok: boolean }>;
 }) {
   const t = useTranslations("estimateCheck");
@@ -216,6 +222,7 @@ function CategoryCard({
           </div>
         </div>
       ) : (
+        canApply &&
         (category.flagged || canRelease) && (
           <div className="flex flex-wrap gap-2">
             {category.flagged && (

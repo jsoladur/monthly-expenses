@@ -15,6 +15,8 @@ import { addActual } from "@/server/services/actuals";
 import { addMonthOnlyLine } from "@/server/services/reserved-lines";
 import { getMonthSummary, getOverspendWarnings } from "@/server/services/summary";
 import { getGlobalStatsPage } from "@/server/services/global-stats";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-24 savings categories — integration (proposed PRD §15 #41–#46, C24).
@@ -264,7 +266,7 @@ suite("UC-24 savings categories", () => {
 
 // #41 fixture: income 3000; Food actual 300; Mortgage 800 (Housing) and
 // Pension 500 (Investment) reserved. Investment starts as a plain category.
-async function seedSplitMonth(userId: string) {
+async function seedSplitMonth(userId: WorkspaceAccess) {
   const salary = await createCategory(userId, { kind: "income", name: "Salary" });
   const food = await createCategory(userId, { kind: "expense", name: "Food" });
   const housing = await createCategory(userId, { kind: "expense", name: "Housing" });
@@ -299,11 +301,10 @@ async function seedSplitMonth(userId: string) {
   return { monthId: monthRow.id, investment };
 }
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

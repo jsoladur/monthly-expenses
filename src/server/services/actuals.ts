@@ -8,7 +8,7 @@ import {
   deleteActual as repoDelete,
   findActualById,
   insertActual,
-  listActualsForMonthForUser,
+  listActualsForMonthInWorkspace,
   listRecentActualNames,
   updateActual as repoUpdate,
   type ActualNameSuggestionRow,
@@ -16,6 +16,13 @@ import {
 import { recentMonthWindow } from "@/lib/actual-name-suggestions";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
+import {
+  WorkspaceForbiddenError,
+  authorize,
+  canEditActual,
+  roleAllows,
+  type WorkspaceAccess,
+} from "@/lib/workspace-roles";
 
 // ============================================================================
 // Actual expenses service (UC-08, PRD §6.7 / §7.2 / §7.3 / C15 / UC-10 /
@@ -108,18 +115,19 @@ export interface EditActualInput {
 // ----------------------------------------------------------------------------
 
 export async function addActual(
-  userId: string,
+  access: WorkspaceAccess,
   input: AddActualInput,
   tx: Tx | typeof db = db,
 ): Promise<MonthActualExpense> {
+  const workspaceId = authorize(access, "addActual");
   const cents = parseAmountOrThrow(input.amount);
   // Tenancy pre-flight (PRD §5.1): the month must belong to this tenant
   // BEFORE we touch its actuals.
-  const monthRow = await findMonthById(userId, input.monthId, tx);
+  const monthRow = await findMonthById(workspaceId, input.monthId, tx);
   if (!monthRow) {
     throw new MonthNotFoundError();
   }
-  await assertExpenseCategory(userId, input.categoryId, tx);
+  await assertExpenseCategory(workspaceId, input.categoryId, tx);
   return insertActual(
     {
       monthId: monthRow.id,
@@ -127,28 +135,34 @@ export async function addActual(
       name: input.name,
       observations: normaliseObservations(input.observations),
       amount: formatCents(cents),
+      createdByUserId: access.userId,
     },
     tx,
   );
 }
 
 export async function editActual(
-  userId: string,
+  access: WorkspaceAccess,
   input: EditActualInput,
   tx: Tx | typeof db = db,
 ): Promise<MonthActualExpense> {
+  const workspaceId = authorize(access, "read");
   const cents = parseAmountOrThrow(input.amount);
   // The repo's JOIN on `month.user_id` is the tenancy gate for edit/delete
   // (PRD §5.1). A null result means either the row never existed or the
   // parent month belongs to another tenant — surface as not-found in both
   // cases (don't leak the difference).
-  const existing = await findActualById(userId, input.id, tx);
+  const existing = await findActualById(workspaceId, input.id, tx);
   if (!existing) {
     throw new ActualNotFoundError();
   }
-  await assertExpenseCategory(userId, input.categoryId, tx);
+  // UC-31 §4.14: Admin/Owner edit any ticket; an Editor only their own.
+  if (!canEditActual(access, existing.createdByUserId)) {
+    throw new WorkspaceForbiddenError();
+  }
+  await assertExpenseCategory(workspaceId, input.categoryId, tx);
   const updated = await repoUpdate(
-    userId,
+    workspaceId,
     input.id,
     {
       categoryId: input.categoryId,
@@ -156,6 +170,7 @@ export async function editActual(
       observations: normaliseObservations(input.observations),
       amount: formatCents(cents),
     },
+    ownOnlyFilter(access),
     tx,
   );
   if (!updated) {
@@ -166,11 +181,20 @@ export async function editActual(
 }
 
 export async function deleteActual(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<void> {
-  const removed = await repoDelete(userId, input.id, tx);
+  const workspaceId = authorize(access, "read");
+  // UC-31 §4.14: Admin/Owner delete any ticket; an Editor only their own.
+  const existing = await findActualById(workspaceId, input.id, tx);
+  if (!existing) {
+    throw new ActualNotFoundError();
+  }
+  if (!canEditActual(access, existing.createdByUserId)) {
+    throw new WorkspaceForbiddenError();
+  }
+  const removed = await repoDelete(workspaceId, input.id, ownOnlyFilter(access), tx);
   if (!removed) {
     throw new ActualNotFoundError();
   }
@@ -181,33 +205,41 @@ export async function deleteActual(
 // ----------------------------------------------------------------------------
 
 export async function listActualsForMonth(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthActualExpense[]> {
-  return listActualsForMonthForUser(userId, monthId, tx);
+  const workspaceId = authorize(access, "read");
+  return listActualsForMonthInWorkspace(workspaceId, monthId, tx);
 }
 
 export async function listRecentActualNameSuggestions(
-  userId: string,
+  access: WorkspaceAccess,
   year: number,
   monthNumber: number,
   tx: Tx | typeof db = db,
 ): Promise<ActualNameSuggestionRow[]> {
+  const workspaceId = authorize(access, "read");
   const periods = recentMonthWindow(year, monthNumber);
-  return listRecentActualNames(userId, periods, tx);
+  return listRecentActualNames(workspaceId, periods, tx);
 }
 
 // ----------------------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------------------
 
+// The repo re-applies the own-only rule in SQL (defense in depth): Editors
+// pass their user id, Admin/Owner pass null (any ticket).
+function ownOnlyFilter(access: WorkspaceAccess): string | null {
+  return roleAllows(access.role, "editActual") ? null : access.userId;
+}
+
 async function assertExpenseCategory(
-  userId: string,
+  workspaceId: string,
   categoryId: string,
   tx: Tx | typeof db,
 ): Promise<void> {
-  const category = await findCategoryById(userId, categoryId, tx);
+  const category = await findCategoryById(workspaceId, categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }

@@ -13,7 +13,7 @@ import type { Tx } from "@/server/repositories/user";
 // Template repository (UC-05, PRD §6.3 / §7.4, ARCH §4).
 //
 // The clone source for `month_fixed_line` and the overspend baseline for the
-// summary (PRD §7.4). Every function takes `userId` as its FIRST argument
+// summary (PRD §7.4). Every function takes `workspaceId` as its FIRST argument
 // and applies it in every WHERE clause (PRD §5.1, ARCH §5 rule 1).
 //
 // `template.active` is the soft-delete flag — inactive rows are EXCLUDED from
@@ -30,13 +30,13 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 
 export async function listTemplates(
-  userId: string,
+  workspaceId: string,
   { includeInactive }: { includeInactive?: boolean } = {},
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
   const where = includeInactive
-    ? eq(template.userId, userId)
-    : and(eq(template.userId, userId), eq(template.active, true));
+    ? eq(template.workspaceId, workspaceId)
+    : and(eq(template.workspaceId, workspaceId), eq(template.active, true));
   return tx
     .select()
     .from(template)
@@ -45,15 +45,15 @@ export async function listTemplates(
 }
 
 export async function listTemplatesByKind(
-  userId: string,
+  workspaceId: string,
   kind: LineKind,
   { includeInactive }: { includeInactive?: boolean } = {},
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
   const where = includeInactive
-    ? and(eq(template.userId, userId), eq(template.kind, kind))
+    ? and(eq(template.workspaceId, workspaceId), eq(template.kind, kind))
     : and(
-        eq(template.userId, userId),
+        eq(template.workspaceId, workspaceId),
         eq(template.kind, kind),
         eq(template.active, true),
       );
@@ -65,18 +65,18 @@ export async function listTemplatesByKind(
 }
 
 export async function listActiveTemplates(
-  userId: string,
+  workspaceId: string,
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
-  return listTemplates(userId, { includeInactive: false }, tx);
+  return listTemplates(workspaceId, { includeInactive: false }, tx);
 }
 
 export async function listActiveTemplatesByKind(
-  userId: string,
+  workspaceId: string,
   kind: LineKind,
   tx: Tx | typeof db = db,
 ): Promise<Template[]> {
-  return listTemplatesByKind(userId, kind, { includeInactive: false }, tx);
+  return listTemplatesByKind(workspaceId, kind, { includeInactive: false }, tx);
 }
 
 // Months compare by `year * 12 + (month − 1)` (UC-26 / UC-29).
@@ -94,7 +94,7 @@ function scheduleApplies(month: number) {
 // C29): ACTIVE templates whose schedule is NULL (every month) or contains
 // `month`, and whose last payment month — if any — is not before it.
 export async function listTemplatesToClone(
-  userId: string,
+  workspaceId: string,
   year: number,
   month: number,
   tx: Tx | typeof db = db,
@@ -104,7 +104,7 @@ export async function listTemplatesToClone(
     .from(template)
     .where(
       and(
-        eq(template.userId, userId),
+        eq(template.workspaceId, workspaceId),
         eq(template.active, true),
         scheduleApplies(month),
         sql`(${template.endYear} IS NULL OR ${endIndex} >= ${periodIndex(year, month)})`,
@@ -119,7 +119,7 @@ export async function listTemplatesToClone(
 // open month — active or already deactivated. The second branch keeps an
 // ended loan in the plan of the months it was really paid in.
 export async function listPlanTemplatesForMonth(
-  userId: string,
+  workspaceId: string,
   year: number,
   month: number,
   tx: Tx | typeof db = db,
@@ -129,7 +129,7 @@ export async function listPlanTemplatesForMonth(
     .from(template)
     .where(
       and(
-        eq(template.userId, userId),
+        eq(template.workspaceId, workspaceId),
         scheduleApplies(month),
         sql`((${template.endYear} IS NULL AND ${template.active} = true) OR (${template.endYear} IS NOT NULL AND ${endIndex} >= ${periodIndex(year, month)}))`,
       ),
@@ -141,7 +141,7 @@ export async function listPlanTemplatesForMonth(
 // is `year`/`month` or earlier (PRD C29, UC-29). Called by `createMonth`
 // right after the clone, in the same transaction. Never deletes.
 export async function deactivateEndedTemplates(
-  userId: string,
+  workspaceId: string,
   year: number,
   month: number,
   tx: Tx | typeof db = db,
@@ -151,7 +151,7 @@ export async function deactivateEndedTemplates(
     .set({ active: false, deletedAt: sql`now()`, updatedAt: sql`now()` })
     .where(
       and(
-        eq(template.userId, userId),
+        eq(template.workspaceId, workspaceId),
         eq(template.active, true),
         sql`${template.endYear} IS NOT NULL`,
         sql`${endIndex} <= ${periodIndex(year, month)}`,
@@ -161,14 +161,14 @@ export async function deactivateEndedTemplates(
 }
 
 export async function findTemplateById(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Template | null> {
   const rows = await tx
     .select()
     .from(template)
-    .where(and(eq(template.userId, userId), eq(template.id, id)))
+    .where(and(eq(template.workspaceId, workspaceId), eq(template.id, id)))
     .limit(1);
   return rows[0] ?? null;
 }
@@ -185,7 +185,7 @@ export async function insertTemplate(
 }
 
 export async function updateTemplate(
-  userId: string,
+  workspaceId: string,
   id: string,
   patch: {
     categoryId: string;
@@ -212,13 +212,13 @@ export async function updateTemplate(
       endMonth: patch.endMonth,
       updatedAt: sql`now()`,
     })
-    .where(and(eq(template.userId, userId), eq(template.id, id)))
+    .where(and(eq(template.workspaceId, workspaceId), eq(template.id, id)))
     .returning();
   return updated ?? null;
 }
 
 export async function deactivateTemplate(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Template | null> {
@@ -230,7 +230,7 @@ export async function deactivateTemplate(
     .set({ active: false, deletedAt: sql`now()`, updatedAt: sql`now()` })
     .where(
       and(
-        eq(template.userId, userId),
+        eq(template.workspaceId, workspaceId),
         eq(template.id, id),
         eq(template.active, true),
       ),
@@ -242,7 +242,7 @@ export async function deactivateTemplate(
 // Reactivating also clears the last payment month (PRD C29, UC-29): otherwise
 // an ended loan would be deactivated again by the next created month.
 export async function reactivateTemplate(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Template | null> {
@@ -257,7 +257,7 @@ export async function reactivateTemplate(
     })
     .where(
       and(
-        eq(template.userId, userId),
+        eq(template.workspaceId, workspaceId),
         eq(template.id, id),
         eq(template.active, false),
       ),
@@ -269,13 +269,13 @@ export async function reactivateTemplate(
 // HARD delete (PRD C23 / §13, UC-20). Safe because no FK references
 // `template` — month lines are snapshots copied at clone time.
 export async function deleteTemplate(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Template | null> {
   const [deleted] = await tx
     .delete(template)
-    .where(and(eq(template.userId, userId), eq(template.id, id)))
+    .where(and(eq(template.workspaceId, workspaceId), eq(template.id, id)))
     .returning();
   return deleted ?? null;
 }

@@ -90,26 +90,26 @@ async function seedSignedIn(context: BrowserContext, locale: "en" | "es" = "en")
 async function seedWindow(dbUrl: string, userId: string): Promise<void> {
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})`;
-    await sql`DELETE FROM month WHERE user_id = ${userId}`;
-    await sql`DELETE FROM category WHERE user_id = ${userId}`;
+    await sql`DELETE FROM month_actual_expense WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_fixed_line WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month_income WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId})`;
+    await sql`DELETE FROM month WHERE workspace_id = ${userId}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${userId}`;
 
     const [income] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, 'Salary', 'income', true)
       RETURNING id
     `;
     const [expense] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, 'Food', 'expense', true)
       RETURNING id
     `;
     if (!income || !expense) throw new Error("seedWindow: category insert failed");
 
     await sql`
-      INSERT INTO month (user_id, year, month)
+      INSERT INTO month (workspace_id, year, month)
       VALUES
         (${userId}, 2026, 8),
         (${userId}, 2026, 7),
@@ -121,17 +121,17 @@ async function seedWindow(dbUrl: string, userId: string): Promise<void> {
       INSERT INTO month_income (month_id, category_id, name, amount)
       SELECT m.id, ${income.id}, ${name}, '1000.00'
         FROM month m
-       WHERE m.user_id = ${userId} AND m.year = 2026 AND m.month = ${monthNumber}
+       WHERE m.workspace_id = ${userId} AND m.year = 2026 AND m.month = ${monthNumber}
     `;
     await addIncome("Nómina", 6);
     await addIncome("Nómina extra", 7);
     await addIncome("Nominal bonus", 5);
 
     await sql`
-      INSERT INTO month_actual_expense (month_id, category_id, name, amount)
-      SELECT m.id, ${expense.id}, 'Nómina gift', '3.00'
+      INSERT INTO month_actual_expense (month_id, category_id, name, amount, created_by_user_id)
+      SELECT m.id, ${expense.id}, 'Nómina gift', '3.00', ${userId}
         FROM month m
-       WHERE m.user_id = ${userId} AND m.year = 2026 AND m.month = 8
+       WHERE m.workspace_id = ${userId} AND m.year = 2026 AND m.month = 8
     `;
   } finally {
     await sql.end({ timeout: 1 });

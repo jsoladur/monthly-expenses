@@ -1,16 +1,18 @@
 import { redirect } from "@/i18n/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { getWorkspaceCurrency, listMyWorkspaces } from "@/server/services/workspaces";
+import { roleAllows } from "@/lib/workspace-roles";
+import { Link } from "@/i18n/navigation";
+import { ChevronRight, Users } from "lucide-react";
 import { getProfileSettings } from "@/server/services/settings";
 import { SettingsForm } from "./settings-form";
 import { routing } from "@/i18n/routing";
 import type { ThemePreference } from "@/server/db/schema";
 import { AppShell } from "@/components/app-shell";
 import { auth, signOut } from "@/auth";
-
-const SUPPORTED_CURRENCIES = ["EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "MXN", "ARS"] as const;
-const FALLBACK_CURRENCY = "EUR";
+import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 
 export default async function SettingsPage({
   params,
@@ -23,14 +25,23 @@ export default async function SettingsPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
-  const settings = await getProfileSettings(userId);
-  const currency = settings?.currency ?? FALLBACK_CURRENCY;
-  const theme = (settings?.theme ?? "auto") as ThemePreference;
-  const [t, session] = await Promise.all([
+  const access = await resolveActiveWorkspace(locale);
+  // Currency: the ACTIVE workspace's (UC-31 §7.3). Theme: per user (UC-21).
+  const [currency, profile, myWorkspaces] = await Promise.all([
+    getWorkspaceCurrency(access),
+    getProfileSettings(access.userId),
+    listMyWorkspaces(access.userId),
+  ]);
+  const multiWorkspace = myWorkspaces.length > 1;
+  const active = myWorkspaces.find((w) => w.id === access.workspaceId);
+  const theme = (profile?.theme ?? "auto") as ThemePreference;
+  const [t, tw, session] = await Promise.all([
     getTranslations({ locale, namespace: "settings" }),
+    getTranslations({ locale, namespace: "workspaces" }),
     auth(),
   ]);
+  const activeName =
+    active?.kind === "shared" && active.name ? active.name : tw("privateLabel");
 
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
@@ -52,7 +63,25 @@ export default async function SettingsPage({
           currentCurrency={currency}
           supportedCurrencies={SUPPORTED_CURRENCIES}
           currentTheme={theme}
+          canEditCurrency={roleAllows(access.role, "manageWorkspace")}
+          currencyLabel={multiWorkspace ? t("currencyFor", { name: activeName }) : undefined}
         />
+
+        {!multiWorkspace && (
+          // UC-31 §4.11: the single workspace entry point in single-workspace
+          // mode. It never lists or names a workspace.
+          <Link
+            href="/workspaces#create"
+            className="bg-card text-card-foreground hover:bg-accent flex min-h-11 items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
+          >
+            <Users className="text-muted-foreground size-5 shrink-0" aria-hidden />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-sm font-medium">{t("share.title")}</span>
+              <span className="text-muted-foreground text-xs">{t("share.help")}</span>
+            </span>
+            <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
+          </Link>
+        )}
       </div>
     </AppShell>
   );

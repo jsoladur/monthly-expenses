@@ -131,5 +131,7 @@ function errorToMessage(
     case "alreadyInactive":
     case "alreadyActive":
       return null;
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }

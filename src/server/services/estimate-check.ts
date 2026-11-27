@@ -15,6 +15,7 @@ import {
   type EstimateCheck,
   type EstimateCheckMode,
 } from "@/lib/estimate-check";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Estimate-check service (UC-25, proposed PRD C25; builds on §7.3 / §7.7).
@@ -46,17 +47,18 @@ export interface ApplyEstimateSuggestionInput {
 }
 
 export async function getEstimateCheck(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<EstimateCheck> {
-  const owned = await findMonthById(userId, monthId, tx);
+  const workspaceId = authorize(access, "read");
+  const owned = await findMonthById(workspaceId, monthId, tx);
   if (!owned) {
     throw new MonthNotFoundError();
   }
   const [lines, tickets] = await Promise.all([
-    listEstimatedLinesForMonth(userId, monthId, tx),
-    listActualsForMonth(userId, monthId, tx),
+    listEstimatedLinesForMonth(workspaceId, monthId, tx),
+    listActualsForMonth(workspaceId, monthId, tx),
   ]);
   return computeEstimateCheck(
     lines.map((l) => ({
@@ -78,18 +80,19 @@ export async function getEstimateCheck(
 }
 
 export async function applyEstimateSuggestion(
-  userId: string,
+  access: WorkspaceAccess,
   input: ApplyEstimateSuggestionInput,
 ): Promise<EstimateCheck> {
+  const workspaceId = authorize(access, "manageMonthMoney");
   return db.transaction(async (tx) => {
-    const before = await getEstimateCheck(userId, input.monthId, tx);
+    const before = await getEstimateCheck(access, input.monthId, tx);
     const target = before.categories.find((c) => c.categoryId === input.categoryId);
     if (!target) {
       throw new EstimateCategoryNotFoundError();
     }
     for (const update of planEstimateUpdates(target, input.mode)) {
-      await updateMonthLineRemaining(userId, update.id, formatCents(update.remaining), tx);
+      await updateMonthLineRemaining(workspaceId, update.id, formatCents(update.remaining), tx);
     }
-    return getEstimateCheck(userId, input.monthId, tx);
+    return getEstimateCheck(access, input.monthId, tx);
   });
 }

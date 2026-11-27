@@ -60,3 +60,10 @@ export async function clearLastOpenedMonthCookieIf(
   const store = await cookies();
   store.delete({ name: LAST_OPENED_MONTH_COOKIE, path: "/" });
 }
+
+// UC-31 §4.9.3 / §4.10: switching workspace forgets the resume hint, so the
+// same period in another workspace is never opened by accident.
+export async function clearLastOpenedMonthCookie(): Promise<void> {
+  const store = await cookies();
+  store.delete({ name: LAST_OPENED_MONTH_COOKIE, path: "/" });
+}

@@ -7,6 +7,7 @@ import {
   type Tx,
 } from "@/server/repositories/user";
 import { insertProfileSettings } from "@/server/repositories/profile-settings";
+import { ensurePrivateWorkspace } from "@/server/services/workspaces";
 import type { AppUser } from "@/server/db/schema";
 
 // ============================================================================
@@ -19,6 +20,11 @@ import type { AppUser } from "@/server/db/schema";
 // First-time sign-in: insert `app_user` + `profile_settings(currency='EUR')`
 // in one transaction so the tenant either gets both rows or neither
 // (PRD §5.3, ARCH §3.1). Repeat sign-in: return the existing user as-is.
+//
+// UC-31 §5.6: the private workspace + its Owner membership are created in the
+// same transaction on first insert. `ensurePrivateWorkspace` is idempotent,
+// so a repeat sign-in never creates a second one (and repairs a user that
+// somehow has none).
 //
 // Returns the internal `app_user.id` that the JWT callback will place in
 // `token.userId` (ARCH §3.2 rule 3).
@@ -45,6 +51,7 @@ export async function upsertUserOnSignIn(identity: GoogleIdentity): Promise<AppU
 
     if (upserted) {
       await insertProfileSettings({ userId: upserted.id, currency: "EUR" }, tx);
+      await ensurePrivateWorkspace(upserted.id, tx);
       return upserted;
     }
 
@@ -52,6 +59,7 @@ export async function upsertUserOnSignIn(identity: GoogleIdentity): Promise<AppU
     if (!existing) {
       throw new Error("User not found after upsert conflict");
     }
+    await ensurePrivateWorkspace(existing.id, tx);
     return existing;
   });
 }

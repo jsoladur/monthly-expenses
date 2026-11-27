@@ -1,7 +1,7 @@
 import { redirect } from "@/i18n/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { auth, signOut } from "@/auth";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { getMonthYears } from "@/server/services/months";
 import { isAppLocale } from "@/i18n/format";
 import { routing } from "@/i18n/routing";
@@ -20,11 +20,11 @@ export default async function HistoryPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const t = await getTranslations({ locale, namespace: "history" });
   const now = new Date();
 
-  const years = await getMonthYears(userId);
+  const years = await getMonthYears(access);
   const previousYears = years.filter((y) => isHistoryYear(y, now));
 
   const session = await auth();

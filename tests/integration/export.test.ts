@@ -14,6 +14,8 @@ import {
 } from "@/server/services/export";
 import { EN_EXPORT_COPY } from "@/server/export/copy";
 import { uniqueYearsDescending } from "@/lib/export-selection";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 const reachable = await pingDatabase();
 const suite = reachable ? describe : describe.skip;
@@ -188,7 +190,7 @@ suite("UC-19 Excel export", () => {
   });
 });
 
-async function seedAliceLedger(userId: string) {
+async function seedAliceLedger(userId: WorkspaceAccess) {
   const salary = await createCategory(userId, { kind: "income", name: "Salary" });
   const housing = await createCategory(userId, { kind: "expense", name: "Housing" });
   const food = await createCategory(userId, { kind: "expense", name: "Food" });
@@ -247,17 +249,15 @@ function numericCell(cell: ExcelJS.Cell): number | undefined {
   return undefined;
 }
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) throw new Error("seedUser returned no id");
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function countMonths(userId: string): Promise<number> {
+async function countMonths(userId: WorkspaceAccess): Promise<number> {
   const rows = await db.execute<{ n: string }>(
-    sql`SELECT COUNT(*)::text AS n FROM month WHERE user_id = ${userId}`,
+    sql`SELECT COUNT(*)::text AS n FROM month WHERE workspace_id = ${userId.workspaceId}`,
   );
   return Number.parseInt(rows[0]!.n, 10);
 }

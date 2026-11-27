@@ -15,6 +15,7 @@ import {
 } from "@/server/repositories/reserved-line";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Reserved-lines service (UC-09, PRD §6.6 / §7.3 / §7.8 / §13 / UC-11 / UC-18,
@@ -115,21 +116,22 @@ export interface DeleteMonthLineInput {
 // ----------------------------------------------------------------------------
 
 export async function updateRemainingAmount(
-  userId: string,
+  access: WorkspaceAccess,
   input: UpdateRemainingInput,
   tx: Tx | typeof db = db,
 ): Promise<MonthFixedLine> {
+  const workspaceId = authorize(access, "manageMonthMoney");
   const cents = parseAmountOrThrow(input.remainingAmount);
   // The repo's JOIN on `month.user_id` is the tenancy gate (PRD §5.1). A
   // null result means either the row never existed or the parent month
   // belongs to another tenant — surface as not-found in both cases (don't
   // leak the difference).
-  const existing = await findMonthLineById(userId, input.lineId, tx);
+  const existing = await findMonthLineById(workspaceId, input.lineId, tx);
   if (!existing) {
     throw new MonthLineNotFoundError();
   }
   const updated = await repoUpdateRemaining(
-    userId,
+    workspaceId,
     input.lineId,
     formatCents(cents),
     tx,
@@ -142,18 +144,19 @@ export async function updateRemainingAmount(
 }
 
 export async function addMonthOnlyLine(
-  userId: string,
+  access: WorkspaceAccess,
   input: AddMonthOnlyLineInput,
   tx: Tx | typeof db = db,
 ): Promise<MonthFixedLine> {
+  const workspaceId = authorize(access, "manageMonthMoney");
   const cents = parseAmountOrThrow(input.amount);
   // Tenancy pre-flight (PRD §5.1): the month must belong to this tenant
   // BEFORE we touch its reserved lines.
-  const monthRow = await findMonthById(userId, input.monthId, tx);
+  const monthRow = await findMonthById(workspaceId, input.monthId, tx);
   if (!monthRow) {
     throw new MonthNotFoundError();
   }
-  await assertExpenseCategory(userId, input.categoryId, tx);
+  await assertExpenseCategory(workspaceId, input.categoryId, tx);
   const amountString = formatCents(cents);
   return insertMonthLine(
     {
@@ -171,11 +174,12 @@ export async function addMonthOnlyLine(
 }
 
 export async function deleteMonthLine(
-  userId: string,
+  access: WorkspaceAccess,
   input: DeleteMonthLineInput,
   tx: Tx | typeof db = db,
 ): Promise<void> {
-  const removed = await repoDelete(userId, input.lineId, tx);
+  const workspaceId = authorize(access, "manageMonthMoney");
+  const removed = await repoDelete(workspaceId, input.lineId, tx);
   if (!removed) {
     throw new MonthLineNotFoundError();
   }
@@ -186,11 +190,11 @@ export async function deleteMonthLine(
 // ----------------------------------------------------------------------------
 
 async function assertExpenseCategory(
-  userId: string,
+  workspaceId: string,
   categoryId: string,
   tx: Tx | typeof db,
 ): Promise<void> {
-  const category = await findCategoryById(userId, categoryId, tx);
+  const category = await findCategoryById(workspaceId, categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }

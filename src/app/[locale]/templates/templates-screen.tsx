@@ -50,11 +50,14 @@ export function TemplatesScreen({
   initialTemplates,
   expenseCategories,
   currency,
+  canManage = true,
 }: {
   locale: string;
   currency: string;
   initialTemplates: TemplateRowData[];
   expenseCategories: CategoryOption[];
+  /** UC-31 §3: the fixed/estimated catalog is Admin+. */
+  canManage?: boolean;
 }) {
   const t = useTranslations("templates");
   const [kind, setKind] = useState<Kind>("committed");
@@ -181,11 +184,13 @@ export function TemplatesScreen({
         })}
       </div>
 
-      <AddTemplateForm
-        kind={kind}
-        currency={currency}
-        expenseCategories={expenseCategories}
-      />
+      {canManage && (
+        <AddTemplateForm
+          kind={kind}
+          currency={currency}
+          expenseCategories={expenseCategories}
+        />
+      )}
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground px-1 py-6 text-center text-sm">
@@ -199,6 +204,7 @@ export function TemplatesScreen({
               template={row}
               currency={currency}
               expenseCategories={expenseCategories}
+              canManage={canManage}
             />
           ))}
         </ul>

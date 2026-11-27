@@ -8,17 +8,17 @@ export async function seedTwoCompleteYearsPlusIncomplete(
   const sql = postgres(dbUrl, { max: 1, prepare: false });
   try {
     const [food] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, 'Food', 'expense', true)
       RETURNING id
     `;
     const [rent] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, 'Rent', 'expense', true)
       RETURNING id
     `;
     const [salary] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${userId}, 'Salary', 'income', true)
       RETURNING id
     `;
@@ -66,7 +66,7 @@ async function insertMonthMoney(
   },
 ): Promise<void> {
   const [row] = await sql<{ id: string }[]>`
-    INSERT INTO month (user_id, year, month)
+    INSERT INTO month (workspace_id, year, month)
     VALUES (${userId}, ${year}, ${month})
     RETURNING id
   `;
@@ -76,9 +76,9 @@ async function insertMonthMoney(
     VALUES (${row.id}, ${amounts.salaryId}, 'Pay', ${amounts.income})
   `;
   await sql`
-    INSERT INTO month_actual_expense (month_id, category_id, name, amount)
+    INSERT INTO month_actual_expense (month_id, category_id, name, amount, created_by_user_id)
     VALUES
-      (${row.id}, ${amounts.foodId}, 'Groceries', ${amounts.foodAmt}),
-      (${row.id}, ${amounts.rentId}, 'Rent', ${amounts.rentAmt})
+      (${row.id}, ${amounts.foodId}, 'Groceries', ${amounts.foodAmt}, ${userId}),
+      (${row.id}, ${amounts.rentId}, 'Rent', ${amounts.rentAmt}, ${userId})
   `;
 }

@@ -1,10 +1,11 @@
 import { redirect } from "@/i18n/navigation";
 import { hasLocale } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { roleAllows } from "@/lib/workspace-roles";
 import { listAnnualsForManagement } from "@/server/services/annuals";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
-import { getProfileSettings } from "@/server/services/settings";
+import { getWorkspaceCurrency } from "@/server/services/workspaces";
 import { parseAmount } from "@/server/money";
 import { AnnualsScreen } from "./annuals-screen";
 import { routing } from "@/i18n/routing";
@@ -22,16 +23,16 @@ export default async function AnnualsPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const [annuals, expenseCategories, profileSettings, t, session] = await Promise.all([
-    listAnnualsForManagement(userId),
-    listActiveCategoriesForPicker(userId, "expense"),
-    getProfileSettings(userId),
+    listAnnualsForManagement(access),
+    listActiveCategoriesForPicker(access, "expense"),
+    getWorkspaceCurrency(access),
     getTranslations({ locale, namespace: "annuals" }),
     auth(),
   ]);
 
-  const currency = profileSettings?.currency ?? "EUR";
+  const currency = profileSettings;
   const email = session?.user?.email ?? "";
   const displayName = session?.user?.name ?? null;
   const avatarUrl = session?.user?.image ?? null;
@@ -51,6 +52,7 @@ export default async function AnnualsPage({
         <AnnualsScreen
           locale={locale}
           currency={currency}
+          canManage={roleAllows(access.role, "manageAnnuals")}
           initialAnnuals={annuals.map((row) => ({
             id: row.id,
             categoryId: row.categoryId,

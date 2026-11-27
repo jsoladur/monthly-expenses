@@ -65,7 +65,27 @@ export interface ActualRowData {
   // edits this actual, the gate closes.
   convertedFromLineId: string | null;
   editedAfterConversion: boolean;
+  // UC-31 §4.14: whether the viewer may edit / delete this ticket (Editor:
+  // own only; Admin/Owner: any). Computed on the server.
+  canEdit: boolean;
+  // UC-31 §4.12: "Added by {name}" — shared workspaces only, else null.
+  addedBy: string | null;
 }
+
+/** UC-31 §3: which month-level controls the viewer's role allows. */
+export interface ActualsPermissions {
+  addActual: boolean;
+  moveActual: boolean;
+  undoPass: boolean;
+  manageMonthMoney: boolean;
+}
+
+const ALL_PERMISSIONS: ActualsPermissions = {
+  addActual: true,
+  moveActual: true,
+  undoPass: true,
+  manageMonthMoney: true,
+};
 
 export interface CategoryOption {
   id: string;
@@ -82,6 +102,7 @@ export function ActualsScreen({
   committedReservedLines = [],
   nameSuggestions = [],
   moveTargets = EMPTY_MOVE_TARGETS,
+  permissions = ALL_PERMISSIONS,
 }: {
   monthId: string;
   year: number;
@@ -92,22 +113,26 @@ export function ActualsScreen({
   committedReservedLines?: ReservedLineRowData[];
   nameSuggestions?: ActualNameSuggestion[];
   moveTargets?: MoveTargetGroups;
+  permissions?: ActualsPermissions;
 }) {
   const t = useTranslations("actuals");
   const [movedTo, setMovedTo] = useState<MoveTargetOption | null>(null);
   const dismissMoved = useCallback(() => setMovedTo(null), []);
-  const canMove = moveTargets.previous.length + moveTargets.upcoming.length > 0;
+  const canMove =
+    permissions.moveActual && moveTargets.previous.length + moveTargets.upcoming.length > 0;
 
   return (
     <section className="flex flex-col gap-3">
-      <AddActualForm
-        monthId={monthId}
-        year={year}
-        month={month}
-        currency={currency}
-        expenseCategories={expenseCategories}
-        nameSuggestions={nameSuggestions}
-      />
+      {permissions.addActual && (
+        <AddActualForm
+          monthId={monthId}
+          year={year}
+          month={month}
+          currency={currency}
+          expenseCategories={expenseCategories}
+          nameSuggestions={nameSuggestions}
+        />
+      )}
 
       {initialActuals.length > 0 && (
         <ul className="flex flex-col gap-1">
@@ -121,6 +146,7 @@ export function ActualsScreen({
               currency={currency}
               expenseCategories={expenseCategories}
               moveTargets={canMove ? moveTargets : null}
+              canUndo={permissions.undoPass}
               onMoved={setMovedTo}
             />
           ))}
@@ -146,6 +172,7 @@ export function ActualsScreen({
                 year={year}
                 month={month}
                 currency={currency}
+                canManage={permissions.manageMonthMoney}
               />
             ))}
           </ul>
@@ -336,6 +363,7 @@ function ActualRow({
   currency,
   expenseCategories,
   moveTargets,
+  canUndo,
   onMoved,
 }: {
   row: ActualRowData;
@@ -345,10 +373,12 @@ function ActualRow({
   currency: string;
   expenseCategories: CategoryOption[];
   moveTargets: MoveTargetGroups | null;
+  canUndo: boolean;
   onMoved: (target: MoveTargetOption) => void;
 }) {
   const t = useTranslations("actuals");
   const tv = useTranslations("validation");
+  const tw = useTranslations("workspaces");
   const [editing, setEditing] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [movePending, setMovePending] = useState(false);
@@ -356,7 +386,9 @@ function ActualRow({
   const [deletePending, setDeletePending] = useState(false);
   const [undoPending, setUndoPending] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
-  const canUndoPass = row.convertedFromLineId !== null && !row.editedAfterConversion;
+  const canUndoPass = canUndo && row.convertedFromLineId !== null && !row.editedAfterConversion;
+  // Disabled by absence (UC-31 §7.4): no control the role cannot use.
+  const canEdit = row.canEdit;
 
   const handleDelete = async () => {
     if (deletePending) return;
@@ -408,7 +440,7 @@ function ActualRow({
 
   return (
     <SwipeAction
-      onSwipeLeft={handleDelete}
+      onSwipeLeft={canEdit ? handleDelete : undefined}
       onSwipeRight={canUndoPass ? handleUndo : undefined}
       leftIcon={canUndoPass ? <Undo2 className="size-5" /> : undefined}
       rightIcon={<Trash2 className="size-5" />}
@@ -427,6 +459,11 @@ function ActualRow({
               {row.observations}
             </span>
           )}
+          {row.addedBy && (
+            <span className="text-muted-foreground truncate text-xs">
+              {tw("addedBy", { name: row.addedBy })}
+            </span>
+          )}
         </span>
         <span className="flex shrink-0 items-center gap-2">
           <span className="tabular-nums whitespace-nowrap">
@@ -434,6 +471,7 @@ function ActualRow({
           </span>
           <RowActions
             canUndoPass={canUndoPass}
+            canEdit={canEdit}
             onEdit={() => setEditing(true)}
             onMove={moveTargets ? () => setMoveOpen(true) : undefined}
             onUndo={handleUndo}
@@ -469,6 +507,7 @@ function ActualRow({
 
 function RowActions({
   canUndoPass,
+  canEdit,
   onEdit,
   onMove,
   onUndo,
@@ -478,6 +517,7 @@ function RowActions({
   undoError,
 }: {
   canUndoPass: boolean;
+  canEdit: boolean;
   onEdit: () => void;
   onMove?: () => void;
   onUndo: () => void;
@@ -491,11 +531,13 @@ function RowActions({
   return (
     <span className="flex flex-col items-end gap-1">
       <span className="flex items-center gap-1">
-        <IconButton
-          icon={<Pencil className="size-4" />}
-          label={t("actions.edit")}
-          onClick={onEdit}
-        />
+        {canEdit && (
+          <IconButton
+            icon={<Pencil className="size-4" />}
+            label={t("actions.edit")}
+            onClick={onEdit}
+          />
+        )}
         {onMove && (
           <IconButton
             icon={<ArrowLeftRight className="size-4" />}
@@ -511,13 +553,15 @@ function RowActions({
             onClick={onUndo}
           />
         )}
-        <IconButton
-          icon={<Trash2 className="size-4" />}
-          label={t("actions.delete")}
-          destructive
-          disabled={deletePending}
-          onClick={onDelete}
-        />
+        {canEdit && (
+          <IconButton
+            icon={<Trash2 className="size-4" />}
+            label={t("actions.delete")}
+            destructive
+            disabled={deletePending}
+            onClick={onDelete}
+          />
+        )}
       </span>
       {undoError && (
         <span
@@ -688,6 +732,8 @@ function errorToMessage(
       return tv("amountFormat");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 
@@ -704,6 +750,8 @@ function errorToMessageMove(
       return tv("actualNotFound");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 
@@ -775,6 +823,8 @@ function errorToMessageUndo(
       return tv("reservedLineNotFound");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 
@@ -788,12 +838,14 @@ function CommittedReservedRow({
   year,
   month,
   currency,
+  canManage,
 }: {
   row: ReservedLineRowData;
   monthId: string;
   year: number;
   month: number;
   currency: string;
+  canManage: boolean;
 }) {
   const t = useTranslations("actuals");
   const tv = useTranslations("validation");
@@ -825,8 +877,8 @@ function CommittedReservedRow({
 
   return (
     <SwipeAction
-      onSwipeLeft={handleDelete}
-      onSwipeRight={handlePass}
+      onSwipeLeft={canManage ? handleDelete : undefined}
+      onSwipeRight={canManage ? handlePass : undefined}
       leftIcon={<ArrowRightCircle className="size-5" />}
       rightIcon={<Trash2 className="size-5" />}
       leftLabel={t("actions.passToActual")}
@@ -863,19 +915,23 @@ function CommittedReservedRow({
               </span>
             )}
           </span>
-          <IconButton
-            icon={<ArrowRightCircle className="size-4" />}
-            label={t("actions.passToActual")}
-            disabled={pending}
-            onClick={handlePass}
-          />
-          <IconButton
-            icon={<Trash2 className="size-4" />}
-            label={t("actions.delete")}
-            destructive
-            disabled={deletePending}
-            onClick={handleDelete}
-          />
+          {canManage && (
+            <>
+              <IconButton
+                icon={<ArrowRightCircle className="size-4" />}
+                label={t("actions.passToActual")}
+                disabled={pending}
+                onClick={handlePass}
+              />
+              <IconButton
+                icon={<Trash2 className="size-4" />}
+                label={t("actions.delete")}
+                destructive
+                disabled={deletePending}
+                onClick={handleDelete}
+              />
+            </>
+          )}
         </span>
         {!row.categoryActive && (
           <p className="text-muted-foreground basis-full text-xs">
@@ -911,6 +967,8 @@ function errorToMessagePass(
       return tv("cannotUndoPass");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 

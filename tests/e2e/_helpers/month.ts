@@ -9,7 +9,7 @@ export async function insertMonthCloningTemplates(
   month: number,
 ): Promise<string> {
   const [row] = await sql<{ id: string }[]>`
-    INSERT INTO month (user_id, year, month)
+    INSERT INTO month (workspace_id, year, month)
     VALUES (${userId}, ${year}, ${month})
     RETURNING id
   `;
@@ -36,7 +36,7 @@ export async function insertMonthCloningTemplates(
       template.kind,
       'cloned'
     FROM template
-    WHERE template.user_id = ${userId} AND template.active = true
+    WHERE template.workspace_id = ${userId} AND template.active = true
   `;
 
   return row.id;

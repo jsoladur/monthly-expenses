@@ -13,8 +13,8 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 // Excel export repository (UC-19, PRD UC-24 / C22, ARCH §5 rule 1).
 //
-// Bulk reads of month-scoped money rows. Every query takes `userId` first
-// and joins `month` so `month.user_id` is never optional (PRD §5.1).
+// Bulk reads of month-scoped money rows. Every query takes `workspaceId` first
+// and joins `month` so `month.workspace_id` is never optional (PRD §5.1).
 // Money columns stay `numeric(14,2)` strings — this file never converts.
 // ============================================================================
 
@@ -49,7 +49,7 @@ export type ExportLineRecord = {
 };
 
 export async function listExportIncomes(
-  userId: string,
+  workspaceId: string,
   monthIds: string[],
   tx: Tx | typeof db = db,
 ): Promise<ExportIncomeRecord[]> {
@@ -65,12 +65,12 @@ export async function listExportIncomes(
     .from(monthIncome)
     .innerJoin(month, eq(monthIncome.monthId, month.id))
     .innerJoin(category, eq(monthIncome.categoryId, category.id))
-    .where(and(eq(month.userId, userId), inArray(monthIncome.monthId, monthIds)))
+    .where(and(eq(month.workspaceId, workspaceId), inArray(monthIncome.monthId, monthIds)))
     .orderBy(asc(monthIncome.createdAt));
 }
 
 export async function listExportActuals(
-  userId: string,
+  workspaceId: string,
   monthIds: string[],
   tx: Tx | typeof db = db,
 ): Promise<ExportActualRecord[]> {
@@ -89,13 +89,13 @@ export async function listExportActuals(
     .innerJoin(month, eq(monthActualExpense.monthId, month.id))
     .innerJoin(category, eq(monthActualExpense.categoryId, category.id))
     .where(
-      and(eq(month.userId, userId), inArray(monthActualExpense.monthId, monthIds)),
+      and(eq(month.workspaceId, workspaceId), inArray(monthActualExpense.monthId, monthIds)),
     )
     .orderBy(asc(monthActualExpense.createdAt));
 }
 
 export async function listExportLines(
-  userId: string,
+  workspaceId: string,
   monthIds: string[],
   tx: Tx | typeof db = db,
 ): Promise<ExportLineRecord[]> {
@@ -115,6 +115,6 @@ export async function listExportLines(
     .from(monthFixedLine)
     .innerJoin(month, eq(monthFixedLine.monthId, month.id))
     .innerJoin(category, eq(monthFixedLine.categoryId, category.id))
-    .where(and(eq(month.userId, userId), inArray(monthFixedLine.monthId, monthIds)))
+    .where(and(eq(month.workspaceId, workspaceId), inArray(monthFixedLine.monthId, monthIds)))
     .orderBy(asc(monthFixedLine.createdAt));
 }

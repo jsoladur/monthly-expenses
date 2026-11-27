@@ -13,6 +13,8 @@ import {
   getMonthList,
   getMonthWorkspace,
 } from "@/server/services/months";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-06 month creation, cloning & home — integration (PRD §15 #3, #4, #18).
@@ -62,7 +64,7 @@ suite("UC-06 month creation, cloning & home", () => {
 
     const month = await createMonth(userId, { year: 2026, month: 8 });
 
-    expect(month.userId).toBe(userId);
+    expect(month.workspaceId).toBe(userId.workspaceId);
     expect(month.year).toBe(2026);
     expect(month.month).toBe(8);
 
@@ -256,8 +258,8 @@ suite("UC-06 month creation, cloning & home", () => {
 
     expect(aliceMonths).toHaveLength(1);
     expect(bobMonths).toHaveLength(1);
-    expect(aliceMonths[0]!.userId).toBe(alice);
-    expect(bobMonths[0]!.userId).toBe(bob);
+    expect(aliceMonths[0]!.workspaceId).toBe(alice.workspaceId);
+    expect(bobMonths[0]!.workspaceId).toBe(bob.workspaceId);
 
     // Cross-tenant workspace read surfaces as not-found.
     const aliceAug = await getMonthWorkspace(alice, 2026, 8);
@@ -286,13 +288,13 @@ suite("UC-06 month creation, cloning & home", () => {
     // The first creation succeeded with one cloned line; the failed attempt
     // did not insert anything else.
     const rows = await db.execute<{ n: string }>(sql`
-      SELECT COUNT(*)::text AS n FROM month WHERE user_id = ${userId}
+      SELECT COUNT(*)::text AS n FROM month WHERE workspace_id = ${userId.workspaceId}
     `);
     expect(Number.parseInt(rows[0]!.n, 10)).toBe(1);
 
     const lineRows = await db.execute<{ n: string }>(sql`
       SELECT COUNT(*)::text AS n FROM month_fixed_line
-        WHERE month_id IN (SELECT id FROM month WHERE user_id = ${userId})
+        WHERE month_id IN (SELECT id FROM month WHERE workspace_id = ${userId.workspaceId})
     `);
     expect(Number.parseInt(lineRows[0]!.n, 10)).toBe(1);
   });
@@ -302,14 +304,10 @@ suite("UC-06 month creation, cloning & home", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

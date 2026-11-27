@@ -3,13 +3,15 @@ import { parseAmount } from "@/server/money";
 import { searchActualsByText } from "@/server/repositories/search";
 import { sanitizeSearchTerm } from "@/server/search/sanitize";
 import type { SearchActualHit, SearchActualsResult } from "@/server/search/types";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 export type { SearchActualHit, SearchActualsResult };
 
 export async function searchActuals(
-  userId: string,
+  access: WorkspaceAccess,
   rawQuery: string | null | undefined,
 ): Promise<SearchActualsResult> {
+  const workspaceId = authorize(access, "read");
   const raw = rawQuery ?? "";
   if (raw.trim() === "") {
     return { status: "idle" };
@@ -18,7 +20,7 @@ export async function searchActuals(
   if (term === null) {
     return { status: "tooShort" };
   }
-  const rows = await searchActualsByText(userId, term);
+  const rows = await searchActualsByText(workspaceId, term);
   const hits = rows.slice(0, 100).map(toHit);
   if (hits.length === 0) {
     return { status: "empty", query: raw };

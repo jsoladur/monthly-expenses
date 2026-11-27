@@ -74,22 +74,22 @@ async function seedPastMonth(context: BrowserContext, tag: string) {
 
   const sql = postgres(DB_URL, { max: 1, prepare: false });
   try {
-    await sql`DELETE FROM month WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM template WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM annual WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM category WHERE user_id = ${user.id}`;
+    await sql`DELETE FROM month WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM template WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM annual WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${user.id}`;
     const cats = await sql<{ id: string; name: string }[]>`
-      INSERT INTO category (user_id, name, kind) VALUES
+      INSERT INTO category (workspace_id, name, kind) VALUES
         (${user.id}, 'Salary', 'income'),
         (${user.id}, 'Groceries', 'expense')
       RETURNING id, name`;
     const id = (name: string) => cats.find((c) => c.name === name)!.id;
     const [monthRow] = await sql<{ id: string }[]>`
-      INSERT INTO month (user_id, year, month) VALUES (${user.id}, 2025, 3) RETURNING id`;
+      INSERT INTO month (workspace_id, year, month) VALUES (${user.id}, 2025, 3) RETURNING id`;
     await sql`INSERT INTO month_income (month_id, category_id, name, amount)
       VALUES (${monthRow.id}, ${id("Salary")}, 'Pay', '3000.00')`;
-    await sql`INSERT INTO month_actual_expense (month_id, category_id, name, amount)
-      VALUES (${monthRow.id}, ${id("Groceries")}, 'Market', '120.00')`;
+    await sql`INSERT INTO month_actual_expense (month_id, category_id, name, amount, created_by_user_id)
+      VALUES (${monthRow.id}, ${id("Groceries")}, 'Market', '120.00', ${user.id})`;
     await sql`INSERT INTO month_fixed_line
         (month_id, category_id, name, kind, origin, original_amount, remaining_amount)
       VALUES

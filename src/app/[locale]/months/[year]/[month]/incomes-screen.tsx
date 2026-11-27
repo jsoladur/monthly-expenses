@@ -54,6 +54,7 @@ export function IncomesScreen({
   initialIncomes,
   incomeCategories,
   nameSuggestions = [],
+  canManage = true,
 }: {
   monthId: string;
   year: number;
@@ -62,19 +63,23 @@ export function IncomesScreen({
   initialIncomes: IncomeRowData[];
   incomeCategories: CategoryOption[];
   nameSuggestions?: NameSuggestion[];
+  /** UC-31 §3: incomes are Admin+; other roles see the list only. */
+  canManage?: boolean;
 }) {
   const t = useTranslations("incomes");
 
   return (
     <section className="flex flex-col gap-3">
-      <AddIncomeForm
-        monthId={monthId}
-        year={year}
-        month={month}
-        currency={currency}
-        incomeCategories={incomeCategories}
-        nameSuggestions={nameSuggestions}
-      />
+      {canManage && (
+        <AddIncomeForm
+          monthId={monthId}
+          year={year}
+          month={month}
+          currency={currency}
+          incomeCategories={incomeCategories}
+          nameSuggestions={nameSuggestions}
+        />
+      )}
 
       {initialIncomes.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("empty")}</p>
@@ -89,6 +94,7 @@ export function IncomesScreen({
               month={month}
               currency={currency}
               incomeCategories={incomeCategories}
+              canManage={canManage}
             />
           ))}
         </ul>
@@ -264,6 +270,7 @@ function IncomeRow({
   month,
   currency,
   incomeCategories,
+  canManage,
 }: {
   row: IncomeRowData;
   monthId: string;
@@ -271,6 +278,7 @@ function IncomeRow({
   month: number;
   currency: string;
   incomeCategories: CategoryOption[];
+  canManage: boolean;
 }) {
   const t = useTranslations("incomes");
   const [editing, setEditing] = useState(false);
@@ -300,7 +308,7 @@ function IncomeRow({
 
   return (
     <SwipeAction
-      onSwipeLeft={handleDelete}
+      onSwipeLeft={canManage ? handleDelete : undefined}
       rightIcon={<Trash2 className="size-5" />}
       rightLabel={t("actions.delete")}
       className="rounded-md border"
@@ -316,11 +324,13 @@ function IncomeRow({
           <span className="tabular-nums whitespace-nowrap">
             {formatMoney(row.amountCents, currency)}
           </span>
-          <RowActions
-            onEdit={() => setEditing(true)}
-            onDelete={handleDelete}
-            deletePending={deletePending}
-          />
+          {canManage && (
+            <RowActions
+              onEdit={() => setEditing(true)}
+              onDelete={handleDelete}
+              deletePending={deletePending}
+            />
+          )}
         </span>
         {!row.categoryActive && (
           <p className="text-muted-foreground basis-full text-xs">
@@ -499,5 +509,7 @@ function errorToMessage(
       return tv("amountFormat");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }

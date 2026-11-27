@@ -3,7 +3,8 @@
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import { monthSchema, yearSchema } from "@/server/validators";
 import {
   NothingToExportError,
@@ -38,7 +39,8 @@ const exportSchema = z.discriminatedUnion("mode", [
   }),
 ]);
 
-export type ExportActionError = "nothingToExport" | "validation";
+export type ExportActionError = "nothingToExport" | "validation"
+  | "workspaceForbidden";
 
 export type ExportActionResult =
   | { ok: true; filename: string; base64: string }
@@ -52,16 +54,19 @@ export async function exportExpensesAction(
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const copy = await loadExportCopy(locale);
 
   let result;
   try {
-    result = await serviceExport(userId, parsed.data as ExportSelection, {
+    result = await serviceExport(access, parsed.data as ExportSelection, {
       locale: isAppLocale(locale) ? locale : routing.defaultLocale,
       copy,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof NothingToExportError) {
       return { ok: false, error: "nothingToExport" };
     }

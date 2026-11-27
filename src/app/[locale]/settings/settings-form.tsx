@@ -37,10 +37,16 @@ export function SettingsForm({
   currentCurrency,
   supportedCurrencies,
   currentTheme,
+  canEditCurrency = true,
+  currencyLabel,
 }: {
   currentCurrency: CurrencyCode;
   supportedCurrencies: ReadonlyArray<CurrencyCode>;
   currentTheme: ThemePreference;
+  /** UC-31 §3: the workspace currency is Admin+; others see it read-only. */
+  canEditCurrency?: boolean;
+  /** UC-31 §7.3: names the workspace in multi-workspace mode only. */
+  currencyLabel?: string;
 }) {
   const t = useTranslations("settings");
   const tv = useTranslations("validation");
@@ -89,6 +95,12 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-6">
+      {!canEditCurrency ? (
+        <section className="flex flex-col gap-1" aria-label={t("currency")}>
+          <h2 className="text-sm font-medium">{currencyLabel ?? t("currency")}</h2>
+          <p className="text-sm">{getCurrencyDisplay(currentCurrency)}</p>
+        </section>
+      ) : (
       <form
         key={currencyFormKey}
         action={currencyFormAction}
@@ -96,7 +108,7 @@ export function SettingsForm({
         aria-label={t("currency")}
       >
         <label htmlFor="currency" className="text-sm font-medium">
-          {t("currency")}
+          {currencyLabel ?? t("currency")}
         </label>
         <select
           id="currency"
@@ -128,6 +140,7 @@ export function SettingsForm({
           {t("actions.save")}
         </Button>
       </form>
+      )}
 
       <form
         key={themeFormKey}
@@ -185,6 +198,8 @@ function errorToMessage(
       return tv("categoryNotFound");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 

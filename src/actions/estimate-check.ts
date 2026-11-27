@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { monthSchema, uuidSchema, yearSchema } from "@/server/validators";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import { MonthNotFoundError } from "@/server/services/months";
 import {
   applyEstimateSuggestion as serviceApply,
@@ -27,7 +28,8 @@ const applySchema = z.object({
   mode: z.enum(["suggested", "release"]),
 });
 
-export type EstimateCheckActionError = "monthNotFound" | "categoryNotFound" | "validation";
+export type EstimateCheckActionError = "monthNotFound" | "categoryNotFound" | "validation"
+  | "workspaceForbidden";
 
 export type EstimateCheckActionResult =
   | { ok: true }
@@ -45,14 +47,17 @@ export async function applyEstimateSuggestionAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    await serviceApply(userId, {
+    await serviceApply(access, {
       monthId: parsed.data.monthId,
       categoryId: parsed.data.categoryId,
       mode: parsed.data.mode,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof MonthNotFoundError) {
       return { ok: false, error: "monthNotFound" };
     }

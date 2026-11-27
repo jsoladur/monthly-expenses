@@ -1,7 +1,7 @@
 import { redirect } from "@/i18n/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { auth, signOut } from "@/auth";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { isAppLocale } from "@/i18n/format";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
@@ -21,9 +21,9 @@ export default async function StatsPage({
   }
   setRequestLocale(locale);
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   const sp = await searchParams;
-  const page = await getGlobalStatsPage(userId, sp);
+  const page = await getGlobalStatsPage(access, sp);
   const t = await getTranslations({ locale, namespace: "stats" });
 
   const session = await auth();

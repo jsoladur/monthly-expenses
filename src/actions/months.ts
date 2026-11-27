@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { monthSchema, uuidSchema, yearSchema } from "@/server/validators";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import {
   DuplicateMonthError,
   MonthNotFoundError,
@@ -23,8 +24,9 @@ import { redirect } from "@/i18n/navigation";
 // One action per mutation. Every action:
 //   1. Parses the input with Zod (rejects anything else with
 //      `{ ok: false, error: "validation" }`).
-//   2. Resolves the tenant via `requireUserId()` — the canonical tenancy
-//      check (PRD §5.1, ARCH §3.2 rule 4). The locale is read from the
+//   2. Resolves the active workspace via `resolveActiveWorkspace()` — session
+//      (`requireUserId()`) + membership check (UC-31 §4.9, ARCH §3.2 rule 6);
+//      the service applies the role matrix (`workspaceForbidden`). The locale is read from the
 //      `x-next-intl-locale` header the middleware sets, so unauthenticated
 //      callers land on a locale-prefixed sign-in URL.
 //   3. Calls the service. Domain errors are translated into stable i18n keys
@@ -45,7 +47,8 @@ const createSchema = z.object({
   month: monthSchema,
 });
 
-export type MonthActionError = "duplicate" | "validation";
+export type MonthActionError = "duplicate" | "validation"
+  | "workspaceForbidden";
 
 export type CreateMonthResult =
   | { ok: true; year: number; month: number }
@@ -60,14 +63,17 @@ export async function createMonthAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    const created = await serviceCreateMonth(userId, {
+    const created = await serviceCreateMonth(access, {
       year: parsed.data.year,
       month: parsed.data.month,
     });
     await setLastOpenedMonthCookie(created.year, created.month);
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof DuplicateMonthError) {
       return { ok: false, error: "duplicate" };
     }
@@ -92,7 +98,7 @@ export async function createMonthAction(input: {
 
 const deleteSchema = z.object({ monthId: uuidSchema });
 
-export type DeleteMonthResult = { ok: false; error: "validation" | "notFound" };
+export type DeleteMonthResult = { ok: false; error: "validation" | "notFound" | "workspaceForbidden" };
 
 export async function deleteMonthAction(input: {
   monthId: string;
@@ -102,11 +108,14 @@ export async function deleteMonthAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   let deleted: { year: number; month: number };
   try {
-    deleted = await serviceDeleteMonth(userId, { monthId: parsed.data.monthId });
+    deleted = await serviceDeleteMonth(access, { monthId: parsed.data.monthId });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof MonthNotFoundError) {
       return { ok: false, error: "notFound" };
     }

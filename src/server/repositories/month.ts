@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gt, inArray, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import {
   month,
@@ -19,7 +19,7 @@ import type { Tx } from "@/server/repositories/user";
 // Month repository (UC-06, PRD §6.3 / §7.8, ARCH §4 / §5).
 //
 // The single entry point for SQL on the month-scoped money rows. Every
-// function takes `userId` as its FIRST argument and applies it in every WHERE
+// function takes `workspaceId` as its FIRST argument and applies it in every WHERE
 // clause (PRD §5.1, ARCH §5 rule 1). Money columns live as `numeric(14,2)`
 // strings end-to-end (ADR-5, ARCH §8) — this repository NEVER converts them.
 //
@@ -30,7 +30,7 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 
 export async function findMonthByPeriod(
-  userId: string,
+  workspaceId: string,
   year: number,
   monthValue: number,
   tx: Tx | typeof db = db,
@@ -40,7 +40,7 @@ export async function findMonthByPeriod(
     .from(month)
     .where(
       and(
-        eq(month.userId, userId),
+        eq(month.workspaceId, workspaceId),
         eq(month.year, year),
         eq(month.month, monthValue),
       ),
@@ -50,14 +50,14 @@ export async function findMonthByPeriod(
 }
 
 export async function findMonthById(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Month | null> {
   const rows = await tx
     .select()
     .from(month)
-    .where(and(eq(month.userId, userId), eq(month.id, id)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(month.id, id)))
     .limit(1);
   return rows[0] ?? null;
 }
@@ -77,55 +77,55 @@ export async function insertMonth(
 // `month_actual_expense` go by `ON DELETE CASCADE` (migration 0000). Returns
 // the deleted period, or `null` when the id is not owned by this tenant.
 export async function deleteMonth(
-  userId: string,
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<{ year: number; month: number } | null> {
   const rows = await tx
     .delete(month)
-    .where(and(eq(month.userId, userId), eq(month.id, monthId)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(month.id, monthId)))
     .returning({ year: month.year, month: month.month });
   return rows[0] ?? null;
 }
 
 export async function listMonths(
-  userId: string,
+  workspaceId: string,
   tx: Tx | typeof db = db,
 ): Promise<Month[]> {
   return tx
     .select()
     .from(month)
-    .where(eq(month.userId, userId))
+    .where(eq(month.workspaceId, workspaceId))
     .orderBy(desc(month.year), desc(month.month));
 }
 
 export async function listMonthYears(
-  userId: string,
+  workspaceId: string,
   tx: Tx | typeof db = db,
 ): Promise<number[]> {
   const rows = await tx
     .select({ year: month.year })
     .from(month)
-    .where(eq(month.userId, userId))
+    .where(eq(month.workspaceId, workspaceId))
     .groupBy(month.year)
     .orderBy(desc(month.year));
   return rows.map((r) => r.year);
 }
 
 export async function listMonthsByYear(
-  userId: string,
+  workspaceId: string,
   year: number,
   tx: Tx | typeof db = db,
 ): Promise<Month[]> {
   return tx
     .select()
     .from(month)
-    .where(and(eq(month.userId, userId), eq(month.year, year)))
+    .where(and(eq(month.workspaceId, workspaceId), eq(month.year, year)))
     .orderBy(desc(month.month));
 }
 
 export async function listMonthsByYears(
-  userId: string,
+  workspaceId: string,
   years: readonly number[],
   tx: Tx | typeof db = db,
 ): Promise<Month[]> {
@@ -133,12 +133,12 @@ export async function listMonthsByYears(
   return tx
     .select()
     .from(month)
-    .where(and(eq(month.userId, userId), inArray(month.year, [...years])))
+    .where(and(eq(month.workspaceId, workspaceId), inArray(month.year, [...years])))
     .orderBy(desc(month.year), desc(month.month));
 }
 
 export async function listMonthsByPeriods(
-  userId: string,
+  workspaceId: string,
   periods: ReadonlyArray<{ year: number; month: number }>,
   tx: Tx | typeof db = db,
 ): Promise<Month[]> {
@@ -152,12 +152,12 @@ export async function listMonthsByPeriods(
   return tx
     .select()
     .from(month)
-    .where(and(eq(month.userId, userId), periodMatch))
+    .where(and(eq(month.workspaceId, workspaceId), periodMatch))
     .orderBy(desc(month.year), desc(month.month));
 }
 
 export async function listUpcomingMonthsInYear(
-  userId: string,
+  workspaceId: string,
   year: number,
   afterMonth: number,
   tx: Tx | typeof db = db,
@@ -167,7 +167,7 @@ export async function listUpcomingMonthsInYear(
     .from(month)
     .where(
       and(
-        eq(month.userId, userId),
+        eq(month.workspaceId, workspaceId),
         eq(month.year, year),
         gt(month.month, afterMonth),
       ),
@@ -184,35 +184,43 @@ export async function insertClonedLines(
   return inserted;
 }
 
+// The three month-row reads join `month` and filter `month.workspace_id`, so a
+// month id of another workspace yields nothing (PRD §5.1, ARCH §5 rule 1).
+const inMonthOf = (workspaceId: string, monthId: string) =>
+  sql`IN (SELECT id FROM ${month} WHERE id = ${monthId} AND workspace_id = ${workspaceId})`;
+
 export async function listMonthFixedLines(
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthFixedLine[]> {
   return tx
     .select()
     .from(monthFixedLine)
-    .where(eq(monthFixedLine.monthId, monthId))
+    .where(sql`${monthFixedLine.monthId} ${inMonthOf(workspaceId, monthId)}`)
     .orderBy(monthFixedLine.kind, monthFixedLine.createdAt);
 }
 
 export async function listMonthIncomes(
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthIncome[]> {
   return tx
     .select()
     .from(monthIncome)
-    .where(eq(monthIncome.monthId, monthId))
+    .where(sql`${monthIncome.monthId} ${inMonthOf(workspaceId, monthId)}`)
     .orderBy(monthIncome.createdAt);
 }
 
 export async function listMonthActuals(
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<MonthActualExpense[]> {
   return tx
     .select()
     .from(monthActualExpense)
-    .where(eq(monthActualExpense.monthId, monthId))
+    .where(sql`${monthActualExpense.monthId} ${inMonthOf(workspaceId, monthId)}`)
     .orderBy(monthActualExpense.createdAt);
 }

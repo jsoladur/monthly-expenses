@@ -12,6 +12,7 @@ import {
   type MoveMonthKey,
   type MoveTargets,
 } from "@/lib/move-window";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Move an actual expense to another month (UC-26, proposed PRD UC-28 / C26,
@@ -52,14 +53,15 @@ export interface MoveActualResult {
 }
 
 export async function listMoveTargets(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
 ): Promise<MoveTargets<MoveTargetMonth>> {
-  const source = await findMonthById(userId, monthId);
+  const workspaceId = authorize(access, "read");
+  const source = await findMonthById(workspaceId, monthId);
   if (!source) {
     throw new MonthNotFoundError();
   }
-  const months = await listMonths(userId);
+  const months = await listMonths(workspaceId);
   return splitMoveTargets(
     { year: source.year, month: source.month },
     months.map((m) => ({ id: m.id, year: m.year, month: m.month })),
@@ -67,19 +69,20 @@ export async function listMoveTargets(
 }
 
 export async function moveActualToMonth(
-  userId: string,
+  access: WorkspaceAccess,
   input: MoveActualInput,
 ): Promise<MoveActualResult> {
+  const workspaceId = authorize(access, "moveActual");
   return db.transaction(async (tx) => {
-    const actual = await findActualById(userId, input.actualId, tx);
+    const actual = await findActualById(workspaceId, input.actualId, tx);
     if (!actual) {
       throw new ActualNotFoundError();
     }
-    const source = await findMonthById(userId, actual.monthId, tx);
+    const source = await findMonthById(workspaceId, actual.monthId, tx);
     if (!source) {
       throw new ActualNotFoundError();
     }
-    const target = await findMonthById(userId, input.targetMonthId, tx);
+    const target = await findMonthById(workspaceId, input.targetMonthId, tx);
     if (!target) {
       throw new MonthNotFoundError();
     }
@@ -88,7 +91,7 @@ export async function moveActualToMonth(
     if (!isMoveTargetAllowed(from, to)) {
       throw new MoveTargetOutOfWindowError();
     }
-    const moved = await moveActual(userId, actual.id, target.id, tx);
+    const moved = await moveActual(workspaceId, actual.id, target.id, tx);
     if (!moved) {
       // Concurrent delete raced the move.
       throw new ActualNotFoundError();

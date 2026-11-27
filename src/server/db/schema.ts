@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -26,6 +27,11 @@ export const lineKindEnum = pgEnum("line_kind", ["committed", "estimated"]);
 export const lineOriginEnum = pgEnum("line_origin", ["cloned", "month_only"]);
 
 export const themePreferenceEnum = pgEnum("theme_preference", ["auto", "light", "dark"]);
+
+// UC-31 (migration 0008): workspace tenancy (PRD C30–C31).
+export const workspaceKindEnum = pgEnum("workspace_kind", ["private", "shared"]);
+
+export const workspaceRoleEnum = pgEnum("workspace_role", ["owner", "admin", "editor", "reader"]);
 
 // ============================================================================
 // Identity and profile (1:1)
@@ -55,16 +61,76 @@ export const profileSettings = pgTable("profile_settings", {
 });
 
 // ============================================================================
-// Global per-user catalogs — SOFT delete only (PRD §13)
+// Workspaces — the tenant (PRD C30–C31, UC-31, ARCH ADR-12, migration 0008)
+//
+// Every user has exactly one PRIVATE workspace (`personal_user_id` set, no
+// name). SHARED workspaces have a name and members with roles; exactly one
+// Owner each (partial unique index). Every tenant table below carries
+// `workspace_id` with ON DELETE CASCADE, so deleting a shared workspace
+// removes exactly its rows.
+// ============================================================================
+
+export const workspace = pgTable(
+  "workspace",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kind: workspaceKindEnum("kind").notNull(),
+    personalUserId: uuid("personal_user_id").references(() => appUser.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name"),
+    // Label only, no FX (PRD C9). Per workspace (UC-31 decision 7).
+    currency: char("currency", { length: 3 }).notNull().default("EUR"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("workspace_personal_user_uk")
+      .on(table.personalUserId)
+      .where(sql`${table.personalUserId} IS NOT NULL`),
+    check(
+      "workspace_private_user_ck",
+      sql`(${table.kind} = 'private') = (${table.personalUserId} IS NOT NULL)`,
+    ),
+    check("workspace_shared_name_ck", sql`${table.kind} = 'private' OR ${table.name} IS NOT NULL`),
+  ],
+);
+
+export const workspaceMember = pgTable(
+  "workspace_member",
+  {
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    role: workspaceRoleEnum("role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // `(workspace_id, user_id)` unique (UC-31 §4.7).
+    primaryKey({ name: "workspace_member_pk", columns: [table.workspaceId, table.userId] }),
+    // Exactly one Owner per workspace (UC-31 §4.7).
+    uniqueIndex("workspace_member_owner_uk")
+      .on(table.workspaceId)
+      .where(sql`${table.role} = 'owner'`),
+    index("workspace_member_user_idx").on(table.userId),
+  ],
+);
+
+// ============================================================================
+// Global per-workspace catalogs — SOFT delete only (PRD §13)
 // ============================================================================
 
 export const category = pgTable(
   "category",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => appUser.id, { onDelete: "cascade" }),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     kind: categoryKindEnum("kind").notNull(),
     // Savings category (PRD C24, UC-24). Money still leaves "available"; only
@@ -80,10 +146,10 @@ export const category = pgTable(
       "category_savings_kind_ck",
       sql`${table.countsAsSavings} = false OR ${table.kind} = 'expense'`,
     ),
-    // Partial unique: names are unique per (user, kind) only among ACTIVE rows
-    // (PRD §6.2). Soft-deleted rows free the name for re-use.
+    // Partial unique: names are unique per (workspace, kind) only among ACTIVE
+    // rows (PRD §6.2). Soft-deleted rows free the name for re-use.
     uniqueIndex("category_active_name_uk")
-      .on(table.userId, table.kind, table.name)
+      .on(table.workspaceId, table.kind, table.name)
       .where(sql`${table.active} = true`),
   ],
 );
@@ -92,9 +158,9 @@ export const template = pgTable(
   "template",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => appUser.id, { onDelete: "cascade" }),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     categoryId: uuid("category_id")
       .notNull()
       .references(() => category.id, { onDelete: "restrict" }),
@@ -119,10 +185,10 @@ export const template = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    // Clone source at month creation = active templates of the user that
+    // Clone source at month creation = active templates of the workspace that
     // apply to the new month-number (PRD C17 / C23). Overspend baseline =
     // sum of those templates per category (PRD §7.4).
-    index("template_clone_idx").on(table.userId, table.active, table.kind),
+    index("template_clone_idx").on(table.workspaceId, table.active, table.kind),
     index("template_category_idx").on(table.categoryId),
     check(
       "template_months_ck",
@@ -139,9 +205,9 @@ export const annual = pgTable(
   "annual",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => appUser.id, { onDelete: "cascade" }),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     categoryId: uuid("category_id")
       .notNull()
       .references(() => category.id, { onDelete: "restrict" }),
@@ -157,7 +223,7 @@ export const annual = pgTable(
   },
   (table) => [
     check("annual_charge_month_ck", sql`${table.chargeMonth} BETWEEN 1 AND 12`),
-    index("annual_reminder_idx").on(table.userId, table.chargeMonth),
+    index("annual_reminder_idx").on(table.workspaceId, table.chargeMonth),
   ],
 );
 
@@ -173,15 +239,15 @@ export const month = pgTable(
   "month",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => appUser.id, { onDelete: "cascade" }),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     year: integer("year").notNull(),
     month: integer("month").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("month_user_period_uk").on(table.userId, table.year, table.month),
+    uniqueIndex("month_workspace_period_uk").on(table.workspaceId, table.year, table.month),
     check("month_range_ck", sql`${table.month} BETWEEN 1 AND 12`),
   ],
 );
@@ -242,6 +308,11 @@ export const monthActualExpense = pgTable(
     name: text("name").notNull(),
     observations: text("observations"),
     amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    // The member who added the ticket (PRD C31, UC-31 §4.14). Editors may edit
+    // or delete only their own. For pass-to-actual: the user who passed it.
+    createdByUserId: uuid("created_by_user_id")
+      .notNull()
+      .references(() => appUser.id),
     // Logical reference only — NO foreign key: pass-to-actual hard-deletes the
     // source line in the same transaction; undo re-inserts it with the same id
     // (ARCH §4, PRD §7.5).
@@ -272,6 +343,9 @@ export const monthActualExpense = pgTable(
 export type AppUser = typeof appUser.$inferSelect;
 export type NewAppUser = typeof appUser.$inferInsert;
 export type ProfileSettings = typeof profileSettings.$inferSelect;
+export type Workspace = typeof workspace.$inferSelect;
+export type NewWorkspace = typeof workspace.$inferInsert;
+export type WorkspaceMember = typeof workspaceMember.$inferSelect;
 export type NewProfileSettings = typeof profileSettings.$inferInsert;
 export type Category = typeof category.$inferSelect;
 export type NewCategory = typeof category.$inferInsert;
@@ -292,3 +366,5 @@ export type CategoryKind = (typeof categoryKindEnum.enumValues)[number];
 export type LineKind = (typeof lineKindEnum.enumValues)[number];
 export type LineOrigin = (typeof lineOriginEnum.enumValues)[number];
 export type ThemePreference = (typeof themePreferenceEnum.enumValues)[number];
+export type WorkspaceKind = (typeof workspaceKindEnum.enumValues)[number];
+export type WorkspaceRoleValue = (typeof workspaceRoleEnum.enumValues)[number];

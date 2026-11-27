@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { routing, type AppLocale } from "@/i18n/routing";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import {
   getMonthWorkspace,
   MonthNotFoundError,
@@ -14,7 +14,8 @@ import {
 import { getAnnualReminders } from "@/server/services/annuals";
 import { getEstimateCheck } from "@/server/services/estimate-check";
 import { isBeforeCurrentMonth } from "@/lib/estimate-check";
-import { getProfileSettings } from "@/server/services/settings";
+import { getActualAuthorLabels, getWorkspaceCurrency } from "@/server/services/workspaces";
+import { canEditActual, roleAllows, type WorkspaceAction } from "@/lib/workspace-roles";
 import { listActiveCategoriesForPicker } from "@/server/services/categories";
 import { listCategoriesForManagement } from "@/server/services/categories";
 import { listRecentActualNameSuggestions } from "@/server/services/actuals";
@@ -71,18 +72,21 @@ export default async function MonthWorkspacePage({
   if (!Number.isInteger(year) || year < 1970 || year > 9999) notFound();
   if (!Number.isInteger(month) || month < 1 || month > 12) notFound();
 
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
 
   let workspace;
   try {
-    workspace = await getMonthWorkspace(userId, year, month);
+    workspace = await getMonthWorkspace(access, year, month);
   } catch (err) {
     if (err instanceof MonthNotFoundError) notFound();
     throw err;
   }
 
-  const settings = await getProfileSettings(userId);
-  const currency = settings?.currency ?? "EUR";
+  const currency = await getWorkspaceCurrency(access);
+  // UC-31 §3 / §7.4: controls a role cannot use are not rendered; the
+  // services enforce the same matrix on every write.
+  const can = (action: WorkspaceAction) => roleAllows(access.role, action);
+  const authorLabels = await getActualAuthorLabels(access);
 
   const [
     activeIncomeCategories,
@@ -90,10 +94,10 @@ export default async function MonthWorkspacePage({
     activeExpenseCategories,
     allExpenseCategories,
   ] = await Promise.all([
-    listActiveCategoriesForPicker(userId, "income"),
-    listCategoriesForManagement(userId, "income"),
-    listActiveCategoriesForPicker(userId, "expense"),
-    listCategoriesForManagement(userId, "expense"),
+    listActiveCategoriesForPicker(access, "income"),
+    listCategoriesForManagement(access, "income"),
+    listActiveCategoriesForPicker(access, "expense"),
+    listCategoriesForManagement(access, "expense"),
   ]);
   const incomeCategoryMap = new Map(
     allIncomeCategories.map((c) => [c.id, { name: c.name, active: c.active }]),
@@ -124,6 +128,10 @@ export default async function MonthWorkspacePage({
       amountCents: parseAmount(actual.amount),
       convertedFromLineId: actual.convertedFromLineId,
       editedAfterConversion: actual.editedAfterConversion,
+      canEdit: canEditActual(access, actual.createdByUserId),
+      // "Added by" only in shared workspaces (UC-31 §4.12).
+      addedBy:
+        access.kind === "shared" ? (authorLabels[actual.createdByUserId] ?? null) : null,
     };
   });
   const reservedLineRows: ReservedLineRowData[] = workspace.lines.map((line) => {
@@ -167,16 +175,16 @@ export default async function MonthWorkspacePage({
     moveTargetsRaw,
   ] =
     await Promise.all([
-      getMonthSummary(userId, workspace.month.id),
-      getOverspendWarnings(userId, workspace.month.id),
-      getAnnualReminders(userId, workspace.month.id),
-      listRecentActualNameSuggestions(userId, workspace.month.year, workspace.month.month),
-      listRecentIncomeNameSuggestions(userId, workspace.month.year, workspace.month.month),
+      getMonthSummary(access, workspace.month.id),
+      getOverspendWarnings(access, workspace.month.id),
+      getAnnualReminders(access, workspace.month.id),
+      listRecentActualNameSuggestions(access, workspace.month.year, workspace.month.month),
+      listRecentIncomeNameSuggestions(access, workspace.month.year, workspace.month.month),
       cameFromHistory
         ? Promise.resolve([])
-        : listUpcomingMonthsForPass(userId, workspace.month.year, workspace.month.month),
-      getEstimateCheck(userId, workspace.month.id),
-      listMoveTargets(userId, workspace.month.id),
+        : listUpcomingMonthsForPass(access, workspace.month.year, workspace.month.month),
+      getEstimateCheck(access, workspace.month.id),
+      listMoveTargets(access, workspace.month.id),
     ]);
   // UC-26: targets computed once per page; each carries its left-over so the
   // picker can answer "is there room?" without a per-row fetch.
@@ -185,7 +193,7 @@ export default async function MonthWorkspacePage({
     year: m.year,
     month: m.month,
     label: monthYear(locale as AppLocale, m.year, m.month),
-    leftOverCents: (await getMonthSummary(userId, m.id)).potentialSavings,
+    leftOverCents: (await getMonthSummary(access, m.id)).potentialSavings,
     // A month before the current calendar month is closed: its figure is
     // what was saved, not a forecast.
     isPast: isBeforeCurrentMonth(m.year, m.month, new Date()),
@@ -260,15 +268,17 @@ export default async function MonthWorkspacePage({
           <h1 className="text-2xl font-semibold tracking-tight">
             {monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
           </h1>
-          <MonthActionsMenu
-            monthId={workspace.month.id}
-            label={monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
-            counts={{
-              incomes: workspace.incomes.length,
-              lines: workspace.lines.length,
-              actuals: workspace.actuals.length,
-            }}
-          />
+          {can("deleteMonth") && (
+            <MonthActionsMenu
+              monthId={workspace.month.id}
+              label={monthYear(locale as AppLocale, workspace.month.year, workspace.month.month)}
+              counts={{
+                incomes: workspace.incomes.length,
+                lines: workspace.lines.length,
+                actuals: workspace.actuals.length,
+              }}
+            />
+          )}
         </div>
 
         {showPastMonthBanner && <PastMonthBanner />}
@@ -300,6 +310,12 @@ export default async function MonthWorkspacePage({
               committedReservedLines={committedLines}
               nameSuggestions={nameSuggestions}
               moveTargets={moveTargets}
+              permissions={{
+                addActual: can("addActual"),
+                moveActual: can("moveActual"),
+                undoPass: can("undoPass"),
+                manageMonthMoney: can("manageMonthMoney"),
+              }}
             />
           }
           incomesTab={
@@ -314,6 +330,7 @@ export default async function MonthWorkspacePage({
                 name: c.name,
               }))}
               nameSuggestions={incomeNameSuggestions}
+              canManage={can("manageMonthMoney")}
             />
           }
           reservedTab={
@@ -333,6 +350,7 @@ export default async function MonthWorkspacePage({
                 month: m.month,
                 label: monthName(locale as AppLocale, m.month),
               }))}
+              canManage={can("manageMonthMoney")}
             />
           }
           checkTab={
@@ -343,6 +361,7 @@ export default async function MonthWorkspacePage({
               currency={currency}
               check={estimateCheck}
               isPast={isBeforeCurrent}
+              canApply={can("manageMonthMoney")}
             />
           }
           statsTab={

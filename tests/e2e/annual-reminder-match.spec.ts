@@ -26,7 +26,7 @@ test.describe("UC-28 annual reminder added state", () => {
       const [row] = await sql<{ id: string }[]>`
         INSERT INTO month_fixed_line (month_id, category_id, name, remaining_amount, original_amount, kind, origin)
         SELECT ${monthId}, c.id, 'Car insurance 2026', '412.50', '412.50', 'committed', 'month_only'
-        FROM category c WHERE c.user_id = ${user.id} AND c.name = 'Transport'
+        FROM category c WHERE c.workspace_id = ${user.id} AND c.name = 'Transport'
         RETURNING id
       `;
       return row!.id;
@@ -62,9 +62,9 @@ test.describe("UC-28 annual reminder added state", () => {
     const monthId = await withSql((sql) => insertMonthCloningTemplates(sql, user.id, 2026, 3));
     await withSql(
       (sql) => sql`
-        INSERT INTO month_actual_expense (month_id, category_id, name, amount)
-        SELECT ${monthId}, c.id, 'CAR INSURANCE mapfre', '400.00'
-        FROM category c WHERE c.user_id = ${user.id} AND c.name = 'Transport'
+        INSERT INTO month_actual_expense (month_id, category_id, name, amount, created_by_user_id)
+        SELECT ${monthId}, c.id, 'CAR INSURANCE mapfre', '400.00', ${user.id}
+        FROM category c WHERE c.workspace_id = ${user.id} AND c.name = 'Transport'
       `,
     );
 
@@ -89,16 +89,16 @@ async function setupUser(context: BrowserContext, tag: string) {
   });
   await context.addCookies([cookie]);
   await withSql(async (sql) => {
-    await sql`DELETE FROM month WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM annual WHERE user_id = ${user.id}`;
-    await sql`DELETE FROM category WHERE user_id = ${user.id}`;
+    await sql`DELETE FROM month WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM annual WHERE workspace_id = ${user.id}`;
+    await sql`DELETE FROM category WHERE workspace_id = ${user.id}`;
     const [cat] = await sql<{ id: string }[]>`
-      INSERT INTO category (user_id, name, kind, active)
+      INSERT INTO category (workspace_id, name, kind, active)
       VALUES (${user.id}, 'Transport', 'expense', true)
       RETURNING id
     `;
     await sql`
-      INSERT INTO annual (user_id, category_id, name, charge_month, is_direct_debit, active)
+      INSERT INTO annual (workspace_id, category_id, name, charge_month, is_direct_debit, active)
       VALUES (${user.id}, ${cat!.id}, 'Car insurance', 3, false, true)
     `;
   });

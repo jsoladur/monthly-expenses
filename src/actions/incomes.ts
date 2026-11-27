@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { amountSchema, nonEmptyStringSchema, uuidSchema } from "@/server/validators";
-import { requireUserId } from "@/server/auth/require-user-id";
+import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
 import { AmountFormatError } from "@/server/money";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import {
@@ -23,8 +24,9 @@ import {
 // One action per mutation. Every action:
 //   1. Parses the input with Zod (rejects anything else with
 //      `{ ok: false, error: "validation" }`).
-//   2. Resolves the tenant via `requireUserId()` — the canonical tenancy
-//      check (PRD §5.1, ARCH §3.2 rule 4). The locale is read from the
+//   2. Resolves the active workspace via `resolveActiveWorkspace()` — session
+//      (`requireUserId()`) + membership check (UC-31 §4.9, ARCH §3.2 rule 6);
+//      the service applies the role matrix (`workspaceForbidden`). The locale is read from the
 //      `x-next-intl-locale` header the middleware sets.
 //   3. Calls the service. Domain errors are translated into stable i18n keys
 //      in the action result so the client component renders localized copy
@@ -72,7 +74,8 @@ export type IncomeActionError =
   | "incomeNotFound"
   | "monthNotFound"
   | "amountFormat"
-  | "validation";
+  | "validation"
+  | "workspaceForbidden";
 
 export type IncomeActionResult =
   | { ok: true }
@@ -91,15 +94,18 @@ export async function addIncomeAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    await serviceAdd(userId, {
+    await serviceAdd(access, {
       monthId: parsed.data.monthId,
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
       amount: parsed.data.amount,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof ExpenseCategoryError) {
       return { ok: false, error: "expenseCategory" };
     }
@@ -135,15 +141,18 @@ export async function editIncomeAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    await serviceEdit(userId, {
+    await serviceEdit(access, {
       id: parsed.data.id,
       categoryId: parsed.data.categoryId,
       name: parsed.data.name,
       amount: parsed.data.amount,
     });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof ExpenseCategoryError) {
       return { ok: false, error: "expenseCategory" };
     }
@@ -176,10 +185,13 @@ export async function deleteIncomeAction(input: {
     return { ok: false, error: "validation" };
   }
   const locale = await getLocaleFromHeaders();
-  const userId = await requireUserId(locale);
+  const access = await resolveActiveWorkspace(locale);
   try {
-    await serviceDelete(userId, { id: parsed.data.id });
+    await serviceDelete(access, { id: parsed.data.id });
   } catch (err) {
+    if (err instanceof WorkspaceForbiddenError) {
+      return { ok: false, error: "workspaceForbidden" };
+    }
     if (err instanceof IncomeNotFoundError) {
       return { ok: false, error: "incomeNotFound" };
     }

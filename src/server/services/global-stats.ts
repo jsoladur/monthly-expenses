@@ -36,6 +36,7 @@ import {
   type StatsRange,
   type TrendSignal,
 } from "@/server/services/global-stats-formulas";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 export type StatsTabId = "overview" | "trends" | "inflation" | "expenses" | "incomes" | "help";
 
@@ -252,14 +253,15 @@ export function parseStatsSearchParams(sp: GlobalStatsQueryInput): {
 }
 
 export async function getGlobalStatsPage(
-  userId: string,
+  access: WorkspaceAccess,
   search: GlobalStatsQueryInput,
   now: Date = new Date(),
 ): Promise<GlobalStatsPage> {
+  const workspaceId = authorize(access, "read");
   const parsed = parseStatsSearchParams(search);
   const [aggregates, settings] = await Promise.all([
-    loadGlobalStatsAggregates(userId),
-    getProfileSettings(userId),
+    loadGlobalStatsAggregates(workspaceId),
+    getProfileSettings(workspaceId),
   ]);
   const currency = settings?.currency ?? "EUR";
   const presence = aggregates.presence;

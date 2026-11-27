@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import { appUser, type AppUser, type NewAppUser } from "@/server/db/schema";
 
@@ -71,4 +71,21 @@ export async function upsertUser(
     return null;
   }
   return inserted;
+}
+
+/**
+ * UC-31 §4.3: find a signed-in user by an allowlist-normalized email (trim +
+ * lowercase on both sides). Oldest row first if two Google accounts share one.
+ */
+export async function findUserByNormalizedEmail(
+  normalizedEmail: string,
+  tx: Tx | typeof db = db,
+): Promise<AppUser | null> {
+  const rows = await tx
+    .select()
+    .from(appUser)
+    .where(sql`lower(trim(${appUser.email})) = ${normalizedEmail}`)
+    .orderBy(asc(appUser.createdAt))
+    .limit(1);
+  return rows[0] ?? null;
 }

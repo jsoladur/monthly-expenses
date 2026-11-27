@@ -18,6 +18,7 @@ import { findAnnualMatch, type AnnualMatch, type AnnualMatchCandidate } from "@/
 import { parseAmount } from "@/server/money";
 import { CategoryNotFoundError } from "@/server/services/categories";
 import type { Tx } from "@/server/repositories/user";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Annuals service (UC-14, ARCH §5 rule 3).
@@ -92,10 +93,11 @@ export class InvalidChargeMonthError extends Error {
 // ----------------------------------------------------------------------------
 
 export async function listAnnualsForManagement(
-  userId: string,
+  access: WorkspaceAccess,
   tx: Tx | typeof db = db,
 ): Promise<Annual[]> {
-  return listAnnuals(userId, { includeInactive: true }, tx);
+  const workspaceId = authorize(access, "read");
+  return listAnnuals(workspaceId, { includeInactive: true }, tx);
 }
 
 export type AnnualReminder = Annual & { match: AnnualMatch | null };
@@ -107,18 +109,19 @@ export type AnnualReminder = Annual & { match: AnnualMatch | null };
  * the matching line brings the full reminder back on the next render.
  */
 export async function getAnnualReminders(
-  userId: string,
+  access: WorkspaceAccess,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<AnnualReminder[]> {
-  const monthRow = await findMonthById(userId, monthId, tx);
+  const workspaceId = authorize(access, "read");
+  const monthRow = await findMonthById(workspaceId, monthId, tx);
   if (!monthRow) {
     throw new MonthNotFoundError();
   }
-  const reminders = await repoGetReminders(userId, monthRow.month, tx);
+  const reminders = await repoGetReminders(workspaceId, monthRow.month, tx);
   if (reminders.length === 0) return [];
 
-  const { lines, actuals } = await listAnnualMatchCandidates(userId, monthId, tx);
+  const { lines, actuals } = await listAnnualMatchCandidates(workspaceId, monthId, tx);
   const candidates: AnnualMatchCandidate[] = [
     ...lines.map((l) => ({ source: "reserved" as const, categoryId: l.categoryId, name: l.name, amountCents: parseAmount(l.amount) })),
     ...actuals.map((a) => ({ source: "actual" as const, categoryId: a.categoryId, name: a.name, amountCents: parseAmount(a.amount) })),
@@ -140,14 +143,15 @@ export interface AnnualInput {
 }
 
 export async function createAnnual(
-  userId: string,
+  access: WorkspaceAccess,
   input: AnnualInput,
   tx: Tx | typeof db = db,
 ): Promise<Annual> {
+  const workspaceId = authorize(access, "manageAnnuals");
   if (input.chargeMonth < 1 || input.chargeMonth > 12) {
     throw new InvalidChargeMonthError();
   }
-  const category = await findCategoryById(userId, input.categoryId, tx);
+  const category = await findCategoryById(workspaceId, input.categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }
@@ -160,7 +164,7 @@ export async function createAnnual(
 
   return insertAnnual(
     {
-      userId,
+      workspaceId,
       categoryId: input.categoryId,
       name: input.name,
       observations: input.observations ?? null,
@@ -174,18 +178,19 @@ export async function createAnnual(
 }
 
 export async function updateAnnual(
-  userId: string,
+  access: WorkspaceAccess,
   input: AnnualInput & { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Annual> {
+  const workspaceId = authorize(access, "manageAnnuals");
   if (input.chargeMonth < 1 || input.chargeMonth > 12) {
     throw new InvalidChargeMonthError();
   }
-  const existing = await findAnnualById(userId, input.id, tx);
+  const existing = await findAnnualById(workspaceId, input.id, tx);
   if (!existing) {
     throw new AnnualNotFoundError();
   }
-  const category = await findCategoryById(userId, input.categoryId, tx);
+  const category = await findCategoryById(workspaceId, input.categoryId, tx);
   if (!category) {
     throw new CategoryNotFoundError();
   }
@@ -197,7 +202,7 @@ export async function updateAnnual(
   }
 
   const updated = await repoUpdate(
-    userId,
+    workspaceId,
     input.id,
     {
       categoryId: input.categoryId,
@@ -216,18 +221,19 @@ export async function updateAnnual(
 }
 
 export async function deactivateAnnual(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Annual> {
-  const existing = await findAnnualById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageAnnuals");
+  const existing = await findAnnualById(workspaceId, input.id, tx);
   if (!existing) {
     throw new AnnualNotFoundError();
   }
   if (!existing.active) {
     throw new AnnualAlreadyInactiveError();
   }
-  const updated = await repoDeactivate(userId, input.id, tx);
+  const updated = await repoDeactivate(workspaceId, input.id, tx);
   if (!updated) {
     throw new AnnualAlreadyInactiveError();
   }
@@ -235,18 +241,19 @@ export async function deactivateAnnual(
 }
 
 export async function reactivateAnnual(
-  userId: string,
+  access: WorkspaceAccess,
   input: { id: string },
   tx: Tx | typeof db = db,
 ): Promise<Annual> {
-  const existing = await findAnnualById(userId, input.id, tx);
+  const workspaceId = authorize(access, "manageAnnuals");
+  const existing = await findAnnualById(workspaceId, input.id, tx);
   if (!existing) {
     throw new AnnualNotFoundError();
   }
   if (existing.active) {
     throw new AnnualAlreadyActiveError();
   }
-  const updated = await repoReactivate(userId, input.id, tx);
+  const updated = await repoReactivate(workspaceId, input.id, tx);
   if (!updated) {
     throw new AnnualAlreadyActiveError();
   }

@@ -14,7 +14,7 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 // Annual repository (UC-14, ARCH §4).
 //
-// Yearly recurring expense reminders. Every function takes `userId` as its
+// Yearly recurring expense reminders. Every function takes `workspaceId` as its
 // FIRST argument and applies it in every WHERE clause (PRD §5.1, ARCH §5 rule 1).
 //
 // `annual.active` is the soft-delete flag — inactive rows are EXCLUDED from
@@ -27,13 +27,13 @@ import type { Tx } from "@/server/repositories/user";
 // ============================================================================
 
 export async function listAnnuals(
-  userId: string,
+  workspaceId: string,
   { includeInactive }: { includeInactive?: boolean } = {},
   tx: Tx | typeof db = db,
 ): Promise<Annual[]> {
   const where = includeInactive
-    ? eq(annual.userId, userId)
-    : and(eq(annual.userId, userId), eq(annual.active, true));
+    ? eq(annual.workspaceId, workspaceId)
+    : and(eq(annual.workspaceId, workspaceId), eq(annual.active, true));
   return tx
     .select()
     .from(annual)
@@ -42,20 +42,20 @@ export async function listAnnuals(
 }
 
 export async function findAnnualById(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Annual | null> {
   const rows = await tx
     .select()
     .from(annual)
-    .where(and(eq(annual.userId, userId), eq(annual.id, id)))
+    .where(and(eq(annual.workspaceId, workspaceId), eq(annual.id, id)))
     .limit(1);
   return rows[0] ?? null;
 }
 
 export async function getAnnualReminders(
-  userId: string,
+  workspaceId: string,
   chargeMonth: number,
   tx: Tx | typeof db = db,
 ): Promise<Annual[]> {
@@ -64,7 +64,7 @@ export async function getAnnualReminders(
     .from(annual)
     .where(
       and(
-        eq(annual.userId, userId),
+        eq(annual.workspaceId, workspaceId),
         eq(annual.chargeMonth, chargeMonth),
         eq(annual.active, true),
       ),
@@ -74,18 +74,18 @@ export async function getAnnualReminders(
 
 /**
  * UC-28: the open month's reserved lines and actuals, reduced to what the
- * annual "already added" match needs. Both reads join `month` on `user_id`
+ * annual "already added" match needs. Both reads join `month` on `workspace_id`
  * so a foreign month id yields nothing (PRD §5.1).
  */
 export async function listAnnualMatchCandidates(
-  userId: string,
+  workspaceId: string,
   monthId: string,
   tx: Tx | typeof db = db,
 ): Promise<{
   lines: { categoryId: string; name: string; amount: string }[];
   actuals: { categoryId: string; name: string; amount: string }[];
 }> {
-  const tenantMonth = and(eq(month.userId, userId), eq(month.id, monthId));
+  const tenantMonth = and(eq(month.workspaceId, workspaceId), eq(month.id, monthId));
   const [lines, actuals] = await Promise.all([
     tx
       .select({
@@ -121,7 +121,7 @@ export async function insertAnnual(
 }
 
 export async function updateAnnual(
-  userId: string,
+  workspaceId: string,
   id: string,
   patch: {
     categoryId: string;
@@ -144,13 +144,13 @@ export async function updateAnnual(
       isDirectDebit: patch.isDirectDebit,
       updatedAt: sql`now()`,
     })
-    .where(and(eq(annual.userId, userId), eq(annual.id, id)))
+    .where(and(eq(annual.workspaceId, workspaceId), eq(annual.id, id)))
     .returning();
   return updated ?? null;
 }
 
 export async function deactivateAnnual(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Annual | null> {
@@ -159,7 +159,7 @@ export async function deactivateAnnual(
     .set({ active: false, deletedAt: sql`now()`, updatedAt: sql`now()` })
     .where(
       and(
-        eq(annual.userId, userId),
+        eq(annual.workspaceId, workspaceId),
         eq(annual.id, id),
         eq(annual.active, true),
       ),
@@ -169,7 +169,7 @@ export async function deactivateAnnual(
 }
 
 export async function reactivateAnnual(
-  userId: string,
+  workspaceId: string,
   id: string,
   tx: Tx | typeof db = db,
 ): Promise<Annual | null> {
@@ -178,7 +178,7 @@ export async function reactivateAnnual(
     .set({ active: true, deletedAt: null, updatedAt: sql`now()` })
     .where(
       and(
-        eq(annual.userId, userId),
+        eq(annual.workspaceId, workspaceId),
         eq(annual.id, id),
         eq(annual.active, false),
       ),

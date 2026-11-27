@@ -5,6 +5,7 @@ import { findActualById } from "@/server/repositories/actual";
 import { findMonthLineById } from "@/server/repositories/reserved-line";
 import { deleteMonthLine, insertMonthLine } from "@/server/repositories/reserved-line";
 import { deleteActual, insertActual } from "@/server/repositories/actual";
+import { authorize, type WorkspaceAccess } from "@/lib/workspace-roles";
 
 // ============================================================================
 // Pass-to-actual service (UC-10, PRD §7.5 / §7.2 / §13, ARCH §4 / §5).
@@ -42,7 +43,7 @@ import { deleteActual, insertActual } from "@/server/repositories/actual";
 //         (preserves original kind: committed or estimated), origin = converted_line_origin;
 //         name / observations / categoryId copied back (PRD §7.5).
 //       * HARD-delete the actual in the SAME transaction (PRD C15 / §13).
-//   - Tenancy: every read uses the `userId`-first JOIN on `month.user_id`
+//   - Tenancy: every read uses the `workspaceId`-first JOIN on `month.workspace_id`
 //     (PRD §5.1, ARCH §5 rule 1). A missing line / actual surfaces as
 //     not-found; the operation never touches another tenant's rows.
 //   - Both operations NEVER mutate a `template` row (PRD §7.8) — implicit
@@ -99,12 +100,13 @@ export interface UndoPassToActualInput {
 // ----------------------------------------------------------------------------
 
 export async function passToActual(
-  userId: string,
+  access: WorkspaceAccess,
   input: PassToActualInput,
 ): Promise<MonthActualExpense> {
+  const workspaceId = authorize(access, "manageMonthMoney");
   // Tenancy pre-flight (PRD §5.1). Done OUTSIDE the transaction so the read
   // is independent.
-  const line = await findMonthLineById(userId, input.lineId);
+  const line = await findMonthLineById(workspaceId, input.lineId);
   if (!line) {
     throw new MonthLineNotFoundError();
   }
@@ -124,21 +126,24 @@ export async function passToActual(
         convertedLineOrigin: line.origin,
         convertedLineKind: line.kind,
         editedAfterConversion: false,
+        // UC-31 §4.14: the ticket belongs to the member who passed the line.
+        createdByUserId: access.userId,
       },
       tx,
     );
-    await deleteMonthLine(userId, line.id, tx);
+    await deleteMonthLine(workspaceId, line.id, tx);
     return created;
   });
 }
 
 export async function undoPassToActual(
-  userId: string,
+  access: WorkspaceAccess,
   input: UndoPassToActualInput,
 ): Promise<string> {
+  const workspaceId = authorize(access, "undoPass");
   // Tenancy + gate (PRD §5.1, §7.5 / #9 / #10). Done OUTSIDE the transaction
   // so a rejected-undo leaves no writes behind.
-  const actual = await findActualById(userId, input.actualId);
+  const actual = await findActualById(workspaceId, input.actualId);
   if (!actual) {
     throw new ActualNotFoundOnUndoError();
   }
@@ -178,7 +183,7 @@ export async function undoPassToActual(
       },
       tx,
     );
-    const deleted = await deleteActual(userId, actual.id, tx);
+    const deleted = await deleteActual(workspaceId, actual.id, null, tx);
     if (!deleted) {
       // Concurrent delete raced the tx. The actual is gone now and the
       // line re-insert must roll back too — surface a not-found.

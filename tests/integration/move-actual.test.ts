@@ -17,6 +17,8 @@ import {
   listMoveTargets,
   moveActualToMonth,
 } from "@/server/services/move-actual";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-26 move an actual expense to another month (proposed PRD §15 #52–#57).
@@ -143,7 +145,7 @@ suite("UC-26 move actual to another month", () => {
       }),
     ).rejects.toBeInstanceOf(MonthNotFoundError);
     const count = await db.execute<{ n: string }>(
-      sql`SELECT COUNT(*)::text AS n FROM month WHERE user_id = ${userId}`,
+      sql`SELECT COUNT(*)::text AS n FROM month WHERE workspace_id = ${userId.workspaceId}`,
     );
     expect(count[0]!.n).toBe("2");
   });
@@ -277,17 +279,13 @@ suite("UC-26 move actual to another month", () => {
   });
 });
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
-async function getMonthWorkspace(userId: string, year: number, monthValue: number) {
+async function getMonthWorkspace(userId: WorkspaceAccess, year: number, monthValue: number) {
   const { getMonthWorkspace: service } = await import("@/server/services/months");
   return service(userId, year, monthValue);
 }

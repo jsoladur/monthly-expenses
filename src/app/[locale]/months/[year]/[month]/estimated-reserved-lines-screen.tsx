@@ -45,6 +45,7 @@ export function EstimatedReservedLinesScreen({
   rows,
   expenseCategories,
   upcomingMonths,
+  canManage = true,
 }: {
   monthId: string;
   year: number;
@@ -53,6 +54,8 @@ export function EstimatedReservedLinesScreen({
   rows: ReservedLineRowData[];
   expenseCategories: CategoryOption[];
   upcomingMonths: UpcomingMonthOption[];
+  /** UC-31 §3: reserved lines are Admin+; other roles see the list only. */
+  canManage?: boolean;
 }) {
   const t = useTranslations("reservedLines");
 
@@ -72,19 +75,22 @@ export function EstimatedReservedLinesScreen({
                 month={month}
                 currency={currency}
                 upcomingMonths={upcomingMonths}
+                canManage={canManage}
               />
             ))}
           </ul>
         )}
       </section>
 
-      <AddMonthOnlyLineForm
-        monthId={monthId}
-        year={year}
-        month={month}
-        currency={currency}
-        expenseCategories={expenseCategories}
-      />
+      {canManage && (
+        <AddMonthOnlyLineForm
+          monthId={monthId}
+          year={year}
+          month={month}
+          currency={currency}
+          expenseCategories={expenseCategories}
+        />
+      )}
     </div>
   );
 }
@@ -100,6 +106,7 @@ function EstimatedReservedLineRow({
   month,
   currency,
   upcomingMonths,
+  canManage,
 }: {
   row: ReservedLineRowData;
   monthId: string;
@@ -107,6 +114,7 @@ function EstimatedReservedLineRow({
   month: number;
   currency: string;
   upcomingMonths: UpcomingMonthOption[];
+  canManage: boolean;
 }) {
   const t = useTranslations("reservedLines");
   const tv = useTranslations("validation");
@@ -174,8 +182,8 @@ function EstimatedReservedLineRow({
 
   return (
     <SwipeAction
-      onSwipeLeft={handleDelete}
-      onSwipeRight={handlePass}
+      onSwipeLeft={canManage ? handleDelete : undefined}
+      onSwipeRight={canManage ? handlePass : undefined}
       leftIcon={<ArrowRightCircle className="size-5" />}
       rightIcon={<Trash2 className="size-5" />}
       leftLabel={t("actions.passToActual")}
@@ -212,17 +220,19 @@ function EstimatedReservedLineRow({
               </span>
             )}
           </span>
-          <RowActions
-            onEdit={() => setEditing(true)}
-            onPass={handlePass}
-            onDelete={handleDelete}
-            onPassToUpcoming={
-              upcomingMonths.length > 0 ? () => setUpcomingOpen(true) : undefined
-            }
-            passPending={passPending}
-            deletePending={deletePending}
-            passError={passError}
-          />
+          {canManage && (
+            <RowActions
+              onEdit={() => setEditing(true)}
+              onPass={handlePass}
+              onDelete={handleDelete}
+              onPassToUpcoming={
+                upcomingMonths.length > 0 ? () => setUpcomingOpen(true) : undefined
+              }
+              passPending={passPending}
+              deletePending={deletePending}
+              passError={passError}
+            />
+          )}
         </span>
         {!row.categoryActive && (
           <p className="text-muted-foreground basis-full text-xs">
@@ -230,7 +240,7 @@ function EstimatedReservedLineRow({
           </p>
         )}
       </div>
-      {upcomingMonths.length > 0 && (
+      {canManage && upcomingMonths.length > 0 && (
         <PassToUpcomingMonthDrawer
           open={upcomingOpen}
           onOpenChange={setUpcomingOpen}
@@ -586,6 +596,8 @@ function errorToMessage(
       return tv("amountFormat");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 
@@ -623,6 +635,8 @@ function errorToMessagePass(
       return tv("cannotUndoPass");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }
 
@@ -643,5 +657,7 @@ function errorToMessageUpcoming(
       return tv("targetNotUpcoming");
     case "validation":
       return tv("required");
+    case "workspaceForbidden":
+      return tv("workspaceForbidden");
   }
 }

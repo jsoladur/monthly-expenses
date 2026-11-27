@@ -19,6 +19,8 @@ import {
   editActual,
   listActualsForMonth,
 } from "@/server/services/actuals";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-08 actual expenses (tickets) — integration (PRD §6.7 / §7.2 / §7.3,
@@ -419,25 +421,21 @@ suite("UC-08 actual expenses", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function loadReservedLineAmounts(
-  userId: string,
+  userId: WorkspaceAccess,
   monthId: string,
 ): Promise<{ id: string; remainingAmount: string }[]> {
   return db.execute<{ id: string; remainingAmount: string }>(sql`
     SELECT month_fixed_line.id::text AS id, month_fixed_line.remaining_amount::text AS "remainingAmount"
     FROM month_fixed_line
     INNER JOIN month ON month.id = month_fixed_line.month_id
-    WHERE month.user_id = ${userId} AND month.id = ${monthId}
+    WHERE month.workspace_id = ${userId.workspaceId} AND month.id = ${monthId}
     ORDER BY month_fixed_line.created_at
   `);
 }

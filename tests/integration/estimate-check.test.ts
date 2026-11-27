@@ -14,6 +14,8 @@ import {
   EstimateCategoryNotFoundError,
   getEstimateCheck,
 } from "@/server/services/estimate-check";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-25 estimate check — integration (proposed PRD §15 #47–#51, C25).
@@ -179,7 +181,7 @@ suite("UC-25 estimate check", () => {
   });
 });
 
-async function seedMonth(userId: string) {
+async function seedMonth(userId: WorkspaceAccess) {
   const salary = await createCategory(userId, { kind: "income", name: "Salary" });
   const groceries = await createCategory(userId, { kind: "expense", name: "Groceries" });
   const monthRow = await createMonth(userId, { year: 2026, month: 9 });
@@ -193,7 +195,7 @@ async function seedMonth(userId: string) {
 }
 
 async function addLine(
-  userId: string,
+  userId: WorkspaceAccess,
   monthId: string,
   categoryId: string,
   name: string,
@@ -202,11 +204,10 @@ async function addLine(
   await addMonthOnlyLine(userId, { monthId, categoryId, name, amount, kind: "estimated" });
 }
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function pingDatabase(): Promise<boolean> {

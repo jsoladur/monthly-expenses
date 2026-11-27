@@ -44,8 +44,8 @@ The PRD is split into implementation slices, `UC-00` … `UC-29`, so the app can
 1. Read `IMPLEMENTATION-STATUS.md` → pick the first PENDING slice whose dependencies are all DONE.
 2. Read the slice file, then the PRD and architecture sections it references. If the slice renders UI, also read `style/STYLE-GUIDE.md`.
 3. TDD: translate the slice's mapped PRD §15 scenarios into Vitest/Playwright specs FIRST (ARCH §10).
-4. Implement following the layering in ARCH §5: RSC for reads, thin server actions (Zod → service → revalidate), services own domain rules and transactions, repositories own SQL and take `userId` first.
-5. **Definition of done:** typecheck + lint clean · the slice's PRD §15 scenarios green · no `userId`-less repository call exists.
+4. Implement following the layering in ARCH §5: RSC for reads, thin server actions (Zod → service → revalidate), services own domain rules and transactions and receive a `WorkspaceAccess`, repositories own SQL and take `workspaceId` first (UC-31, ADR-12).
+5. **Definition of done:** typecheck + lint clean · the slice's PRD §15 scenarios green · no tenant repository call without `workspaceId` exists.
 6. Mark the slice DONE in `IMPLEMENTATION-STATUS.md` (ISO date + notes).
 7. Add a `CHANGELOG.md` entry under `[Unreleased]` in the same commit (rules in `AGENTS.md`).
 

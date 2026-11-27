@@ -17,6 +17,8 @@ import {
   listIncomesForMonth,
 } from "@/server/services/incomes";
 import { createMonth } from "@/server/services/months";
+import type { WorkspaceAccess } from "@/lib/workspace-roles";
+import { seedOwnerAccess } from "./_helpers/workspace";
 
 // ============================================================================
 // UC-07 month incomes — integration (PRD §6.5 / §7.8, UC-09, C15).
@@ -308,14 +310,10 @@ suite("UC-07 month incomes", () => {
 // Helpers
 // ----------------------------------------------------------------------------
 
-async function seedUser(googleSub: string): Promise<string> {
-  const [{ id }] = await db.execute<{ id: string }>(
-    sql`INSERT INTO app_user (google_sub, email) VALUES (${googleSub}, ${`${googleSub}@example.com`}) RETURNING id`,
-  );
-  if (!id) {
-    throw new Error("seedUser returned no id");
-  }
-  return id;
+async function seedUser(googleSub: string): Promise<WorkspaceAccess> {
+  // UC-31: a signed-in user with their private workspace; services take the
+  // Owner access to it.
+  return seedOwnerAccess(googleSub);
 }
 
 async function countTemplateRows(): Promise<{ n: string }[]> {
