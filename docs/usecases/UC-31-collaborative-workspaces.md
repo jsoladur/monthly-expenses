@@ -157,7 +157,7 @@ When the user is a member of **exactly one** workspace (their private one), the 
 - No Home workspace list, no workspace chip or switcher in the header, no role badge, no "shared", "Added by" or workspace name text in any screen or form.
 - No workspace field in any form. Forms never gain a workspace picker in any mode; the active workspace is always implicit.
 - The Settings currency control keeps its current label and position.
-- **One exception, so a first shared workspace can be created:** Settings shows a single "Share with others" row that opens the create-shared form. It is the only workspace entry point in single-workspace mode, and it never lists or names a workspace.
+- **Workspaces is its own section (PO decision 2026-11-27, amends the original "Share with others" exception):** the nav always has a **Workspaces** entry — desktop sidebar before Settings, last item of the mobile **More** sheet — and Settings shows a **Workspaces** link row to the same screen. In single-workspace mode that screen lists only "My private workspace" plus the create-shared form. No other screen shows workspace text in this mode: no Home list, no header chip, no role badge, no "Added by".
 
 ### 4.12 Multi-workspace mode
 
@@ -298,7 +298,7 @@ On desktop the cards sit in a row above the month list. The active workspace nam
 
 - Lists the user's workspaces and the create-shared form (name, currency).
 - `/[locale]/workspaces/[workspaceId]` (shared only; private → 404): details, members list with role controls (Admin+), add-member form (email + role), leave (non-owner), rename + currency (Admin+), delete with typed name (Owner). Ownership transfer controls arrive in UC-32.
-- Reachable from the Home block and from the **More** menu on mobile, and from the sidebar on desktop, **only in multi-workspace mode** (§4.12). In single-workspace mode the only entry is the "Share with others" row in Settings (§4.11), which opens the create-shared form directly.
+- Reachable in **every mode** from the sidebar on desktop and the **More** menu on mobile, and from the Settings link row (PO decision 2026-11-27). In multi-workspace mode also from the Home block and the header chip (§4.12).
 
 ### 7.3 Settings (`/[locale]/settings`)
 
@@ -349,7 +349,7 @@ Scenarios:
 
 78. Migration backfill: an existing user with months, categories, templates, annuals and actuals ends with one private workspace holding all of them; row counts are unchanged.
 79. First sign-in creates exactly one private workspace with an Owner membership; a second sign-in creates no second one.
-80. A user with only the private workspace sees the current Home and nav; no workspace text, chip, switcher or "Added by" appears anywhere.
+80. A user with only the private workspace sees the current Home and screens; no workspace list, chip, switcher, role or "Added by" appears in the page content. The nav has a Workspaces entry and Settings links to it (amended 2026-11-27).
 81. Creating a shared workspace makes the creator its Owner and leaves the private workspace untouched.
 82. Adding a member: an allowlisted user who has signed in is added; a non-allowlisted email is rejected and nothing is stored; an allowlisted user who never signed in is rejected with the sign-in-first message; a duplicate is rejected; the Owner role cannot be assigned.
 83. Reader: sees every report and screen of the workspace; every write is rejected by the server; the UI shows no write control.

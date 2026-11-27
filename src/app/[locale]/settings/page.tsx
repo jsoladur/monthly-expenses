@@ -67,21 +67,19 @@ export default async function SettingsPage({
           currencyLabel={multiWorkspace ? t("currencyFor", { name: activeName }) : undefined}
         />
 
-        {!multiWorkspace && (
-          // UC-31 §4.11: the single workspace entry point in single-workspace
-          // mode. It never lists or names a workspace.
+        {/* Link to the Workspaces section (its own nav entry since the PO
+            decision of 2026-11-27); shown in every mode. */}
           <Link
-            href="/workspaces#create"
+            href="/workspaces"
             className="bg-card text-card-foreground hover:bg-accent flex min-h-11 items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
           >
             <Users className="text-muted-foreground size-5 shrink-0" aria-hidden />
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-sm font-medium">{t("share.title")}</span>
-              <span className="text-muted-foreground text-xs">{t("share.help")}</span>
+              <span className="text-sm font-medium">{t("workspaces.title")}</span>
+              <span className="text-muted-foreground text-xs">{t("workspaces.help")}</span>
             </span>
             <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
           </Link>
-        )}
       </div>
     </AppShell>
   );

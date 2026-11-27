@@ -534,11 +534,11 @@
       "saved": "Currency saved.",
       "themeSaved": "Theme saved."
     },
-    "share": {
-      "title": "Share with others",
-      "help": "Create a shared ledger and invite people with a role. Your current data stays private."
-    },
-    "currencyFor": "Currency of {name}"
+    "currencyFor": "Currency of {name}",
+    "workspaces": {
+      "title": "Workspaces",
+      "help": "Create a shared workspace and manage members and roles."
+    }
   },
   "stats": {
     "title": "Stats",

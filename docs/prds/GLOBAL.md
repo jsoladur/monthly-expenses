@@ -662,7 +662,7 @@ Implementation slice: `docs/usecases/UC-31-collaborative-workspaces.md`. Product
 - A shared workspace has its own categories, templates, annuals, months, incomes, reserved lines, actuals, currency, Stats, Search, Export, estimate check and annual reminders.
 - Editors create months, categories and expenses, and delete or edit only expenses they created. Readers see everything and change nothing.
 - **Home:** with one workspace, unchanged. With several, the workspace list comes first (role and active marker); selecting one makes it active for every section. The header shows the active workspace name.
-- With only a private workspace, no workspace name, switcher, role or "Added by" text appears anywhere. The one exception is a "Share with others" row in Settings that starts a shared workspace.
+- With only a private workspace, no workspace name, switcher, role or "Added by" text appears on Home or any data screen. **Workspaces** is its own section in every mode (desktop sidebar, mobile More, a link row in Settings), where a first shared workspace is created (PO decision 2026-11-27).
 - Removing a member ends their access on the next request; their past tickets stay, attributed to them.
 - The Owner deletes a shared workspace behind a typed name. Other workspaces are untouched.
 - A user who is not a member cannot tell that a workspace exists.
@@ -693,7 +693,7 @@ Implementation slice: `docs/usecases/UC-32-workspace-ownership-transfer.md`. Pro
 12. Search — find actual tickets by name or note, any year  
 13. Home export picker — All / year / specific months → Excel download
 14. Workspaces — create shared workspace; members and roles; leave; rename and currency (Admin+); delete (Owner, typed name); ownership offer (Owner offers, member accepts or declines). Shared workspaces only; private workspace has no member controls.
-15. Workspace switcher — with several workspaces: Home lists them first (role, active marker, "Private" tag on private); header shows the active workspace name. With one workspace: not shown (C30, slice UC-31 §4.11).  
+15. Workspace switcher — with several workspaces: Home lists them first (role, active marker, "Private" tag on private); header shows the active workspace name. With one workspace: not shown (C30, slice UC-31 §4.11). The Workspaces screen (14) is a nav section in every mode.  
 
 Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list. Export is a Home header button that opens a bottom sheet.
 
@@ -848,7 +848,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 77. In Nov 2026, months Jun 2025, Jun 2026 and Jan 2027 exist → Home lists Jan 2027 then Jun 2026; History lists only 2025; `/history/2027` redirects to History.
 78. Migration backfill: an existing user with months, categories, templates, annuals and actuals ends with one private workspace holding all of them; row counts are unchanged.
 79. First sign-in creates exactly one private workspace with an Owner membership; a second sign-in creates no second one.
-80. A user with only the private workspace sees the current Home and nav; no workspace text, chip, switcher or “Added by” appears anywhere.
+80. A user with only the private workspace sees the current Home and screens; no workspace list, chip, switcher, role or “Added by” appears in the page content. The nav has a Workspaces entry and Settings links to it (amended 2026-11-27).
 81. Creating a shared workspace makes the creator its Owner and leaves the private workspace untouched.
 82. Adding a member: an allowlisted user who has signed in is added; a non-allowlisted email is rejected and nothing is stored; an allowlisted user who never signed in is rejected with the sign-in-first message; a duplicate is rejected; the Owner role cannot be assigned.
 83. Reader: sees every report and screen of the workspace; every write is rejected by the server; the UI shows no write control.

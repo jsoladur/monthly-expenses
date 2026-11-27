@@ -534,11 +534,11 @@
       "saved": "Moneda guardada.",
       "themeSaved": "Tema guardado."
     },
-    "share": {
-      "title": "Compartir con otras personas",
-      "help": "Crea un libro compartido e invita a personas con un rol. Tus datos actuales siguen siendo privados."
-    },
-    "currencyFor": "Moneda de {name}"
+    "currencyFor": "Moneda de {name}",
+    "workspaces": {
+      "title": "Espacios de trabajo",
+      "help": "Crea un espacio compartido y gestiona miembros y roles."
+    }
   },
   "stats": {
     "title": "Estadísticas",

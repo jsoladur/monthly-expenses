@@ -14,8 +14,8 @@ import { CreateWorkspaceForm } from "./create-workspace-form";
 
 // ============================================================================
 // Workspaces screen (UC-31 §7.2): the user's workspaces + the create-shared
-// form. Reachable from the Home list and the nav in multi-workspace mode, and
-// from Settings → "Share with others" in single-workspace mode.
+// form. Its own section in every mode: desktop sidebar, mobile More sheet,
+// the Home list (multi-workspace) and a link row in Settings.
 // ============================================================================
 
 export default async function WorkspacesPage({
@@ -37,7 +37,6 @@ export default async function WorkspacesPage({
     auth(),
   ]);
   if (workspaces.length === 0) notFound();
-  const multiWorkspace = workspaces.length > 1;
 
   async function startSignOut() {
     "use server";
@@ -52,13 +51,9 @@ export default async function WorkspacesPage({
       signOutAction={startSignOut}
     >
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {multiWorkspace ? t("title") : t("create.title")}
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground max-w-prose text-sm leading-relaxed">{t("lead")}</p>
 
-        {/* Single-workspace mode (§4.11): only the create form, no list. */}
-        {multiWorkspace && (
         <ul className="flex flex-col gap-2">
           {workspaces.map((w) => {
             const label = w.kind === "private" ? t("privateLabel") : (w.name ?? "");
@@ -93,7 +88,6 @@ export default async function WorkspacesPage({
             );
           })}
         </ul>
-        )}
 
         <CreateWorkspaceForm
           defaultCurrency={profile?.currency ?? "EUR"}

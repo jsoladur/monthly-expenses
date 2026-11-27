@@ -21,7 +21,7 @@ const DB_URL =
 const YEAR = new Date().getFullYear();
 
 test.describe("UC-31 collaborative workspaces", () => {
-  test("80 — a user with only the private workspace sees today's Home, nav and screens", async ({
+  test("80 — a user with only the private workspace sees today's Home and screens; Workspaces is its own section", async ({
     context,
     page,
   }) => {
@@ -38,17 +38,25 @@ test.describe("UC-31 collaborative workspaces", () => {
 
     await page.goto(`${BASE_URL}/en`);
     await expect(page.getByRole("link", { name: new RegExp(`March ${YEAR}`) })).toBeVisible();
+    // No Home workspace list, no header switcher, no workspace names or roles
+    // in the page content (UC-31 §4.11 as amended 2026-11-27).
     await expect(page.getByRole("region", { name: "Workspaces" })).toHaveCount(0);
-    await expect(page.locator("body")).not.toContainText(/workspace|Added by|Owner|Shared/i);
+    await expect(page.getByTestId("workspace-switcher")).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText(/workspace|Added by|Owner|Shared/i);
+    // Workspaces is its own section: desktop sidebar or the mobile More sheet.
+    await expect(page.locator('[data-testid="nav-workspaces"], [data-testid="nav-more"]').first()).toBeAttached();
 
     await page.goto(`${BASE_URL}/en/months/${YEAR}/3`);
     await expect(page.getByText("Bakery").first()).toBeVisible();
-    await expect(page.locator("body")).not.toContainText(/workspace|Added by/i);
+    await expect(page.locator("main")).not.toContainText(/workspace|Added by/i);
 
-    // The one exception: Settings offers "Share with others" and names nothing.
+    // Settings links to the Workspaces section.
     await page.goto(`${BASE_URL}/en/settings`);
-    await expect(page.getByRole("link", { name: "Share with others" })).toBeVisible();
-    await expect(page.locator("body")).not.toContainText(/My private workspace/i);
+    await page.getByRole("link", { name: /Workspaces/ }).filter({ hasText: "manage members" }).click();
+    await expect(page).toHaveURL(/\/en\/workspaces$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Workspaces" })).toBeVisible();
+    await expect(page.getByText("My private workspace")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create workspace" })).toBeVisible();
   });
 
   test("88 — switching the active workspace changes every section together", async ({

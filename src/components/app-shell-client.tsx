@@ -39,8 +39,9 @@ export interface AppShellProps {
 }
 
 /**
- * UC-31 §4.12: only in multi-workspace mode. `null` (single-workspace mode)
- * renders exactly the pre-workspace shell (§4.11).
+ * UC-31 §4.12: the header switcher chip, only in multi-workspace mode. `null`
+ * (single-workspace mode) hides it. The Workspaces nav entry is always there
+ * (PO decision 2026-11-27).
  */
 export interface WorkspaceSwitcherInfo {
   activeName: string;
@@ -60,6 +61,8 @@ const WORKSPACES_ITEM: NavItem = {
   testId: "nav-workspaces",
 };
 
+// Workspaces is its own section in every mode (PO decision 2026-11-27):
+// desktop sidebar before Settings, last item of the mobile More sheet.
 const DESKTOP_ITEMS: NavItem[] = [
   { href: "/", icon: Calendar, labelKey: "home", testId: "nav-home" },
   { href: "/stats", icon: BarChart3, labelKey: "stats", testId: "nav-stats" },
@@ -68,6 +71,7 @@ const DESKTOP_ITEMS: NavItem[] = [
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
   { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
+  WORKSPACES_ITEM,
   { href: "/settings", icon: Settings, labelKey: "settings", testId: "nav-settings" },
 ];
 
@@ -82,6 +86,7 @@ const MORE_ITEMS: NavItem[] = [
   { href: "/annuals", icon: Bell, labelKey: "annuals", testId: "nav-annuals" },
   { href: "/categories", icon: Tags, labelKey: "categories", testId: "nav-categories" },
   { href: "/history", icon: History, labelKey: "history", testId: "nav-history" },
+  WORKSPACES_ITEM,
 ];
 
 const MOBILE_SETTINGS: NavItem = {
@@ -99,7 +104,7 @@ function isActiveRoute(pathname: string, href: string): boolean {
 }
 
 function isMoreActive(pathname: string): boolean {
-  return [...MORE_ITEMS, WORKSPACES_ITEM].some((item) => isActiveRoute(pathname, item.href));
+  return MORE_ITEMS.some((item) => isActiveRoute(pathname, item.href));
 }
 
 function navClass(active: boolean, extra = ""): string {
@@ -129,11 +134,6 @@ export function AppShellClient({
   const tw = useTranslations("workspaces");
   const pathname = usePathname();
   const wide = pathname.startsWith("/stats");
-  // Workspaces nav entry: desktop sidebar + mobile More, multi-workspace only.
-  const desktopItems = workspace
-    ? [...DESKTOP_ITEMS.slice(0, -1), WORKSPACES_ITEM, DESKTOP_ITEMS[DESKTOP_ITEMS.length - 1]!]
-    : DESKTOP_ITEMS;
-  const moreItems = workspace ? [...MORE_ITEMS, WORKSPACES_ITEM] : MORE_ITEMS;
   // The quiet header control that opens the Home workspace list (§4.12).
   const switcher = workspace ? (
     <Link
@@ -163,7 +163,7 @@ export function AppShellClient({
           </span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-4">
-          {desktopItems.map((item) => {
+          {DESKTOP_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActiveRoute(pathname, item.href);
             return (
@@ -288,7 +288,7 @@ export function AppShellClient({
                 <DrawerContent>
                   <DrawerTitle>{t("more")}</DrawerTitle>
                   <ul className="flex flex-col gap-1">
-                    {moreItems.map((item) => {
+                    {MORE_ITEMS.map((item) => {
                       const Icon = item.icon;
                       const active = isActiveRoute(pathname, item.href);
                       return (
