@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Workspaces has its own section: in the sidebar on desktop and under More on mobile, plus a link in Settings. Start your first shared workspace there (UC-31).
 
 ### Changed
+- Creating something now starts from a single "New …" button that opens the form in a sheet from the bottom of the screen: expenses, incomes, month-only lines, fixed expenses, categories, annuals, months, shared workspaces and members. Editing still happens in place on the row.
 - Data now belongs to a workspace instead of a user. Migration 0008 gives every existing user a private workspace that holds all their data and records who added each expense. With only the private workspace, the app looks and works exactly as before (UC-31).
 - The currency in Settings is the currency of the workspace you are viewing. A new shared workspace starts with your currency, then keeps its own: changing your currency later, or handing the workspace to someone else, does not change it (UC-31).
 

@@ -45,6 +45,7 @@ test.describe("UC-08 actual expenses", () => {
 
     // Add form is rendered with the seeded category preselected.
     await expect(page.getByRole("tab", { name: /Actuals/ })).toBeVisible();
+    await page.getByTestId("new-actual").click();
     await page.locator("#new-actual-name").fill("Bread");
     await page
       .locator("#new-actual-observations")
@@ -122,6 +123,7 @@ test.describe("UC-08 actual expenses", () => {
     expect(before.length).toBeGreaterThan(0); // reserved line seeded
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
+    await page.getByTestId("new-actual").click();
     await page.locator("#new-actual-name").fill("Bread");
     await page.locator("#new-actual-amount").fill("5.00");
     await page.getByRole("button", { name: "Add" }).click();
@@ -143,6 +145,7 @@ test.describe("UC-08 actual expenses", () => {
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
     await expect(page.getByRole("tab", { name: /Gastos/ })).toBeVisible();
+    await page.getByTestId("new-actual").click();
     await page.locator("#new-actual-name").fill("Pan");
     await page.locator("#new-actual-amount").fill("5.00");
     await page.getByRole("button", { name: "Añadir" }).click();

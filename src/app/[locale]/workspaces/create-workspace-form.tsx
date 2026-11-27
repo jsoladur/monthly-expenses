@@ -38,15 +38,7 @@ export function CreateWorkspaceForm({
   );
 
   return (
-    <form
-      id="create"
-      action={action}
-      aria-labelledby="create-workspace-title"
-      className="bg-card text-card-foreground flex scroll-mt-24 flex-col gap-3 rounded-lg border p-4"
-    >
-      <h2 id="create-workspace-title" className="text-lg font-semibold">
-        {t("title")}
-      </h2>
+    <form action={action} aria-label={t("title")} className="flex flex-col gap-3">
       <p className="text-muted-foreground text-sm leading-relaxed">{t("help")}</p>
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">{t("name")}</span>

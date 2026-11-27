@@ -56,6 +56,8 @@ test.describe("UC-31 collaborative workspaces", () => {
     await expect(page).toHaveURL(/\/en\/workspaces$/);
     await expect(page.getByRole("heading", { level: 1, name: "Workspaces" })).toBeVisible();
     await expect(page.getByText("My private workspace")).toBeVisible();
+    // "Create new" pattern: a button opens the form in a bottom drawer.
+    await page.getByTestId("new-workspace").click();
     await expect(page.getByRole("button", { name: "Create workspace" })).toBeVisible();
   });
 

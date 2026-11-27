@@ -11,6 +11,7 @@ import { listMyWorkspaces } from "@/server/services/workspaces";
 import { getProfileSettings } from "@/server/services/settings";
 import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 import { CreateWorkspaceForm } from "./create-workspace-form";
+import { CreateDrawer } from "@/components/create-drawer";
 
 // ============================================================================
 // Workspaces screen (UC-31 §7.2): the user's workspaces + the create-shared
@@ -89,10 +90,14 @@ export default async function WorkspacesPage({
           })}
         </ul>
 
-        <CreateWorkspaceForm
-          defaultCurrency={profile?.currency ?? "EUR"}
-          currencies={SUPPORTED_CURRENCIES}
-        />
+        <div id="create" className="scroll-mt-24">
+          <CreateDrawer label={t("new")} testId="new-workspace" openOnHash="create">
+            <CreateWorkspaceForm
+              defaultCurrency={profile?.currency ?? "EUR"}
+              currencies={SUPPORTED_CURRENCIES}
+            />
+          </CreateDrawer>
+        </div>
       </div>
     </AppShell>
   );

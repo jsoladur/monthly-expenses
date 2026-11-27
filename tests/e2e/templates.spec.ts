@@ -49,6 +49,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Fixed expenses" })).toBeVisible();
 
     // Add a committed template.
+    await page.getByTestId("new-template").click();
     await page.locator("#new-committed-name").fill("Weekly groceries");
     await page.locator("#new-committed-amount").fill("150.00");
     await page.getByRole("button", { name: "Add" }).click();
@@ -85,6 +86,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
 
     const notes =
       "84 meses - 1ª cuota Oct 2026 - Ult. Cuota Sept 2033 extra payment schedule notes";
+    await page.getByTestId("new-template").click();
     await page.locator("#new-committed-name").fill("Tesla Model 3");
     await page.locator("#new-committed-observations").fill(notes);
     await page.locator("#new-committed-amount").fill("44.33");
@@ -124,6 +126,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
 
     // Add "Water" scheduled for Jan, Mar, Jul, Oct: toggle on starts with no
     // month selected, so pick the four that apply.
+    await page.getByTestId("new-template").click();
     await page.locator("#new-committed-name").fill("Water");
     await page.locator("#new-committed-amount").fill("60.00");
     await page.getByLabel("Only in some months").check();
@@ -176,6 +179,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await page.getByRole("tab", { name: "Committed" }).click();
 
     // A year that is not a year blocks the save with a keyed error.
+    await page.getByTestId("new-template").click();
     await page.locator("#new-committed-name").fill("Car loan");
     await page.locator("#new-committed-amount").fill("250.00");
     await page.getByLabel("Has a last payment").check();
@@ -196,6 +200,7 @@ test.describe("UC-05 fixed/estimated templates", () => {
     await page.goto(`${BASE_URL}/en`);
     // Both fields are controlled: a value typed before hydration is reset to
     // today's month, so retry until the picked period survives.
+    await page.getByTestId("new-month").click();
     const year = page.locator('input[name="year"]');
     const month = page.locator('select[name="month"]');
     await expect(async () => {

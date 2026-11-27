@@ -21,6 +21,7 @@ test.describe("UC-30 income name autocomplete", () => {
     await page.goto(`${BASE_URL}/en/months/2026/8`);
     await page.getByRole("tab", { name: /Incomes/ }).click();
 
+    await page.getByTestId("new-income").click();
     const name = page.locator("#new-income-name");
     await name.click();
     await name.pressSequentially("n");
@@ -41,6 +42,7 @@ test.describe("UC-30 income name autocomplete", () => {
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
     await page.getByRole("tab", { name: /Incomes/ }).click();
+    await page.getByTestId("new-income").click();
     const name = page.locator("#new-income-name");
     await name.click();
     await name.pressSequentially("no");
@@ -65,6 +67,7 @@ test.describe("UC-30 income name autocomplete", () => {
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
     await page.getByRole("tab", { name: /Ingresos/ }).click();
+    await page.getByTestId("new-income").click();
     const name = page.locator("#new-income-name");
     await name.click();
     await name.pressSequentially("no");

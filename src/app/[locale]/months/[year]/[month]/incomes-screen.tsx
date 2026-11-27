@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { SwipeAction } from "@/components/ui/swipe-action";
 import { Pencil, Trash2 } from "lucide-react";
+import { CreateDrawer } from "@/components/create-drawer";
 
 // ============================================================================
 // Incomes screen (UC-07) — interactive part of the workspace's incomes block.
@@ -71,14 +72,31 @@ export function IncomesScreen({
   return (
     <section className="flex flex-col gap-3">
       {canManage && (
-        <AddIncomeForm
-          monthId={monthId}
-          year={year}
-          month={month}
-          currency={currency}
-          incomeCategories={incomeCategories}
-          nameSuggestions={nameSuggestions}
-        />
+        incomeCategories.length === 0 ? (
+          // Nothing to create yet: show the form's "create a category first" hint inline.
+            <AddIncomeForm
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              incomeCategories={incomeCategories}
+              nameSuggestions={nameSuggestions}
+            />
+        ) : (
+        <CreateDrawer label={t("new")} testId="new-income">
+          {(close) => (
+            <AddIncomeForm
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              incomeCategories={incomeCategories}
+              nameSuggestions={nameSuggestions}
+              onCreated={close}
+            />
+          )}
+        </CreateDrawer>
+        )
       )}
 
       {initialIncomes.length === 0 ? (
@@ -108,6 +126,7 @@ export function IncomesScreen({
 // ---------------------------------------------------------------------------
 
 function AddIncomeForm({
+  onCreated,
   monthId,
   year,
   month,
@@ -115,6 +134,8 @@ function AddIncomeForm({
   incomeCategories,
   nameSuggestions,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   monthId: string;
   year: number;
   month: number;
@@ -138,6 +159,7 @@ function AddIncomeForm({
 
   return (
     <AddIncomeFormBody
+      onCreated={onCreated}
       monthId={monthId}
       year={year}
       month={month}
@@ -151,6 +173,7 @@ function AddIncomeForm({
 }
 
 function AddIncomeFormBody({
+  onCreated,
   monthId,
   year,
   month,
@@ -160,6 +183,8 @@ function AddIncomeFormBody({
   t,
   tv,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   monthId: string;
   year: number;
   month: number;
@@ -184,6 +209,7 @@ function AddIncomeFormBody({
       const result = await addIncomeAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
+        onCreated?.();
         setDraftAmount("");
       }
       return result;

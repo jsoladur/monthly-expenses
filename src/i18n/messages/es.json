@@ -420,6 +420,10 @@
       "badge": "Ahorro",
       "mark": "Marcar como ahorro",
       "unmark": "Dejar de contar como ahorro"
+    },
+    "new": {
+      "expense": "Nueva categoría de gasto",
+      "income": "Nueva categoría de ingreso"
     }
   },
   "templates": {

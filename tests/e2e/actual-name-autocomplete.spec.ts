@@ -21,6 +21,7 @@ test.describe("UC-17 actual name autocomplete", () => {
     await page.goto(`${BASE_URL}/en/months/2026/8`);
     await expect(page.getByRole("tab", { name: /Actuals/ })).toBeVisible();
 
+    await page.getByTestId("new-actual").click();
     const name = page.locator("#new-actual-name");
     await name.click();
     await name.pressSequentially("c");
@@ -42,6 +43,7 @@ test.describe("UC-17 actual name autocomplete", () => {
     await seedWindow(DB_URL, user.id);
 
     await page.goto(`${BASE_URL}/en/months/2026/8`);
+    await page.getByTestId("new-actual").click();
     const name = page.locator("#new-actual-name");
     await name.click();
     await name.pressSequentially("ca");
@@ -61,6 +63,7 @@ test.describe("UC-17 actual name autocomplete", () => {
     await seedWindow(DB_URL, user.id);
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
+    await page.getByTestId("new-actual").click();
     const name = page.locator("#new-actual-name");
     await name.click();
     await name.pressSequentially("ca");

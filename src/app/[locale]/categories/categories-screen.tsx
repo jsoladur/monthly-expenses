@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { AddCategoryForm } from "./add-category-form";
 import { CategoryRow } from "./category-row";
+import { CreateDrawer } from "@/components/create-drawer";
 
 type Kind = "expense" | "income";
 
@@ -61,7 +62,11 @@ export function CategoriesScreen({
         })}
       </div>
 
-      {canCreate && <AddCategoryForm kind={kind} />}
+      {canCreate && (
+        <CreateDrawer label={t(`new.${kind}`)} testId="new-category">
+          {(close) => <AddCategoryForm kind={kind} onCreated={close} />}
+        </CreateDrawer>
+      )}
 
       {kind === "expense" && canManage && (
         <p id="savings-help" className="text-muted-foreground px-1 text-xs leading-relaxed">

@@ -41,6 +41,7 @@ test.describe("UC-07 month incomes", () => {
     await page.goto(`${BASE_URL}/en/months/2026/8`);
 
     await page.getByRole("tab", { name: /Incomes/ }).click();
+    await page.getByTestId("new-income").click();
     await expect(page.locator("#new-income-name")).toBeVisible();
     await page.locator("#new-income-name").fill("Monthly salary");
     await page.locator("#new-income-amount").fill("2000.00");
@@ -103,6 +104,7 @@ test.describe("UC-07 month incomes", () => {
 
     await page.goto(`${BASE_URL}/es/months/2026/8`);
     await page.getByRole("tab", { name: /Ingresos/ }).click();
+    await page.getByTestId("new-income").click();
     await expect(page.locator("#new-income-name")).toBeVisible();
     await page.locator("#new-income-name").fill("Salario mensual");
     await page.locator("#new-income-amount").fill("2000.00");

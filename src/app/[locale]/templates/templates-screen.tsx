@@ -12,6 +12,7 @@ import {
   CHART_LEGEND_WRAPPER,
   CHART_TOOLTIP_PROPS,
 } from "@/components/chart-tooltip";
+import { CreateDrawer } from "@/components/create-drawer";
 
 type Kind = "committed" | "estimated";
 
@@ -185,11 +186,25 @@ export function TemplatesScreen({
       </div>
 
       {canManage && (
-        <AddTemplateForm
-          kind={kind}
-          currency={currency}
-          expenseCategories={expenseCategories}
-        />
+        expenseCategories.length === 0 ? (
+          // Nothing to create yet: show the form's "create a category first" hint inline.
+            <AddTemplateForm
+              kind={kind}
+              currency={currency}
+              expenseCategories={expenseCategories}
+            />
+        ) : (
+        <CreateDrawer label={t("new")} testId="new-template">
+          {(close) => (
+            <AddTemplateForm
+              kind={kind}
+              currency={currency}
+              expenseCategories={expenseCategories}
+              onCreated={close}
+            />
+          )}
+        </CreateDrawer>
+        )
       )}
 
       {rows.length === 0 ? (

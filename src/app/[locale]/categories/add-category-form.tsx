@@ -22,8 +22,11 @@ import { Button } from "@/components/ui/button";
 type Kind = "expense" | "income";
 
 export function AddCategoryForm({
+  onCreated,
   kind,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   kind: Kind;
 }) {
   const t = useTranslations("categories");
@@ -40,6 +43,7 @@ export function AddCategoryForm({
         // way to react to action results in React 19; the lint rule only
         // fires for `useEffect`.
         setBumpOnSuccess((k) => k + 1);
+        onCreated?.();
       }
       return result;
     },

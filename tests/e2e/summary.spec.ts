@@ -120,7 +120,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
     await expect(page.getByText(/Plan in fixed expenses:/)).toBeVisible();
     await expect(page.getByText(/Over by/)).toBeVisible();
     // Overspend does NOT block — the add form is still usable.
-    await expect(page.locator("#new-actual-name")).toBeVisible();
+    await expect(page.getByTestId("new-actual")).toBeVisible();
   });
 
   test("no overspend badge when actuals stay inside the active template plan", async ({
@@ -166,7 +166,7 @@ test.describe("UC-11 summary, savings & warnings", () => {
 
     // Edits ARE allowed in past months (PRD §7.7). The add-actual form is
     // still rendered.
-    await expect(page.locator("#new-actual-name")).toBeVisible();
+    await expect(page.getByTestId("new-actual")).toBeVisible();
   });
 
   test("Spanish variant renders translated summary + warning copy", async ({

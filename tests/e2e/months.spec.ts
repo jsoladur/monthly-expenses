@@ -58,6 +58,7 @@ test.describe("UC-06 month creation, cloning & home", () => {
     ).toBeVisible();
 
     // --- Create month ---
+    await page.getByTestId("new-month").click();
     await page.locator('input[name="year"]').fill("2026");
     await page.locator('select[name="month"]').selectOption("8");
     await page.getByRole("button", { name: "Create" }).click();
@@ -98,7 +99,7 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await attachSessionCookie(context, user);
 
     await page.goto(`${BASE_URL}/en`);
-    await page.locator("summary", { hasText: "Create month" }).click();
+    await page.getByTestId("new-month").click();
     await page.locator('input[name="year"]').fill("2026");
     await page.locator('select[name="month"]').selectOption("8");
     await expect(page.getByText("That month already exists.")).toBeVisible();
@@ -209,6 +210,7 @@ test.describe("UC-06 month creation, cloning & home", () => {
     await seedTemplate(DB_URL, user.id, "Groceries", "estimated", "400.00");
 
     await page.goto(`${BASE_URL}/en`);
+    await page.getByTestId("new-month").click();
     await page.locator('input[name="year"]').fill("2026");
     await page.locator('select[name="month"]').selectOption("8");
     await page.getByRole("button", { name: "Create" }).click();

@@ -420,6 +420,10 @@
       "badge": "Savings",
       "mark": "Mark as savings",
       "unmark": "Stop counting as savings"
+    },
+    "new": {
+      "expense": "New expense category",
+      "income": "New income category"
     }
   },
   "templates": {

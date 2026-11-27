@@ -32,6 +32,7 @@ import type { ReservedLineRowData } from "@/app/[locale]/months/[year]/[month]/r
 import { Collapsible } from "@/components/ui/collapsible";
 import { SwipeAction } from "@/components/ui/swipe-action";
 import type { ActualNameSuggestion } from "@/lib/actual-name-suggestions";
+import { CreateDrawer } from "@/components/create-drawer";
 
 // ============================================================================
 // Actuals screen (UC-08) — interactive part of the workspace's actuals block.
@@ -124,14 +125,31 @@ export function ActualsScreen({
   return (
     <section className="flex flex-col gap-3">
       {permissions.addActual && (
-        <AddActualForm
-          monthId={monthId}
-          year={year}
-          month={month}
-          currency={currency}
-          expenseCategories={expenseCategories}
-          nameSuggestions={nameSuggestions}
-        />
+        expenseCategories.length === 0 ? (
+          // Nothing to create yet: show the form's "create a category first" hint inline.
+            <AddActualForm
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              expenseCategories={expenseCategories}
+              nameSuggestions={nameSuggestions}
+            />
+        ) : (
+        <CreateDrawer label={t("new")} testId="new-actual">
+          {(close) => (
+            <AddActualForm
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              expenseCategories={expenseCategories}
+              nameSuggestions={nameSuggestions}
+              onCreated={close}
+            />
+          )}
+        </CreateDrawer>
+        )
       )}
 
       {initialActuals.length > 0 && (
@@ -187,6 +205,7 @@ export function ActualsScreen({
 // ---------------------------------------------------------------------------
 
 function AddActualForm({
+  onCreated,
   monthId,
   year,
   month,
@@ -194,6 +213,8 @@ function AddActualForm({
   expenseCategories,
   nameSuggestions,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   monthId: string;
   year: number;
   month: number;
@@ -217,6 +238,7 @@ function AddActualForm({
 
   return (
     <AddActualFormBody
+      onCreated={onCreated}
       monthId={monthId}
       year={year}
       month={month}
@@ -230,6 +252,7 @@ function AddActualForm({
 }
 
 function AddActualFormBody({
+  onCreated,
   monthId,
   year,
   month,
@@ -239,6 +262,8 @@ function AddActualFormBody({
   t,
   tv,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   monthId: string;
   year: number;
   month: number;
@@ -264,6 +289,7 @@ function AddActualFormBody({
       const result = await addActualAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
+        onCreated?.();
         setDraftAmount("");
       }
       return result;

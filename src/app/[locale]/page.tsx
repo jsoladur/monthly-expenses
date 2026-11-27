@@ -7,6 +7,7 @@ import { roleAllows } from "@/lib/workspace-roles";
 import { isAppLocale, monthYear, monthName } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { MonthCreateForm } from "@/app/[locale]/month-create-form";
+import { CreateDrawer } from "@/components/create-drawer";
 import { AppShell } from "@/components/app-shell";
 import { ExportExpensesDrawer } from "@/components/export-expenses-drawer";
 import { Link } from "@/i18n/navigation";
@@ -101,31 +102,7 @@ export default async function LocaleHome({
               </p>
             </div>
             {canCreateMonth && (
-            <MonthCreateForm
-              locale={locale}
-              labels={{
-                year: tm("create.year"),
-                month: tm("create.month"),
-                submit: tm("create.submit"),
-                duplicate: tm("create.duplicate"),
-                validationRequired: tv("required"),
-                validationMonth: tv("monthInvalid"),
-                validationYear: tv("yearOutOfRange"),
-                forbidden: tv("workspaceForbidden"),
-              }}
-              monthNames={monthNames}
-              existingMonths={existingMonths}
-            />
-            )}
-          </section>
-        ) : (
-          <section aria-labelledby="month-list" className="flex flex-col gap-4">
-            {canCreateMonth && (
-            <details className="bg-card text-card-foreground rounded-lg border">
-              <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-                {tm("list.createNew")}
-              </summary>
-              <div className="border-t p-4">
+              <CreateDrawer label={tm("create.title")} testId="new-month">
                 <MonthCreateForm
                   locale={locale}
                   labels={{
@@ -141,8 +118,29 @@ export default async function LocaleHome({
                   monthNames={monthNames}
                   existingMonths={existingMonths}
                 />
-              </div>
-            </details>
+              </CreateDrawer>
+            )}
+          </section>
+        ) : (
+          <section aria-labelledby="month-list" className="flex flex-col gap-4">
+            {canCreateMonth && (
+              <CreateDrawer label={tm("create.title")} testId="new-month">
+                <MonthCreateForm
+                  locale={locale}
+                  labels={{
+                    year: tm("create.year"),
+                    month: tm("create.month"),
+                    submit: tm("create.submit"),
+                    duplicate: tm("create.duplicate"),
+                    validationRequired: tv("required"),
+                    validationMonth: tv("monthInvalid"),
+                    validationYear: tv("yearOutOfRange"),
+                    forbidden: tv("workspaceForbidden"),
+                  }}
+                  monthNames={monthNames}
+                  existingMonths={existingMonths}
+                />
+              </CreateDrawer>
             )}
             <h2 id="month-list" className="text-lg font-semibold">
               {tm("list.title")}

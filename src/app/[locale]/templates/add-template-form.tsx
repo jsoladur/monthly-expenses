@@ -29,10 +29,13 @@ import { isValidEndMonth, type EndMonth } from "@/lib/template-end";
 type Kind = "committed" | "estimated";
 
 export function AddTemplateForm({
+  onCreated,
   kind,
   currency,
   expenseCategories,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   kind: Kind;
   currency: string;
   expenseCategories: CategoryOption[];
@@ -53,6 +56,7 @@ export function AddTemplateForm({
 
   return (
     <AddTemplateFormBody
+      onCreated={onCreated}
       kind={kind}
       currency={currency}
       expenseCategories={expenseCategories}
@@ -63,12 +67,15 @@ export function AddTemplateForm({
 }
 
 function AddTemplateFormBody({
+  onCreated,
   kind,
   currency,
   expenseCategories,
   t,
   tv,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   kind: Kind;
   currency: string;
   expenseCategories: CategoryOption[];
@@ -102,6 +109,7 @@ function AddTemplateFormBody({
       const result = await boundAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
+        onCreated?.();
         setDraftAmount("");
         setDraftMonths(null);
         setDraftEnd(null);

@@ -11,8 +11,11 @@ import { AmountInput } from "@/components/amount-input";
 import type { CategoryOption } from "./annuals-screen";
 
 export function AddAnnualForm({
+  onCreated,
   expenseCategories,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   currency: string;
   expenseCategories: CategoryOption[];
 }) {
@@ -32,6 +35,7 @@ export function AddAnnualForm({
 
   return (
     <AddAnnualFormBody
+      onCreated={onCreated}
       expenseCategories={expenseCategories}
       t={t}
       tv={tv}
@@ -40,10 +44,13 @@ export function AddAnnualForm({
 }
 
 function AddAnnualFormBody({
+  onCreated,
   expenseCategories,
   t,
   tv,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   expenseCategories: CategoryOption[];
   t: ReturnType<typeof useTranslations<"annuals">>;
   tv: ReturnType<typeof useTranslations<"validation">>;
@@ -65,6 +72,7 @@ function AddAnnualFormBody({
       const result = await createAnnualAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
+        onCreated?.();
         setIsDirectDebit(false);
         setDraftAmount("");
       }

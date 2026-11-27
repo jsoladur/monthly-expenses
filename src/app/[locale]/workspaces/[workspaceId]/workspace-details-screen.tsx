@@ -21,6 +21,7 @@ import {
 import { ASSIGNABLE_ROLES, type WorkspaceRole } from "@/lib/workspace-roles";
 import { WORKSPACE_NAME_MAX, matchesWorkspaceName } from "@/lib/workspace-name";
 import { workspaceErrorMessage } from "../workspace-error";
+import { CreateDrawer } from "@/components/create-drawer";
 
 // ============================================================================
 // Workspace details (UC-31 §7.2): members + role controls and add form
@@ -84,7 +85,9 @@ export function WorkspaceDetailsScreen({
         invitations={invitations}
         canManage={can.manageMembers}
       />
-      {can.manageMembers && <AddMemberForm workspaceId={workspaceId} candidates={candidates} />}
+      {can.manageMembers && (
+        <AddMemberDrawer workspaceId={workspaceId} candidates={candidates} />
+      )}
       {can.manageWorkspace && (
         <SettingsSection
           workspaceId={workspaceId}
@@ -264,12 +267,29 @@ function MembersSection({
   );
 }
 
-function AddMemberForm({
+function AddMemberDrawer({
   workspaceId,
   candidates,
 }: {
   workspaceId: string;
   candidates: Candidate[];
+}) {
+  const t = useTranslations("workspaces.members");
+  return (
+    <CreateDrawer label={t("add")} testId="new-member">
+      {(close) => <AddMemberForm workspaceId={workspaceId} candidates={candidates} onCreated={close} />}
+    </CreateDrawer>
+  );
+}
+
+function AddMemberForm({
+  workspaceId,
+  candidates,
+  onCreated,
+}: {
+  workspaceId: string;
+  candidates: Candidate[];
+  onCreated: () => void;
 }) {
   const t = useTranslations("workspaces.members");
   const tr = useTranslations("workspaces.roles");
@@ -282,21 +302,16 @@ function AddMemberForm({
         email: String(formData.get("email") ?? ""),
         role: String(formData.get("role") ?? "reader"),
       });
-      if (result.ok) setFormKey((k) => k + 1);
+      if (result.ok) {
+        setFormKey((k) => k + 1);
+        onCreated();
+      }
       return result;
     },
     null,
   );
   return (
-    <form
-      key={formKey}
-      action={action}
-      aria-labelledby="add-member-title"
-      className="bg-card text-card-foreground flex flex-col gap-3 rounded-lg border p-4"
-    >
-      <h2 id="add-member-title" className="text-lg font-semibold">
-        {t("add")}
-      </h2>
+    <form key={formKey} action={action} aria-label={t("add")} className="flex flex-col gap-3">
       <p className="text-muted-foreground text-xs leading-relaxed">{t("addHelp")}</p>
       {candidates.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("noCandidates")}</p>

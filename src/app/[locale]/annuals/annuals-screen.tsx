@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { AddAnnualForm } from "./add-annual-form";
 import { AnnualRow } from "./annual-row";
+import { CreateDrawer } from "@/components/create-drawer";
 
 export interface AnnualRowData {
   id: string;
@@ -42,10 +43,23 @@ export function AnnualsScreen({
   return (
     <section className="flex flex-col gap-4">
       {canManage && (
-        <AddAnnualForm
-          currency={currency}
-          expenseCategories={expenseCategories}
-        />
+        expenseCategories.length === 0 ? (
+          // Nothing to create yet: show the form's "create a category first" hint inline.
+            <AddAnnualForm
+              currency={currency}
+              expenseCategories={expenseCategories}
+            />
+        ) : (
+        <CreateDrawer label={t("new")} testId="new-annual">
+          {(close) => (
+            <AddAnnualForm
+              currency={currency}
+              expenseCategories={expenseCategories}
+              onCreated={close}
+            />
+          )}
+        </CreateDrawer>
+        )
       )}
 
       {!hasData ? (

@@ -44,14 +44,18 @@ test.describe("UC-03 categories", () => {
     await expect(page.getByText("No expense categories yet.")).toBeVisible();
 
     // Add a category.
+    await page.getByTestId("new-category").click();
     await page.getByLabel("Name", { exact: true }).fill("Groceries");
     await page.getByRole("button", { name: "Add" }).click();
     await expect(page.getByText("Groceries", { exact: true })).toBeVisible();
 
     // Duplicate name: rejected.
+    await page.getByTestId("new-category").click();
     await page.getByLabel("Name", { exact: true }).fill("Groceries");
     await page.getByRole("button", { name: "Add" }).click();
     await expect(page.getByText("A category with this name already exists.")).toBeVisible();
+    // The create drawer stays open on an error; close it to reach the rows.
+    await page.keyboard.press("Escape");
 
     // Deactivate.
     await page.getByRole("button", { name: "Deactivate" }).click();

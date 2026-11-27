@@ -28,6 +28,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { SwipeAction } from "@/components/ui/swipe-action";
 import { PassToUpcomingMonthDrawer } from "@/components/pass-to-upcoming-month-drawer";
 import { Pencil, Trash2, ArrowRightCircle, Calendar } from "lucide-react";
+import { CreateDrawer } from "@/components/create-drawer";
 
 // ============================================================================
 // Estimated reserved lines screen — separate section for estimated lines only.
@@ -83,13 +84,29 @@ export function EstimatedReservedLinesScreen({
       </section>
 
       {canManage && (
-        <AddMonthOnlyLineForm
-          monthId={monthId}
-          year={year}
-          month={month}
-          currency={currency}
-          expenseCategories={expenseCategories}
-        />
+        expenseCategories.length === 0 ? (
+          // Nothing to create yet: show the form's "create a category first" hint inline.
+            <AddMonthOnlyLineForm
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              expenseCategories={expenseCategories}
+            />
+        ) : (
+        <CreateDrawer label={t("new")} testId="new-month-line">
+          {(close) => (
+            <AddMonthOnlyLineForm
+              monthId={monthId}
+              year={year}
+              month={month}
+              currency={currency}
+              expenseCategories={expenseCategories}
+              onCreated={close}
+            />
+          )}
+        </CreateDrawer>
+        )
       )}
     </div>
   );
@@ -411,12 +428,15 @@ function EditRemainingForm({
 // ---------------------------------------------------------------------------
 
 function AddMonthOnlyLineForm({
+  onCreated,
   monthId,
   year,
   month,
   currency,
   expenseCategories,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   monthId: string;
   year: number;
   month: number;
@@ -438,6 +458,7 @@ function AddMonthOnlyLineForm({
 
   return (
     <AddMonthOnlyLineFormBody
+      onCreated={onCreated}
       monthId={monthId}
       year={year}
       month={month}
@@ -448,12 +469,15 @@ function AddMonthOnlyLineForm({
 }
 
 function AddMonthOnlyLineFormBody({
+  onCreated,
   monthId,
   year,
   month,
   currency,
   expenseCategories,
 }: {
+  /** Called after a successful create (closes the CreateDrawer). */
+  onCreated?: () => void;
   monthId: string;
   year: number;
   month: number;
@@ -482,6 +506,7 @@ function AddMonthOnlyLineFormBody({
       const result = await addMonthOnlyLineAction(payload);
       if (result.ok) {
         setBumpOnSuccess((k) => k + 1);
+        onCreated?.();
         setDraftAmount("");
       }
       return result;
@@ -494,7 +519,6 @@ function AddMonthOnlyLineFormBody({
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold">{t("new")}</h2>
       <form key={formKey} action={formAction} className="flex flex-col gap-2">
         <div className="flex items-stretch gap-2">
           <label htmlFor="new-reserved-category" className="sr-only">
