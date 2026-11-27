@@ -11,7 +11,7 @@
 
 # Monthly Expenses
 
-A personal, multi-tenant Progressive Web App for tracking **one calendar month at a time**: incomes, reusable categories, fixed commitments, estimated envelopes, and actual tickets. From the day a month is created, reserved money is already in place so **potential savings** is visible immediately.
+A personal, multi-tenant Progressive Web App for tracking **one calendar month at a time**: incomes, reusable categories, fixed commitments, estimated envelopes, and actual tickets. From the day a month is created, reserved money is already in place so **potential savings** is visible immediately. Every account has a private workspace, and a workspace can be shared with other allowlisted users, each with a role.
 
 Product, architecture, and implementation docs live in [`docs/README.md`](docs/README.md).
 
@@ -43,6 +43,20 @@ The goal was to see how far a tightly constrained personal product can be taken 
 - **Pass to upcoming month** — move an estimated leftover onto a later month of the same year that already exists.
 - **Past months stay editable**, with a warning.
 
+### Workspaces
+- **Private by default** — every account has its own workspace. With only that workspace, the app looks and works exactly as before.
+- **Shared workspaces** — create one and add other allowlisted users who have signed in once, each with a role:
+
+  | Role | Can do |
+  | --- | --- |
+  | Reader | See every screen and report. Change nothing. |
+  | Editor | Create months, categories and expenses. Edit and delete only the expenses they added. |
+  | Admin | Everything except deleting the workspace and transferring ownership. Manages members, except the Owner. |
+  | Owner | Everything, including deleting the workspace and offering it to a member. |
+
+- **Ownership transfer** — the Owner offers the workspace to a member, who accepts. The former Owner becomes an Admin. No data changes hands.
+- **Switching** — with more than one workspace, Home lists them, and the selected one applies to every section (months, categories, fixed expenses, History, Stats, Search, Export, Settings).
+
 ### Catalogs
 - Per-user **expense and income categories** (soft delete; historical rows keep their label).
 - **Fixed and estimated templates**, cloned **once** when a month is created; months never sync with templates afterwards.
@@ -57,7 +71,7 @@ The goal was to see how far a tightly constrained personal product can be taken 
 - **Google sign-in** plus a hardcoded email allowlist (`ALLOWED_EMAILS`).
 - **English and Spanish**; month names from the locale; amount input stays `1234.56` in both.
 - **Installable PWA** (online-only; no offline sync).
-- **Multi-tenant isolation** — every query is scoped by `user_id`.
+- **Workspace isolation** — every query is scoped by workspace and checked against membership and role. Users outside a workspace cannot see that it exists.
 
 ---
 
@@ -163,7 +177,7 @@ flowchart LR
 
     subgraph Server["Host"]
         APP["Next.js app<br/>RSC + server actions + Auth.js"]
-        DB[("PostgreSQL 16<br/>user-scoped rows")]
+        DB[("PostgreSQL 16<br/>workspace-scoped rows")]
         APP -->|"SQL (Drizzle)"| DB
     end
 
@@ -173,14 +187,14 @@ flowchart LR
     APP -->|"OIDC code exchange (server-side)"| GOOGLE
 ```
 
-Layering: React Server Components for reads; thin server actions (Zod → service → revalidate); services own domain rules and transactions; repositories are the only place SQL lives, and every function takes `userId` first.
+Layering: React Server Components for reads; thin server actions (Zod → service → revalidate); services own domain rules and transactions; repositories are the only place SQL lives, and every tenant function takes `workspaceId` first. Services receive a membership-checked access object, so role rules cannot be skipped.
 
 ```mermaid
 flowchart TD
     RSC["Server Components (reads)"] --> SVC
     ACT["Server Actions"] --> ZOD["Zod"]
     ZOD --> SVC["Services — domain rules"]
-    SVC --> REPO["Repositories (Drizzle, userId first)"]
+    SVC --> REPO["Repositories (Drizzle, workspaceId first)"]
     REPO --> DB[("PostgreSQL")]
 ```
 

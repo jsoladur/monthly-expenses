@@ -33,7 +33,7 @@ Key properties:
 - **Single deployable.** UI, auth, domain logic, and data access ship in one container. Compose = `app` + `postgres` (PRD C5).
 - **No bearer tokens in the browser.** Google tokens are exchanged server-side by Auth.js; the browser only holds an httpOnly session cookie.
 - **Online-only.** The PWA requirement is *installability* (manifest + service worker), not offline sync (PRD C11).
-- **Every money query is tenant-scoped.** A missing `user_id` filter is a P0 bug (PRD §5.1). This is enforced in the repository layer, not by convention alone (see §7).
+- **Every money query is tenant-scoped.** A missing `workspace_id` filter, or a missing membership and role check, is a P0 bug (PRD §5.1, C30–C31). This is enforced in the repository layer, not by convention alone (see §7).
 
 ---
 
@@ -52,6 +52,7 @@ Key properties:
 | ADR-9 | **Tailwind + shadcn/ui** | MUI; Chakra; plain CSS | Mobile-first (PRD §10), agents generate competent UI with it, tree-shakeable. |
 | ADR-10 | **Vitest (unit/domain) + Playwright (E2E)** | Jest; Cypress | Vitest is native to the Vite-era toolchain; Playwright covers the PRD UC flows in a real browser. |
 | ADR-11 | **ExcelJS for `.xlsx` export (UC-19)** | SheetJS community `xlsx` (weak styling, license trap for Pro); CSV zip | Need multi-sheet workbooks with header fills, 2-decimal number format, freeze panes, and print setup. ExcelJS is MIT and runs in Node only (`serverExternalPackages`). |
+| ADR-12 | **Workspace-scoped tenancy (PRD C30–C32)** | Keep `user_id` and add `workspace_id` beside it (two scope columns to keep in every `WHERE`); a per-row ACL table of user grants (expensive to query, easy to forget) | Tenant rows (`category`, `template`, `annual`, `month`, and `actual` via its month) carry one `workspace_id`. Every user gets a private workspace. Sharing is a membership table (`workspace_member`) with one role per member. Repositories take `workspaceId` first (supersedes the `userId`-first rule in §5 rule 1 for tenant data). Services receive a `WorkspaceAccess` object from `requireWorkspaceAccess(workspaceId, action)`, which checks membership and the role matrix, so the check cannot be skipped. |
 
 ---
 
@@ -92,19 +93,23 @@ sequenceDiagram
 3. Internal identity = `users.id` (uuid). External identity = `users.google_sub`. The session JWT carries `userId`; server code never trusts client-supplied user ids.
 4. Session checks live in the **data-access layer** (`requireUserId()`), not only in middleware. Middleware matcher gaps are a known Auth.js footgun; defense in depth is mandatory.
 5. `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` come from env. Google Cloud Console redirect URIs: `https://expenses.jmsola.dev/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`.
+6. **Workspace access (ADR-12, PRD C31).** Every tenant read or write goes through `requireWorkspaceAccess(workspaceId, action)` in the data-access layer: it calls `requireUserId()`, loads the caller's `workspace_member` row, applies the role matrix (UC-31 §3) for `action`, and returns `{ userId, workspaceId, role }`. A workspace the caller does not belong to is reported as not found, never as forbidden. The active workspace comes from a cookie that is only a UX hint; membership is checked on every request.
 
 ---
 
 ## 4. Data model
 
-Logical model from PRD §6, physicalized. All tables except `users`/`profile_settings` carry `user_id` (directly or via `months`) and all queries filter by it.
+Logical model from PRD §6, physicalized. Tenant tables (`category`, `template`, `annual`, `month`) carry `workspace_id` (ADR-12), and rows below them reach it through `month`. All queries filter by `workspace_id` after the membership check in §3.2 rule 6. `users` and `profile_settings` are per user. Migrations 0008 (UC-31) and 0009 (UC-32) introduce the workspace tables; the `user_id` columns of the tenant tables are dropped in 0008 after backfill.
 
 ```mermaid
 erDiagram
     USERS ||--|| PROFILE_SETTINGS : "1:1"
-    USERS ||--o{ CATEGORIES : owns
-    USERS ||--o{ TEMPLATES : owns
-    USERS ||--o{ MONTHS : owns
+    USERS ||--o{ WORKSPACE_MEMBER : "member of (one role per workspace)"
+    WORKSPACE ||--o{ WORKSPACE_MEMBER : "has (exactly one owner)"
+    WORKSPACE ||--o{ CATEGORIES : owns
+    WORKSPACE ||--o{ TEMPLATES : owns
+    WORKSPACE ||--o{ MONTHS : owns
+    WORKSPACE ||--o| WORKSPACE_TRANSFER : "may have one offer"
     MONTHS ||--o{ MONTH_INCOMES : contains
     MONTHS ||--o{ MONTH_FIXED_LINES : contains
     MONTHS ||--o{ MONTH_ACTUAL_EXPENSES : contains
@@ -114,6 +119,23 @@ erDiagram
     CATEGORIES ||--o{ MONTH_ACTUAL_EXPENSES : categorizes
     MONTH_FIXED_LINES ||--o| MONTH_ACTUAL_EXPENSES : "converted to (undo link)"
 
+    WORKSPACE {
+        uuid id PK
+        text kind "private | shared"
+        uuid personal_user_id UK "set only for private"
+        text name "shared only"
+        char(3) currency "default EUR"
+    }
+    WORKSPACE_MEMBER {
+        uuid workspace_id FK
+        uuid user_id FK
+        text role "owner | admin | editor | reader"
+    }
+    WORKSPACE_TRANSFER {
+        uuid workspace_id UK
+        uuid from_user_id FK
+        uuid to_user_id FK
+    }
     USERS {
         uuid id PK
         text google_sub UK
@@ -127,7 +149,7 @@ erDiagram
     }
     CATEGORIES {
         uuid id PK
-        uuid user_id FK
+        uuid workspace_id FK
         text name
         text kind "expense | income"
         boolean active "soft delete = false"
@@ -135,7 +157,7 @@ erDiagram
     }
     TEMPLATES {
         uuid id PK
-        uuid user_id FK
+        uuid workspace_id FK
         uuid category_id FK
         text name
         text observations
@@ -146,9 +168,9 @@ erDiagram
     }
     MONTHS {
         uuid id PK
-        uuid user_id FK
+        uuid workspace_id FK
         int year
-        int month "1-12; unique(user_id, year, month)"
+        int month "1-12; unique(workspace_id, year, month)"
         timestamptz created_at
     }
     MONTH_INCOMES {
@@ -176,6 +198,7 @@ erDiagram
         text name
         text observations
         numeric amount "numeric(14,2); HARD delete"
+        uuid created_by_user_id FK "member who added it (PRD C31)"
         uuid converted_from_line_id "nullable; set by pass-to-actual"
         boolean edited_after_conversion "default false; gates undo"
     }
@@ -183,8 +206,11 @@ erDiagram
 
 Invariants enforced by the schema and service layer:
 
-- `unique(user_id, year, month)` on `MONTHS` — duplicate month creation is rejected (PRD UC-08).
-- Category name unique per `(user_id, kind)` **among active rows** (partial unique index `WHERE active`) (PRD §6.2).
+- `workspace_member(workspace_id, user_id)` unique; partial unique `workspace_member(workspace_id) WHERE role = 'owner'` — exactly one Owner per shared workspace (UC-31 §4.7). `workspace.personal_user_id` unique; private workspaces only.
+- Every tenant table has `workspace_id NOT NULL` with `ON DELETE CASCADE`, so deleting a shared workspace removes exactly its rows (PRD C31).
+- `workspace_transfer` has at most one row per workspace (PRD C32, UC-32).
+- `unique(workspace_id, year, month)` on `MONTHS` — duplicate month creation is rejected (PRD UC-08).
+- Category name unique per `(workspace_id, kind)` **among active rows** (partial unique index `WHERE active`) (PRD §6.2).
 - Soft delete on `CATEGORIES`, `TEMPLATES` (and future catalogs). `TEMPLATES` additionally allow an explicit hard delete (PRD C23 / UC-20) — safe because no FK references `template`; month lines are snapshots. Hard delete on all month-scoped money rows (PRD §13).
 - `TEMPLATES.months` (`smallint[]`, nullable, UC-20): `NULL` = every month. Check `template_months_ck` keeps it non-empty, ≤ 11 entries, values 1–12; the service normalizes "all 12" to `NULL`. Clone source = `active AND (months IS NULL OR month = ANY(months))`.
 - `TEMPLATES.end_year` / `end_month` (`smallint`, nullable, UC-29 / PRD C29): last payment month of a **committed** template. Check `template_end_ck` keeps both `NULL` or both set (committed, month 1–12, year 1970–9999). Periods compare by `year * 12 + (month − 1)`. Clone source additionally requires `end_year IS NULL OR new month <= end month`. `createMonth` deactivates, in the same transaction, every active template whose end month is ≤ the new month. Overspend baseline: a template with an end month counts for months ≤ it regardless of `active`.
@@ -199,14 +225,15 @@ flowchart TD
     RSC["Server Components (reads)"] --> SVC
     ACT["Server Actions (mutations, one per PRD use case; UC-19 export is a read-shaped action that returns a file)"] --> ZOD["Zod input validation"]
     ZOD --> SVC["Service layer — domain rules<br/>cloneMonth, passToActual, undoPass,<br/>passToUpcomingMonth, potentialSavings, overspendWarnings, exportExpenses"]
-    SVC --> REPO["Repository layer (Drizzle)<br/>EVERY function takes userId as first arg"]
+    SVC --> REPO["Repository layer (Drizzle)<br/>EVERY tenant function takes workspaceId as first arg"]
     REPO --> DB[("PostgreSQL")]
     SVC --> TX["db.transaction for clone / pass-to-actual / undo / pass-to-upcoming"]
 ```
 
 Rules:
 
-1. **Repositories require `userId` as an explicit first parameter** and apply it in every `WHERE`. There is no way to call a repository without a tenant id. This is the enforcement mechanism for PRD §5.1.
+1. **Repositories require `workspaceId` as an explicit first parameter** for tenant data and apply it in every `WHERE`. There is no way to call a tenant repository without a workspace id. This is the enforcement mechanism for PRD §5.1 (ADR-12). Identity and settings repositories (`app_user`, `profile_settings`) keep `userId`.
+1a. **Services receive a `WorkspaceAccess` object**, never a bare id. It is produced only by `requireWorkspaceAccess(workspaceId, action)` (§3.2 rule 6), which also applies the role matrix (PRD C31, UC-31 §3).
 2. Services contain all money rules (PRD §7): potential savings, no double-count, clone-once snapshot (only templates whose `months` schedule includes the new month-number, UC-20), pass-to-actual (committed only), pass-to-upcoming-month (estimated, current year, later created month), overspend vs **active template** sums.
 3. Server actions are thin: parse with Zod → call service → revalidate. No business logic in actions, components, or `route.ts` files. **Reads** (including Search, UC-16, and the add-actual name corpus, UC-17) stay in RSC: GET `?q=` or page load → service → repository SQL. Do not add a mutation-shaped server action for a search or for name suggestions. **Pass to upcoming month** (UC-18) is a mutation: Zod → service transaction → revalidate source and target month pages. **Excel export** (UC-19) is a **read**: Zod → `requireUserId()` → service → `{ filename, base64 }`. RSC cannot trigger a file download, so a Server Action carries the bytes (CSRF). It must **not** `revalidatePath`. `exceljs` is imported only from server modules.
 4. Amounts cross the wire as **strings** (`"1234.56"`). Zod schema: `^-?\d{1,12}\.\d{2}$` (PRD C9: dot decimal, 2 places, may be negative).
@@ -251,7 +278,7 @@ expenses/
 │   │   ├── db/
 │   │   │   ├── schema.ts          # Drizzle schema = §4 of this doc
 │   │   │   └── client.ts
-│   │   ├── repositories/          # userId-first data access; the ONLY place SQL lives
+│   │   ├── repositories/          # workspaceId-first tenant data access; the ONLY place SQL lives
 │   │   ├── services/              # domain logic; transactions live here
 │   │   ├── export/                # ExcelJS workbook builder (UC-19, server-only)
 │   │   └── money.ts               # cents-based arithmetic helpers
@@ -350,9 +377,9 @@ Then:
 
 1. Write `src/server/db/schema.ts` from §4 and generate the first migration.
 2. Write `src/auth.ts` implementing §3 exactly (allowlist in `signIn`, `userId` in jwt/session callbacks, `pages.error = '/403'`).
-3. Implement repositories with the `userId`-first rule, then services, then server actions — following the PRD §18 build order.
+3. Implement repositories with the tenancy-first rule (ARCH §5 rule 1, as it stood at UC-00: `userId`; from UC-31: `workspaceId`), then services, then server actions — following the PRD §18 build order.
 4. Wire Serwist + `manifest.ts`, then next-intl with the cookie rule from §7.
 5. Translate PRD §15 test scenarios 1–19 into Vitest/Playwright specs **before** implementing the corresponding features (TDD against the PRD).
 6. `docker compose up` must yield a working app: sign-in → allowlist → create month → clone → add actual → savings number.
 
-Definition of done per feature: typecheck + lint clean, PRD scenario tests green, and no `userId`-less repository call exists.
+Definition of done per feature: typecheck + lint clean, PRD scenario tests green, and no tenant repository call without a workspace or user id exists.

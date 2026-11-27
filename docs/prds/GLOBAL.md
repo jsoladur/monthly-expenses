@@ -15,6 +15,8 @@ A personal Progressive Web App where an allowlisted user tracks **one calendar m
 
 A **Search** screen finds already-recorded actual tickets across years by name or notes (read-only). It does not replace History or the month workspace.
 
+Every user has a **private workspace**. A user may also create **shared workspaces** and invite other allowlisted users with a role (C30–C32). Each workspace is a complete ledger of its own.
+
 Home can **export** created months to an Excel workbook (one sheet per month). It does not replace Stats or the month workspace.
 
 **Not V1 (explicit future):** year view, category totals across months, and other reports. Do not build them now. Keep the model compatible later (stable categories, months, amounts).
@@ -25,7 +27,7 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 
 | ID | Constraint |
 | --- | --- |
-| C1 | Multi-tenant: many users may use the app in parallel. All money data is isolated by user. |
+| C1 | Multi-tenant: many users may use the app in parallel. All money data is isolated by **workspace** (C30). |
 | C2 | Access: Google sign-in + **hardcoded Gmail allowlist** from an environment variable (comma-separated). |
 | C3 | Non-allowlisted Google user → **HTTP 403**, no app shell, no data. |
 | C4 | Languages: English and Spanish. Locale from **browser** or **persisted cookie**. |
@@ -33,8 +35,8 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C6 | Period = **calendar month + year**, created **only manually** (user picks month/year). Never auto-create a month. |
 | C7 | Unused grocery/estimate leftovers **die at month end** (no automatic rollover). Each month is a **separate instance**. |
 | C8 | Past months remain **editable**, with a **warning**. |
-| C9 | Currency is per-user in `profile_settings`, **default EUR**, always **2 decimal places**. Amounts **may be negative**. Amount **input** format: `1234.56` (dot decimal). |
-| C10 | Categories are **per-user global catalogs**, not cloned as category definitions per month. **Logical (soft) delete** for categories and other catalog CRUDs. |
+| C9 | Currency is per **workspace** (C30; a new private workspace takes the user's `profile_settings` currency, **default EUR**), always **2 decimal places**. Amounts **may be negative**. Amount **input** format: `1234.56` (dot decimal). |
+| C10 | Categories are **per-workspace global catalogs**, not cloned as category definitions per month. **Logical (soft) delete** for categories and other catalog CRUDs. |
 | C11 | MVP is **online web**. Offline sync is out of scope. PWA install is still required. |
 | C12 | Home never invents a month. User opens an existing month or creates one. **Last opened month** is stored in a cookie. |
 | C13 | Expense **name** is free text. On the add-actual form, names from **this month + the two previous calendar months** may autocomplete after two characters (prefix, case-insensitive, accent-folded). Selecting a suggestion fills the **name only**. The add-income form does the same from the user’s **income** names in the same window (UC-32). |
@@ -54,6 +56,9 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C27 | **Delete a month.** A month header can be hard-deleted with all its incomes, reserved lines and actuals (cascade), behind a typed confirmation of the month label. Catalogs are untouched. Home never auto-picks or creates a replacement (C6/C12). |
 | C28 | **Annual reminder "added" state.** When the open month already holds a reserved line or actual in the annual's category whose folded name equals or starts with the annual's folded name, the reminder collapses to an **Added** row. Computed at read time; nothing links a line to an annual; the reminder never disappears. |
 | C29 | **Last payment month (loans & instalments).** A **committed** template may carry an optional last payment month (month + year). Creating a month copies the template only when that month is **not after** it, and **deactivates** (soft, never deletes) every template whose last payment month is that month or earlier — so a skipped month still ends it. Reactivating a template clears its last payment month. Existing months are never rewritten. |
+| C30 | **Workspaces (tenant).** Every tenant row — categories, templates, annuals, months and everything inside a month — belongs to a **workspace**, not directly to a user. Each allowlisted user has exactly one **private workspace**, created at first sign-in and backfilled for existing users. It cannot be deleted, shared or transferred. A user may also belong to **shared workspaces**. Each workspace has its own categories, templates, annuals, months, currency and reports; nothing is shared across workspaces. This replaces the per-user wording of C1, C9, C10 and §6. A user with only a private workspace sees the app unchanged (UC-33). |
+| C31 | **Shared workspace roles & membership.** The creator of a shared workspace is its **Owner**. Members are added only from `ALLOWED_EMAILS` and only after they have signed in once — no invitations for people who have not signed in. Roles: **Reader** reads everything; **Editor** (Read/Write) creates months, categories and expenses and deletes or edits only the expenses they created; **Admin** has full access except deleting the workspace and transferring ownership, and manages every member except the Owner; **Owner** has full access, deletes the workspace and offers ownership. The matrix in slice UC-31 §3 is normative. Deleting a shared workspace is a hard delete behind a typed name and removes only that workspace's rows. |
+| C32 | **Ownership transfer.** The Owner may offer ownership to one current member. Nothing changes until the member accepts. On acceptance the member becomes Owner and the previous Owner becomes Admin, in one transaction; no data changes. An offer is cancelled when its target leaves, is removed, or is no longer allowlisted. Private workspaces cannot be transferred (UC-34). |
 
 ---
 
@@ -63,10 +68,10 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | --- | --- |
 | Visitor | Not signed in. Can only start Google sign-in. |
 | Blocked Google user | Authenticated with Google, email not on allowlist. Sees 403 only. |
-| User | Allowlisted. Owns categories, months, incomes, fixed/estimated lines, actuals, annuals, profile settings. |
+| User | Allowlisted. Owns a **private workspace** and profile settings; may create shared workspaces; is a member of zero or more shared workspaces, each with a role (C31). |
 | Coding agent / implementer | Builds exactly this spec. Must not share data across users. |
 
-There is **no household sharing** in MVP. Tenancy = one user account.
+Tenancy = **workspace** (C30). Every user has a private workspace. Sharing happens only through **shared workspaces** with roles (C31–C32), and only with users in `ALLOWED_EMAILS` who have signed in once.
 
 ---
 
@@ -90,6 +95,11 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 | **Export** | Read-only Excel download of created month workspaces (incomes, actuals, committed, estimated, summary totals). Lives on Home. Not Stats (aggregates) and not a catalog dump. |
 | **Logical erase** | Soft-delete / deactivate catalogs (categories, templates, annuals). Hidden from new pickers and from annual reminders. Month rows that already reference a category/template keep the id. |
 | **Hard delete** | Row removed. Used for month incomes, month actuals, month fixed lines. |
+| **Workspace** | The tenant for all money and catalog data (C30). Either **private** (one per user, default) or **shared** (members with roles). |
+| **Private workspace** | The workspace every allowlisted user has. Cannot be deleted, shared or transferred. |
+| **Shared workspace** | A workspace with members. Created by any allowlisted user, who becomes its Owner (C31). |
+| **Role** | What a member may do in one workspace: Reader, Editor, Admin or Owner (C31, slice UC-31 §3). |
+| **Ownership offer** | A pending offer to hand a shared workspace to a member. Takes effect only when accepted (C32). |
 
 ---
 
@@ -97,7 +107,7 @@ There is **no household sharing** in MVP. Tenancy = one user account.
 
 ### 5.1 Isolation invariant
 
-Every query/mutation for months, categories, incomes, expenses, templates, annuals, and settings **must** be scoped to `user_id` of the session. No user can read or write another user’s rows. Agents: treat missing `user_id` filter as a **P0 bug**.
+Every query/mutation for months, categories, incomes, expenses, templates, and annuals **must** be scoped to the **workspace** the session has selected (C30), and the session user **must** be a member of that workspace with a role that allows the action (C31). Profile settings stay per user. No user can read or write another workspace’s rows. A workspace the user does not belong to gets the same not-found answer as a missing one. Agents: treat a missing `workspace_id` filter, or a missing membership and role check, as a **P0 bug**.
 
 ### 5.2 Allowlist
 
@@ -109,12 +119,14 @@ Every query/mutation for months, categories, incomes, expenses, templates, annua
 
 Logical entity `profile_settings` (1:1 user):
 
-- `currency` — default `EUR`
+- `currency` — default `EUR`. The working currency is the **workspace**'s (C30); this value is the default for a new private workspace and for a new shared workspace.
+- `theme` — per user (UC-21).
 
 ### 5.4 Cookies
 
 - Language (`en` | `es`)
-- Last opened month (`year` + `month`) so the same browser can resume that month. Not a security boundary.
+- Last opened month (`year` + `month`) so the same browser can resume that month. Resumed only inside the active workspace. Not a security boundary.
+- Active workspace (workspace id): which workspace every section shows. Missing or stale → the user's private workspace (C30). Not a security boundary; membership is checked on every request.
 
 ---
 
@@ -122,11 +134,13 @@ Logical entity `profile_settings` (1:1 user):
 
 Agents may normalize tables as needed if **behavior and fields** stay equivalent.
 
+> **C30:** every "per user" catalog and month below is **per workspace** from now on. The user who created a row is recorded only on actual expenses (§6.7, `created_by`).
+
 ### 6.1 User (from Google)
 
 - Stable id, email, display name/avatar optional.
 
-### 6.2 ExpenseCategory / IncomeCategory (per user, global)
+### 6.2 ExpenseCategory / IncomeCategory (per workspace, global)
 
 | Field | Rules |
 | --- | --- |
@@ -137,7 +151,7 @@ Agents may normalize tables as needed if **behavior and fields** stay equivalent
 
 **Soft-delete / deactivate:** cannot be chosen for **new** actuals, incomes, or new template lines. Existing month rows still display the name. Reactivate allowed.
 
-### 6.3 Fixed/Estimated template (per user, global management form)
+### 6.3 Fixed/Estimated template (per workspace, global management form)
 
 | Field | Rules |
 | --- | --- |
@@ -152,7 +166,7 @@ Agents may normalize tables as needed if **behavior and fields** stay equivalent
 
 Clone source only. Never updated from month edits. **Delete:** deactivate (soft, reversible) **or** delete (hard, permanent — the row is gone from the catalog; months already created keep their copied lines).
 
-### 6.4 Month (per user)
+### 6.4 Month (per workspace)
 
 | Field | Rules |
 | --- | --- |
@@ -196,10 +210,11 @@ No observations. **Hard delete.** Not cloned from templates.
 | name | Mandatory. Free text. Add-form autocomplete: see UC-22. |
 | observations | Optional, may be empty |
 | amount | Mandatory, 2 decimals, may be negative |
+| created_by | The member who added it (C31). Editors may edit or delete only their own. Shown as "Added by" in shared workspaces only. |
 
 **Hard delete.** Unlimited actuals per month. Never cloned.
 
-### 6.8 Annual (per user, global catalog)
+### 6.8 Annual (per workspace, global catalog)
 
 | Field | Rules |
 | --- | --- |
@@ -214,6 +229,27 @@ No observations. **Hard delete.** Not cloned from templates.
 Catalog only. Not cloned into months. Nothing on a month row references an annual.
 
 ---
+
+### 6.9 Workspace (C30, C31)
+
+| Field | Rules |
+| --- | --- |
+| kind | `private` or `shared`. Exactly one `private` per user. |
+| name | Shared only: 1–60 characters, trimmed. Private: none; shown as "My private workspace". |
+| currency | Per workspace. Default from `profile_settings.currency` (EUR). Label only, no FX (C9). |
+
+Deleting a **shared** workspace is a hard delete by its Owner, behind a typed name, and removes its children. A private workspace is never deleted.
+
+### 6.10 Workspace member (C31)
+
+| Field | Rules |
+| --- | --- |
+| workspace, user | Unique together. The user must be in `ALLOWED_EMAILS` and must have signed in once. |
+| role | `owner` \| `admin` \| `editor` \| `reader`. Exactly one `owner` per shared workspace. Private workspaces have only their own `owner`. |
+
+### 6.11 Ownership offer (C32)
+
+At most one per workspace. Holds the Owner who offered, and the target member. Deleted when accepted, declined, cancelled, or invalid. No history in V1.
 
 ## 7. Money rules (normative)
 
@@ -616,6 +652,31 @@ Implementation slice: `docs/usecases/UC-30-income-name-autocomplete.md`. Product
 
 ---
 
+### UC-33 — Collaborative workspaces
+
+Implementation slice: `docs/usecases/UC-31-collaborative-workspaces.md`. Product Owner request 2026-11-27 (C30, C31).
+
+- Every allowlisted user has a **private workspace**, created at sign-in and backfilled for existing users. It behaves exactly like the app today and cannot be deleted, shared or transferred.
+- Any allowlisted user may create a **shared workspace** and becomes its Owner.
+- The Owner and Admins add allowlisted users who have signed in once, as **Reader**, **Editor** or **Admin**. The matrix is in `docs/usecases/UC-31-collaborative-workspaces.md` §3.
+- A shared workspace has its own categories, templates, annuals, months, incomes, reserved lines, actuals, currency, Stats, Search, Export, estimate check and annual reminders.
+- Editors create months, categories and expenses, and delete or edit only expenses they created. Readers see everything and change nothing.
+- **Home:** with one workspace, unchanged. With several, the workspace list comes first (role and active marker); selecting one makes it active for every section. The header shows the active workspace name.
+- With only a private workspace, no workspace name, switcher, role or "Added by" text appears anywhere. The one exception is a "Share with others" row in Settings that starts a shared workspace.
+- Removing a member ends their access on the next request; their past tickets stay, attributed to them.
+- The Owner deletes a shared workspace behind a typed name. Other workspaces are untouched.
+- A user who is not a member cannot tell that a workspace exists.
+
+### UC-34 — Ownership transfer
+
+Implementation slice: `docs/usecases/UC-32-workspace-ownership-transfer.md`. Product Owner request 2026-11-27 (C32).
+
+- The Owner of a shared workspace offers ownership to one current member (Reader, Editor or Admin).
+- The member accepts or declines. The Owner can cancel until then. One offer per workspace.
+- On acceptance the member becomes Owner and the previous Owner becomes Admin, in one transaction. No data changes.
+- An offer disappears when its target leaves, is removed, or is no longer allowlisted.
+- Private workspaces cannot be offered.
+
 ## 10. Screens (logical)
 
 1. Sign-in  
@@ -630,7 +691,9 @@ Implementation slice: `docs/usecases/UC-30-income-name-autocomplete.md`. Product
 10. Install PWA — if not installed  
 11. Annuals catalog — yearly reminders, grouped by charge month  
 12. Search — find actual tickets by name or note, any year  
-13. Home export picker — All / year / specific months → Excel download  
+13. Home export picker — All / year / specific months → Excel download
+14. Workspaces — create shared workspace; members and roles; leave; rename and currency (Admin+); delete (Owner, typed name); ownership offer (Owner offers, member accepts or declines). Shared workspaces only; private workspace has no member controls.
+15. Workspace switcher — with several workspaces: Home lists them first (role, active marker, "Private" tag on private); header shows the active workspace name. With one workspace: not shown (C30, slice UC-31 §4.11).  
 
 Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list. Export is a Home header button that opens a bottom sheet.
 
@@ -641,7 +704,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 - All user-facing strings keyed. Locales `en`, `es`.
 - Month names follow locale.
 - Amount input: `1234.56` in both locales.
-- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker, export picker and workbook section labels, savings labels (Spending / Invested / Left over / Total saved), estimate check, move-to-month picker and notice, delete-month confirmation, annual reminder “Added” state.
+- Translate 403, validation, past-month warning, overspend warning, annual reminders, search idle/empty/too-short, actual-name autocomplete list label, pass-to-upcoming-month picker, export picker and workbook section labels, savings labels (Spending / Invested / Left over / Total saved), estimate check, move-to-month picker and notice, delete-month confirmation, annual reminder “Added” state. Workspaces: names, roles, member and leave copy, ownership offer copy, delete confirmation, workspace switcher, and the "Added by" label.
 
 ---
 
@@ -665,12 +728,15 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Month actual expenses | Hard |
 | Month fixed/estimated lines | Hard |
 | Month header | Hard, explicit **Delete month** with typed confirmation; children cascade (C27) |
+| Shared workspace | Hard, by its Owner, behind a typed name; children cascade (C31). Private workspaces are never deleted |
+| Workspace member | Hard remove by Admin+ or by the member leaving (C31). Their created tickets stay |
+| Ownership offer | Hard delete when accepted, declined, cancelled or invalid (C32) |
 
 ---
 
 ## 14. Explicit non-goals (V1)
 
-- Household / shared months
+- Sharing outside the workspace model: public or link-based sharing, invitations to emails outside `ALLOWED_EMAILS`, invitations for people who have not signed in, per-category or per-month permissions, custom roles (shared workspaces with roles are in scope, C30–C32)
 - Admin UI for allowlist
 - Offline-first sync
 - Autocomplete on the **edit**-ticket name field, or filling category/amount from a suggestion
@@ -780,6 +846,32 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 75. Income autocomplete corpus is tenant-scoped (user B never sees user A’s income names).
 76. One character → no list; picking an income suggestion fills the name only (category and amount unchanged).
 77. In Nov 2026, months Jun 2025, Jun 2026 and Jan 2027 exist → Home lists Jan 2027 then Jun 2026; History lists only 2025; `/history/2027` redirects to History.
+78. Migration backfill: an existing user with months, categories, templates, annuals and actuals ends with one private workspace holding all of them; row counts are unchanged.
+79. First sign-in creates exactly one private workspace with an Owner membership; a second sign-in creates no second one.
+80. A user with only the private workspace sees the current Home and nav; no workspace text, chip, switcher or “Added by” appears anywhere.
+81. Creating a shared workspace makes the creator its Owner and leaves the private workspace untouched.
+82. Adding a member: an allowlisted user who has signed in is added; a non-allowlisted email is rejected and nothing is stored; an allowlisted user who never signed in is rejected with the sign-in-first message; a duplicate is rejected; the Owner role cannot be assigned.
+83. Reader: sees every report and screen of the workspace; every write is rejected by the server; the UI shows no write control.
+84. Editor: creates a month and a category, adds an actual; cannot delete a month, rename or deactivate a category, or touch incomes, templates, annuals or reserved lines; can edit and delete only the actuals they created.
+85. Admin: full data access except deleting the workspace and transferring ownership; adds, re-roles and removes members; cannot touch the Owner.
+86. Owner deletes a shared workspace: the typed name is required; every row of that workspace is gone; other workspaces and every private workspace are untouched; a private workspace cannot be deleted.
+87. A user who is not a member gets the same not-found answer for a real workspace id and for a random one, on every route and action.
+88. Switching the active workspace changes Home, History, Categories, Fixed, Annuals, Stats, Search, Export and Settings together; a stale cookie for a workspace the user left falls back to the private workspace.
+89. The same year and month can exist once in the private workspace and once in a shared one; creating one never affects the other. Overspend and savings figures never mix the two.
+90. Removing a member ends their access on the next request; their past actuals stay in the workspace, attributed to them.
+91. A non-owner member can leave; the Owner cannot leave while the workspace exists.
+92. The last-opened-month cookie resumes only a month of the active workspace; switching workspace clears it.
+93. Changing the currency of a shared workspace relabels only that workspace; the private workspace keeps its currency.
+94. Owner offers ownership to a member: nothing changes until that member accepts.
+95. Accepting makes the recipient Owner and the former Owner Admin in one transaction; a failure midway leaves the original Owner in place with the offer still pending.
+96. Declining or cancelling an offer leaves roles and data unchanged.
+97. A second offer for the same workspace is rejected while one is pending.
+98. Offers to oneself, to a non-member, to a removed member, or to an address no longer in `ALLOWED_EMAILS` are rejected.
+99. Only the Owner can offer or cancel; an Admin, Editor or Reader gets the forbidden answer; a non-member gets not-found.
+100. An offer disappears when its target leaves, is removed, or is no longer allowlisted when accepted.
+101. After acceptance the former Owner cannot delete or offer the workspace; the new Owner can.
+102. A transfer changes no month, catalog, ticket or attribution.
+103. A private workspace cannot be offered for transfer.
 
 ---
 
@@ -820,6 +912,8 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Delete month | Hard delete with cascade behind a typed label. Catalogs untouched; re-creating clones today's templates. |
 | Annual reminder added | Read-time match: same category + folded name prefix. Collapses to Added; never dismissed; nothing stored. |
 | Excel export | Home picker. All / one or more years with data / specific created months. One sheet per month. No charts. Tenant-scoped. |
+| Tenancy | Workspace, not user (C30). Every user has a private workspace; shared workspaces carry roles (C31); ownership moves only by an offer the target accepts (C32). |
+| Workspace in the UI | Hidden while a user has only their private workspace. With several, the Home list and the header name carry it; forms never get a workspace field (slice UC-31 §4.11–4.12). |
 
 No blocking product questions remain for V1 money behavior.
 
@@ -848,6 +942,8 @@ No blocking product questions remain for V1 money behavior.
 19. Move an actual expense to another month
 20. Delete a month
 21. Annual reminder “Added” state
+22. Collaborative workspaces (UC-33; migration 0008; backfill every user into a private workspace before anything else moves)
+23. Ownership transfer (UC-34; migration 0009)
 
 ---
 
@@ -876,3 +972,11 @@ No blocking product questions remain for V1 money behavior.
 - Move ticket: “Move this ticket to another month you already created.”
 - Delete month confirm: “Delete {month} and everything in it? This cannot be undone. Type the month name to confirm.”
 - Annual reminder added: “Added: {line name} · {amount}.”
+- Workspace list (Home): “Your workspaces. Pick one to show it everywhere.”
+- Private workspace: “Only you can see this workspace.”
+- Member add, not signed in: “This person has not signed in yet. Ask them to sign in once, then add them again.”
+- Editor delete on someone else’s ticket: “Only Admins can change tickets added by someone else.”
+- Delete shared workspace confirm: “Delete {workspace} and everything in it for everyone? This cannot be undone. Type the workspace name to confirm.”
+- Ownership offer sent: “Offered to {name}. Nothing changes until they accept.”
+- Ownership offer received: “{owner} offers you ownership of {workspace}. As Owner you can delete it.”
+- Owner cannot leave: “Transfer ownership or delete this workspace first.”
