@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-27
+
 ### Added
 - Shared workspaces: besides your private ledger, you can create a shared workspace and add people from the app's allowlist as Reader, Editor or Admin. Pick them from a list; someone who has not signed in yet is invited and joins the workspace the first time they sign in. Each workspace has its own months, categories, fixed expenses, annuals, currency and reports; nothing is shared between workspaces (UC-31).
 - With more than one workspace, the header shows the active one as a dropdown: pick another workspace there and every screen switches to it (the last opened month is forgotten). A Workspaces screen manages members, roles, the name and currency, leaving, and deleting a shared workspace after typing its name (UC-31).
@@ -14,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Workspaces has its own section: in the sidebar on desktop and under More on mobile, plus a link in Settings. Start your first shared workspace there (UC-31).
 
 ### Changed
-- Creating something now starts from a single "New …" button that opens the form in a sheet from the bottom of the screen: expenses, incomes, month-only lines, fixed expenses, categories, annuals, months, shared workspaces and members. Editing still happens in place on the row.
+- Creating something now starts from a single "New …" button, at the top right of its section, that opens the form in a sheet from the bottom of the screen: expenses, incomes, month-only lines, fixed expenses, categories, annuals, months, shared workspaces and members. Editing still happens in place on the row.
 - Data now belongs to a workspace instead of a user. Migration 0008 gives every existing user a private workspace that holds all their data and records who added each expense. With only the private workspace, the app looks and works exactly as before (UC-31).
 - The currency in Settings is the currency of the workspace you are viewing. A new shared workspace starts with your currency, then keeps its own: changing your currency later, or handing the workspace to someone else, does not change it (UC-31).
 
