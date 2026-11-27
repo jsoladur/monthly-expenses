@@ -105,6 +105,7 @@ Thin, Zod → `requireUserId()` (plus `requireWorkspaceAccess` where the Owner a
 - `removeMember` and `leaveWorkspace` call `deleteOffersForUser` in the same transaction.
 - `deleteWorkspace` (UC-31) deletes the offer through the cascade; no extra code.
 - `workspace_transfer` is added to the children-first delete order in UC-31 §4.6.
+- If UC-33 (convert private ↔ shared) is already implemented, `makeWorkspaceMyPrivate` deletes the workspace's offer in its transaction (UC-33 §4.5).
 
 ---
 

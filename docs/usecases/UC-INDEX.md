@@ -17,7 +17,7 @@
 - **Deletes:** soft delete for catalogs (`category`, `template`, `annual`); `template` also allows an explicit hard delete (UC-20 / C23); hard delete for month-scoped money rows (PRD §13).
 - **i18n:** every user-facing string is keyed (`en`/`es`), including errors and warnings (PRD §11).
 - **No auto-months:** nothing creates a month implicitly, anywhere (PRD C6/C12). Annuals (UC-14) also never auto-create lines — they only remind. The only catalog change month creation makes is deactivating committed fixed expenses that reached their last payment month (UC-29 / C29).
-- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03). UC-21 (theme, shipped) added `profile_settings.theme` (migration 0001). UC-22 and UC-23 (shipped) add none. UC-24 adds `category.counts_as_savings` (migration 0006, PO decision 2026-11-03). UC-25…UC-28 add none. UC-29 adds two nullable columns, `template.end_year` / `template.end_month` (migration 0007, PO decision 2026-11-11). UC-30 (income name autocomplete) is read-only and adds none. UC-31 (collaborative workspaces, PO decision 2026-11-27) adds `workspace` and `workspace_member`, replaces `user_id` with `workspace_id` on `category`, `template`, `annual` and `month`, and adds `month_actual_expense.created_by_user_id` (migration 0008). UC-32 (ownership transfer) adds `workspace_transfer` (migration 0009).
+- **Schema:** no slice changes the schema — the sole exception is UC-14, which adds the `annual` table via migration 0002. UC-15 (Global Stats), UC-16 (Search), UC-17 (actual name autocomplete), and UC-19 (Excel export) are read-only and add no tables. UC-18 (pass to upcoming month) mutates `month_fixed_line` only and adds no tables. UC-20 adds one nullable column, `template.months` (migration 0005, PO decision 2026-11-03). UC-21 (theme, shipped) added `profile_settings.theme` (migration 0001). UC-22 and UC-23 (shipped) add none. UC-24 adds `category.counts_as_savings` (migration 0006, PO decision 2026-11-03). UC-25…UC-28 add none. UC-29 adds two nullable columns, `template.end_year` / `template.end_month` (migration 0007, PO decision 2026-11-11). UC-30 (income name autocomplete) is read-only and adds none. UC-31 (collaborative workspaces, PO decision 2026-11-27) adds `workspace` and `workspace_member`, replaces `user_id` with `workspace_id` on `category`, `template`, `annual` and `month`, and adds `month_actual_expense.created_by_user_id` (migration 0008). UC-32 (ownership transfer) adds `workspace_transfer` (migration 0009). UC-33 (convert private ↔ shared) adds none.
 
 ## Build order and dependencies
 
@@ -56,6 +56,7 @@
 | UC-30 | Income name autocomplete (add-income form) | PRD **UC-32** / C13 (extends UC-22 to incomes). THIS file is the detailed slice | UC-07, UC-17. **No schema change** — PO decision 2026-11-23 |
 | UC-31 | Collaborative workspaces (private by default, shared with roles) | PRD **UC-33** / **C30**, **C31** (amends C1, C9, C10, §3, §5.1, §6, §13, §14). THIS file is the detailed slice. **Tenancy change**: adds `workspace` + `workspace_member`; `workspace_id` replaces `user_id` on `category`, `template`, `annual`, `month`; adds `month_actual_expense.created_by_user_id` (migration 0008) — PO decision 2026-11-27 | UC-00 … UC-30 (every tenant slice) |
 | UC-32 | Workspace ownership transfer | PRD **UC-34** / **C32**. THIS file is the detailed slice. **Adds `workspace_transfer`** (migration 0009) — PO decision 2026-11-27 | UC-31 |
+| UC-33 | Convert private workspace into shared (and back) | PRD **UC-35** / **C33**. THIS file is the detailed slice. **No schema change** — re-labels `workspace` rows; PO request 2026-11-27 | UC-31 (interacts with UC-32, either order) |
 
 ```mermaid
 flowchart TD
@@ -86,6 +87,7 @@ flowchart TD
     UC05 & UC06 & UC11 & UC20 --> UC29
     UC07 & UC17 --> UC30
     UC30 --> UC31 --> UC32
+    UC31 --> UC33
 ```
 
 ## PRD §15 test-scenario map
@@ -141,5 +143,6 @@ flowchart TD
 | 74–76 Add-income name autocomplete: 3-month window, income-only source, tenant-scoped, name-only fill | UC-30 |
 | 78–93 Collaborative workspaces: backfill, private workspace per user, role matrix, membership and not-found answers, active workspace, single-workspace mode, cookie resume, currency per workspace | UC-31 |
 | 94–103 Ownership transfer: offer, accept, decline, cancel, one offer, automatic invalidation, former Owner becomes Admin, data untouched, private workspace not transferable | UC-32 |
+| 104–113 Convert private ↔ shared: share keeps data and ids and creates an empty private workspace, make-private replaces the private workspace and removes members, Owner only, confirmations enforced on the server, round trip, atomicity | UC-33 |
 
 UC-15 has no PRD §15 scenario (it **is** the C16 reports feature, PO 2026-09-01); its acceptance tests live in the UC-15 file.

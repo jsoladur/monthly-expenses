@@ -59,6 +59,7 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C30 | **Workspaces (tenant).** Every tenant row — categories, templates, annuals, months and everything inside a month — belongs to a **workspace**, not directly to a user. Each allowlisted user has exactly one **private workspace**, created at first sign-in and backfilled for existing users. It cannot be deleted, shared or transferred. A user may also belong to **shared workspaces**. Each workspace has its own categories, templates, annuals, months, currency and reports; nothing is shared across workspaces. This replaces the per-user wording of C1, C9, C10 and §6. A user with only a private workspace sees the app unchanged (UC-33). |
 | C31 | **Shared workspace roles & membership.** The creator of a shared workspace is its **Owner**. Members are added only from `ALLOWED_EMAILS`, picked from that list. A person who has not signed in yet gets a **pending invitation** that becomes a membership at their first sign-in (PO decision 2026-11-27). Roles: **Reader** reads everything; **Editor** (Read/Write) creates months, categories and expenses and deletes or edits only the expenses they created; **Admin** has full access except deleting the workspace and transferring ownership, and manages every member except the Owner; **Owner** has full access, deletes the workspace and offers ownership. The matrix in slice UC-31 §3 is normative. Deleting a shared workspace is a hard delete behind a typed name and removes only that workspace's rows. |
 | C32 | **Ownership transfer.** The Owner may offer ownership to one current member. Nothing changes until the member accepts. On acceptance the member becomes Owner and the previous Owner becomes Admin, in one transaction; no data changes. An offer is cancelled when its target leaves, is removed, or is no longer allowlisted. Private workspaces cannot be transferred (UC-34). |
+| C33 | **Convert private ↔ shared.** The user may turn their **private** workspace into a shared workspace they own: all its data stays with it (same ids), and they get a new, empty private workspace. The **Owner** of a shared workspace may turn it into their private workspace: their current private workspace and all its data are permanently deleted and every other member loses access. Owner only; Admin, Editor and Reader cannot. Sharing needs two confirmations, making private three (UC-35). |
 
 ---
 
@@ -677,6 +678,15 @@ Implementation slice: `docs/usecases/UC-32-workspace-ownership-transfer.md`. Pro
 - An offer disappears when its target leaves, is removed, or is no longer allowlisted.
 - Private workspaces cannot be offered.
 
+### UC-35 — Convert private workspace into shared (and back)
+
+Implementation slice: `docs/usecases/UC-33-convert-private-workspace.md`. Product Owner request 2026-11-27 (C33).
+
+- **Share my private workspace:** its Owner names it and turns it into a shared workspace. Months, categories, fixed expenses, annuals and history all stay with it. The user gets a new, empty private workspace. Two confirmations (explain + name, typed name).
+- **Make this my private workspace:** the Owner of a shared workspace turns it into their private workspace. Their current private workspace and its data are permanently deleted; every other member and invitation is removed. Three confirmations (what you lose, who loses access, typed name).
+- Admin, Editor and Reader cannot do either. Non-members get not-found.
+- Each operation is one transaction; nothing is copied, the workspace changes kind.
+
 ## 10. Screens (logical)
 
 1. Sign-in  
@@ -692,7 +702,7 @@ Implementation slice: `docs/usecases/UC-32-workspace-ownership-transfer.md`. Pro
 11. Annuals catalog — yearly reminders, grouped by charge month  
 12. Search — find actual tickets by name or note, any year  
 13. Home export picker — All / year / specific months → Excel download
-14. Workspaces — create shared workspace; members and roles; leave; rename and currency (Admin+); delete (Owner, typed name); ownership offer (Owner offers, member accepts or declines). Shared workspaces only; private workspace has no member controls.
+14. Workspaces — create shared workspace; members and roles; leave; rename and currency (Admin+); delete (Owner, typed name); ownership offer (Owner offers, member accepts or declines); share my private workspace / make a shared workspace my private one (UC-35). Shared workspaces only for member controls; private workspace has no member controls.
 15. Workspace switcher — with several workspaces: a header dropdown lists them (role, check on the active one, "Private" / "Shared" tag) plus "Manage workspaces" and "New shared workspace". With one workspace: not shown (C30, slice UC-31 §4.11–§4.12). The Workspaces screen (14) is a nav section in every mode.
 
 Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list. Export is a Home header button that opens a bottom sheet.
@@ -872,6 +882,16 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 101. After acceptance the former Owner cannot delete or offer the workspace; the new Owner can.
 102. A transfer changes no month, catalog, ticket or attribution.
 103. A private workspace cannot be offered for transfer.
+104. Sharing the private workspace turns it into a shared workspace with the given name, owned by the user, with the same id and every row unchanged; the user then has a new, empty private workspace whose currency comes from their profile.
+105. Only the private workspace's Owner can share it; sharing a shared workspace or another user's private workspace is refused.
+106. After sharing, the user can add members to it; other users' private workspaces are untouched; the active workspace stays on the shared one.
+107. Sharing without a matching typed name is refused and changes nothing; cancelling at any step changes nothing.
+108. Making a shared workspace private deletes the Owner's current private workspace and all its data, removes every other member, invitation and pending ownership offer, and keeps the shared workspace's id and rows as the new private workspace.
+109. Making private is refused for Admin, Editor and Reader, for non-members (not found), and for a workspace that is already private.
+110. Making private without the typed name or without acknowledging the data loss is refused and changes nothing.
+111. After making private, former members lose access on their next request, fall back to their own private workspace, and their tickets stay attributed to them; “Added by” is not shown.
+112. Share, then make the same workspace private again: the private workspace holds the original data with the same ids, and the empty private workspace created by sharing is gone.
+113. A failure in the middle of either operation leaves both workspaces and all memberships as before.
 
 ---
 
