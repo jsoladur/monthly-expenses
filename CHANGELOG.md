@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Share your private workspace: from the Workspaces screen, name your private ledger and turn it into a shared workspace that you own. All months, categories, fixed expenses, annuals and history stay with it, unchanged, and you get a new, empty private workspace. Then add members as usual. Two confirmations: the explanation with the name, then typing the name (UC-33).
+- Make a shared workspace your private workspace: the Owner of any shared workspace can turn it into their private ledger. Your current private workspace and all its data are permanently deleted (you can export it first), and every other member, pending invitation and ownership offer is removed. Three confirmations: what you lose, who loses access (with a checkbox), then typing the name. Admins, Editors and Readers cannot do either (UC-33).
+
 ## [0.19.0] - 2026-11-27
 
 ### Added

@@ -41,6 +41,12 @@ import {
   renameWorkspace,
   setWorkspaceCurrency,
 } from "@/server/services/workspaces";
+import {
+  DataLossNotAcknowledgedError,
+  WorkspaceAlreadySharedError,
+  makeWorkspaceMyPrivate,
+  shareMyPrivateWorkspace,
+} from "@/server/services/workspace-conversion";
 import { redirect } from "@/i18n/navigation";
 
 // ============================================================================
@@ -93,6 +99,9 @@ function toError(err: unknown): WorkspaceActionError | null {
   if (err instanceof CannotRemoveOwnerError) return "cannotRemoveOwner";
   if (err instanceof OwnerCannotLeaveError) return "ownerCannotLeave";
   if (err instanceof WorkspaceNameMismatchError) return "workspaceNameMismatch";
+  // UC-33 §2.1: one message for "wrong kind" (PO may split it later).
+  if (err instanceof WorkspaceAlreadySharedError) return "workspaceForbidden";
+  if (err instanceof DataLossNotAcknowledgedError) return "validation";
   return null;
 }
 
@@ -304,6 +313,82 @@ export async function deleteWorkspaceAction(input: {
   if (!result.ok) return result;
   await clearActiveWorkspaceCookieIf(parsed.data.workspaceId);
   return redirect({ href: "/", locale });
+}
+
+// ----------------------------------------------------------------------------
+// UC-33: convert private ↔ shared (Owner only; the service re-checks the
+// typed confirmations — the server is the gate).
+// ----------------------------------------------------------------------------
+
+const shareSchema = z.object({
+  workspaceId: uuidSchema,
+  name: nameSchema,
+  confirmName: z.string().max(500),
+});
+
+export type ShareWorkspaceResult =
+  | { ok: true; workspaceId: string }
+  | { ok: false; error: WorkspaceActionError };
+
+/**
+ * Private → shared. The active workspace stays on the converted one (same
+ * id): the cookie is pinned so the fallback does not pick the new, empty
+ * private workspace. The client then opens the details screen.
+ */
+export async function shareMyPrivateWorkspaceAction(input: {
+  workspaceId: string;
+  name: string;
+  confirmName: string;
+}): Promise<ShareWorkspaceResult> {
+  const parsed = shareSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "validation" };
+  const locale = await getLocaleFromHeaders();
+  let workspaceId = parsed.data.workspaceId;
+  const result = await run(async () => {
+    const access = await requireWorkspaceAccess(parsed.data.workspaceId, "read", locale);
+    ({ workspaceId } = await shareMyPrivateWorkspace(access, {
+      name: parsed.data.name,
+      confirmName: parsed.data.confirmName,
+    }));
+  });
+  if (!result.ok) return result;
+  await setActiveWorkspaceCookie(workspaceId);
+  return { ok: true, workspaceId };
+}
+
+const makePrivateSchema = z.object({
+  workspaceId: uuidSchema,
+  confirmName: z.string().max(500),
+  acknowledgeDataLoss: z.literal(true),
+});
+
+/**
+ * Shared → my private. Keeps the active cookie on it, forgets the last-opened
+ * month (the old private months are gone) and goes Home with a one-time note.
+ */
+export async function makeWorkspaceMyPrivateAction(input: {
+  workspaceId: string;
+  confirmName: string;
+  acknowledgeDataLoss: boolean;
+}): Promise<WorkspaceActionResult> {
+  const parsed = makePrivateSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "validation" };
+  const locale = await getLocaleFromHeaders();
+  let name = "";
+  const result = await run(async () => {
+    const access = await requireWorkspaceAccess(parsed.data.workspaceId, "read", locale);
+    ({ name } = await makeWorkspaceMyPrivate(access, {
+      confirmName: parsed.data.confirmName,
+      acknowledgeDataLoss: parsed.data.acknowledgeDataLoss,
+    }));
+  });
+  if (!result.ok) return result;
+  await setActiveWorkspaceCookie(parsed.data.workspaceId);
+  await clearLastOpenedMonthCookie();
+  return redirect({
+    href: { pathname: "/", query: { madePrivate: parsed.data.workspaceId, name } },
+    locale,
+  });
 }
 
 /**

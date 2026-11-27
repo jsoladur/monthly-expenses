@@ -13,17 +13,21 @@ import { ExportExpensesDrawer } from "@/components/export-expenses-drawer";
 import { Link } from "@/i18n/navigation";
 import { uniqueYearsDescending } from "@/lib/export-selection";
 import { isHomeYear } from "@/lib/month-buckets";
-import { Trash2 } from "lucide-react";
+import { Lock, Trash2 } from "lucide-react";
 
 export default async function LocaleHome({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ deleted?: string | string[] }>;
+  searchParams: Promise<{
+    deleted?: string | string[];
+    madePrivate?: string | string[];
+    name?: string | string[];
+  }>;
 }) {
   const { locale } = await params;
-  const { deleted: deletedRaw } = await searchParams;
+  const { deleted: deletedRaw, madePrivate: madePrivateRaw, name: nameRaw } = await searchParams;
   if (!isAppLocale(locale)) {
     redirect({ href: "/", locale: routing.defaultLocale });
   }
@@ -33,6 +37,7 @@ export default async function LocaleHome({
   const t = await getTranslations({ locale, namespace: "auth.signedIn" });
   const tm = await getTranslations({ locale, namespace: "months" });
   const tv = await getTranslations({ locale, namespace: "validation" });
+  const tw = await getTranslations({ locale, namespace: "workspaces.convert.private" });
 
   // Home shows the active workspace's months; the workspace is picked in the
   // header switcher (UC-31 §4.12, PO decision 2026-11-27).
@@ -45,6 +50,12 @@ export default async function LocaleHome({
     deletedPeriod &&
     !allMonths.some((m) => m.year === deletedPeriod.year && m.month === deletedPeriod.month)
       ? monthYear(locale as AppLocale, deletedPeriod.year, deletedPeriod.month)
+      : null;
+  // UC-33: one-shot note after making a shared workspace private. Shown only
+  // when the named workspace really is the active PRIVATE workspace.
+  const madePrivateName =
+    first(madePrivateRaw) === access.workspaceId && access.kind === "private"
+      ? (first(nameRaw) ?? "").slice(0, 60)
       : null;
   // Home: current year and any later year (newest first); earlier years live
   // in History (PRD UC-14).
@@ -85,6 +96,16 @@ export default async function LocaleHome({
           >
             <Trash2 className="text-muted-foreground size-4 shrink-0" aria-hidden />
             {tm("delete.done", { month: deletedLabel })}
+          </p>
+        )}
+
+        {madePrivateName && (
+          <p
+            role="status"
+            className="bg-success/10 text-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-sm"
+          >
+            <Lock className="text-success-foreground size-4 shrink-0" aria-hidden />
+            {tw("done", { name: madePrivateName })}
           </p>
         )}
 
@@ -163,6 +184,10 @@ export default async function LocaleHome({
       </div>
     </AppShell>
   );
+}
+
+function first(raw: string | string[] | undefined): string | undefined {
+  return Array.isArray(raw) ? raw[0] : raw;
 }
 
 function parseDeletedPeriod(raw: string | string[] | undefined): { year: number; month: number } | null {

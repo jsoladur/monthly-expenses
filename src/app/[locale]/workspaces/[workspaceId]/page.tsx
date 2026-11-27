@@ -8,6 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { requireWorkspaceAccess } from "@/server/auth/require-workspace-access";
 import { getWorkspaceDetails, listMemberCandidates } from "@/server/services/workspaces";
 import { getOfferForWorkspace } from "@/server/services/workspace-transfer";
+import { getMakePrivateSummary } from "@/server/services/workspace-conversion";
 import { WorkspaceNotFoundError, roleAllows } from "@/lib/workspace-roles";
 import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 import { WorkspaceDetailsScreen } from "./workspace-details-screen";
@@ -20,10 +21,13 @@ import { WorkspaceDetailsScreen } from "./workspace-details-screen";
 
 export default async function WorkspaceDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; workspaceId: string }>;
+  searchParams: Promise<{ shared?: string | string[] }>;
 }) {
   const { locale, workspaceId } = await params;
+  const { shared } = await searchParams;
   if (!hasLocale(routing.locales, locale)) {
     redirect({ href: "/workspaces", locale: routing.defaultLocale });
   }
@@ -39,10 +43,12 @@ export default async function WorkspaceDetailsPage({
   if (access.kind !== "shared") notFound();
 
   const canManageMembers = roleAllows(access.role, "manageMembers");
-  const [details, candidates, offer, t, session] = await Promise.all([
+  const canMakePrivate = roleAllows(access.role, "convertToPrivate");
+  const [details, candidates, offer, makePrivate, t, session] = await Promise.all([
     getWorkspaceDetails(access),
     canManageMembers ? listMemberCandidates(access) : Promise.resolve([]),
     getOfferForWorkspace(access),
+    canMakePrivate ? getMakePrivateSummary(access) : Promise.resolve(null),
     getTranslations({ locale, namespace: "workspaces" }),
     auth(),
   ]);
@@ -101,6 +107,23 @@ export default async function WorkspaceDetailsPage({
               role: m.role,
             }))}
           counts={details.counts}
+          // UC-33 §5: one-time notice right after sharing the private workspace.
+          justShared={(Array.isArray(shared) ? shared[0] : shared) === "1" && access.role === "owner"}
+          makePrivate={
+            makePrivate
+              ? {
+                  privateWorkspaceId: makePrivate.privateWorkspaceId,
+                  privateCounts: makePrivate.privateCounts,
+                  members: makePrivate.members.map((m) => ({
+                    userId: m.userId,
+                    label: m.displayName?.trim() ? m.displayName : m.email,
+                    email: m.email,
+                    role: m.role,
+                  })),
+                  invitations: makePrivate.invitations.map((i) => ({ email: i.email, role: i.role })),
+                }
+              : null
+          }
           can={{
             manageWorkspace: roleAllows(access.role, "manageWorkspace"),
             manageMembers: canManageMembers,

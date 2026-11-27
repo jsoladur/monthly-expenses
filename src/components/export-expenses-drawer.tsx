@@ -28,7 +28,7 @@ export type ExportMonthOption = {
   label: string;
 };
 
-function downloadBase64Xlsx(filename: string, base64: string): void {
+export function downloadBase64Xlsx(filename: string, base64: string): void {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {

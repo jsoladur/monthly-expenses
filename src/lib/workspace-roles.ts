@@ -37,6 +37,9 @@ export const WORKSPACE_ACTIONS = [
   "leaveWorkspace",
   "deleteWorkspace",
   "transferOwnership",
+  // UC-33: share my private workspace / make a shared one my private one.
+  "convertToShared",
+  "convertToPrivate",
 ] as const;
 export type WorkspaceAction = (typeof WORKSPACE_ACTIONS)[number];
 
@@ -63,6 +66,8 @@ const MATRIX: Record<WorkspaceAction, readonly WorkspaceRole[]> = {
   leaveWorkspace: ["reader", "editor", "admin"],
   deleteWorkspace: OWNER,
   transferOwnership: OWNER,
+  convertToShared: OWNER,
+  convertToPrivate: OWNER,
 };
 
 export function roleAllows(role: WorkspaceRole, action: WorkspaceAction): boolean {

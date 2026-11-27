@@ -41,6 +41,8 @@ const MATRIX: Record<WorkspaceAction, readonly WorkspaceRole[]> = {
   leaveWorkspace: [R, E, A],
   deleteWorkspace: [O],
   transferOwnership: [O],
+  convertToShared: [O],
+  convertToPrivate: [O],
 };
 
 const ROLES: WorkspaceRole[] = [R, E, A, O];

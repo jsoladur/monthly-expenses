@@ -6,18 +6,24 @@ import { auth, signOut } from "@/auth";
 import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
-import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
+import {
+  requireWorkspaceAccess,
+  resolveActiveWorkspace,
+} from "@/server/auth/require-workspace-access";
+import { getShareSummary } from "@/server/services/workspace-conversion";
 import { listMyWorkspaces } from "@/server/services/workspaces";
 import { listOffersForUser } from "@/server/services/workspace-transfer";
 import { getProfileSettings } from "@/server/services/settings";
 import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 import { CreateWorkspaceForm } from "./create-workspace-form";
 import { CreateDrawer } from "@/components/create-drawer";
+import { ShareWorkspaceFlow } from "./convert-workspace";
 
 // ============================================================================
 // Workspaces screen (UC-31 §7.2): the user's workspaces + the create-shared
 // form. Its own section in every mode: desktop sidebar, mobile More sheet,
-// the Home list (multi-workspace) and a link row in Settings.
+// the Home list (multi-workspace) and a link row in Settings. The private
+// row offers "Share this workspace" (UC-33 §5).
 // ============================================================================
 
 export default async function WorkspacesPage({
@@ -41,6 +47,11 @@ export default async function WorkspacesPage({
   ]);
   if (workspaces.length === 0) notFound();
   const offered = new Set(offers.map((o) => o.workspaceId));
+  // UC-33: the user is always the Owner of their private workspace.
+  const privateWorkspace = workspaces.find((w) => w.kind === "private") ?? null;
+  const shareSummary = privateWorkspace
+    ? await getShareSummary(await requireWorkspaceAccess(privateWorkspace.id, "read", locale))
+    : null;
 
   async function startSignOut() {
     "use server";
@@ -96,8 +107,11 @@ export default async function WorkspacesPage({
                     <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
                   </Link>
                 ) : (
-                  <div className="bg-card text-card-foreground flex min-h-11 items-center gap-3 rounded-lg border px-4 py-3">
+                  <div className="bg-card text-card-foreground flex min-h-11 flex-wrap items-center gap-3 rounded-lg border px-4 py-3">
                     {meta}
+                    {shareSummary && (
+                      <ShareWorkspaceFlow workspaceId={w.id} counts={shareSummary.counts} />
+                    )}
                   </div>
                 )}
               </li>

@@ -213,6 +213,15 @@ Map to `tests/unit/workspace-access.test.ts` (two new matrix rows), `tests/integ
 
 ---
 
+## 10b. Implementation notes (2026-11-27)
+
+- `validation.workspaceAlreadyShared` was not added: per §2.1 both "wrong kind" errors map to `workspaceForbidden`. Unchecked data-loss acknowledgement maps to `validation`.
+- Sharing pins the `active_workspace` cookie to the converted workspace. Without it, a user with no cookie would fall back to their private workspace, which is now the new empty one.
+- The one-time notices use query parameters (`?shared=1` on details, `?madePrivate=<id>&name=…` on Home), like UC-27's `?deleted=`. Home shows its note only when the id is the active private workspace.
+- "Export my private workspace first" calls the UC-19 export with an explicit `workspaceId` (membership-checked), because the shared workspace is the active one during the flow.
+
+---
+
 ## 11. Depends on / unlocks
 
 - Depends on: UC-31. Interacts with UC-32 (§4.5); either order works.

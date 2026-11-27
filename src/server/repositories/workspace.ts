@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import {
   annual,
@@ -171,10 +171,14 @@ export async function updateWorkspace(
  * Hard delete of a shared workspace, children first (UC-31 §4.6.3), one
  * statement per table inside the caller's transaction. The FKs cascade too;
  * the explicit order keeps the intent visible and independent of them.
+ *
+ * `allowPrivate` is for UC-33 make-private only, which replaces the caller's
+ * private workspace; every other path keeps the shared-only guard.
  */
 export async function deleteWorkspaceCascade(
   workspaceId: string,
   tx: Tx | typeof db = db,
+  opts: { allowPrivate?: boolean } = {},
 ): Promise<boolean> {
   const months = sql`(SELECT id FROM ${month} WHERE workspace_id = ${workspaceId})`;
   await tx.execute(sql`DELETE FROM month_actual_expense WHERE month_id IN ${months}`);
@@ -190,9 +194,84 @@ export async function deleteWorkspaceCascade(
   await tx.delete(workspaceMember).where(eq(workspaceMember.workspaceId, workspaceId));
   const deleted = await tx
     .delete(workspace)
-    .where(and(eq(workspace.id, workspaceId), eq(workspace.kind, "shared")))
+    .where(
+      opts.allowPrivate
+        ? eq(workspace.id, workspaceId)
+        : and(eq(workspace.id, workspaceId), eq(workspace.kind, "shared")),
+    )
     .returning({ id: workspace.id });
   return deleted.length > 0;
+}
+
+// ----------------------------------------------------------------------------
+// UC-33 conversion (private ↔ shared). No row changes workspace: the
+// workspace row is re-labelled. Callers run these in ONE transaction.
+// ----------------------------------------------------------------------------
+
+/** `SELECT … FOR UPDATE` on the workspace row; returns it (null when gone). */
+export async function lockWorkspace(workspaceId: string, tx: Tx): Promise<Workspace | null> {
+  const rows = await tx
+    .select()
+    .from(workspace)
+    .where(eq(workspace.id, workspaceId))
+    .for("update");
+  return rows[0] ?? null;
+}
+
+/**
+ * Private → shared (UC-33 §2.2 step 2). Frees `workspace_personal_user_uk`
+ * before the new private workspace claims it; the check constraints hold
+ * after the statement (shared ⇔ no personal user, shared ⇒ name).
+ */
+export async function markShared(
+  workspaceId: string,
+  name: string,
+  tx: Tx,
+): Promise<Workspace | null> {
+  const [updated] = await tx
+    .update(workspace)
+    .set({ kind: "shared", name, personalUserId: null, updatedAt: sql`now()` })
+    .where(and(eq(workspace.id, workspaceId), eq(workspace.kind, "private")))
+    .returning();
+  return updated ?? null;
+}
+
+/** Shared → private of `userId` (UC-33 §2.3 step 4). Name is cleared. */
+export async function markPrivate(
+  workspaceId: string,
+  userId: string,
+  tx: Tx,
+): Promise<Workspace | null> {
+  const [updated] = await tx
+    .update(workspace)
+    .set({ kind: "private", name: null, personalUserId: userId, updatedAt: sql`now()` })
+    .where(and(eq(workspace.id, workspaceId), eq(workspace.kind, "shared")))
+    .returning();
+  return updated ?? null;
+}
+
+/** Every membership of the workspace except `keepUserId`'s. */
+export async function deleteOtherMembers(
+  workspaceId: string,
+  keepUserId: string,
+  tx: Tx | typeof db = db,
+): Promise<number> {
+  const deleted = await tx
+    .delete(workspaceMember)
+    .where(and(eq(workspaceMember.workspaceId, workspaceId), ne(workspaceMember.userId, keepUserId)))
+    .returning({ userId: workspaceMember.userId });
+  return deleted.length;
+}
+
+export async function deleteInvitationsOf(
+  workspaceId: string,
+  tx: Tx | typeof db = db,
+): Promise<number> {
+  const deleted = await tx
+    .delete(workspaceInvitation)
+    .where(eq(workspaceInvitation.workspaceId, workspaceId))
+    .returning({ email: workspaceInvitation.email });
+  return deleted.length;
 }
 
 export interface WorkspaceCounts {
@@ -200,6 +279,8 @@ export interface WorkspaceCounts {
   categories: number;
   templates: number;
   annuals: number;
+  /** Actual expenses (tickets) across every month (UC-33 confirmations). */
+  actuals: number;
   members: number;
 }
 
@@ -212,6 +293,7 @@ export async function countWorkspaceContents(
     categories: number;
     templates: number;
     annuals: number;
+    actuals: number;
     members: number;
   }>(sql`
     SELECT
@@ -219,6 +301,8 @@ export async function countWorkspaceContents(
       (SELECT count(*)::int FROM ${category} WHERE workspace_id = ${workspaceId}) AS categories,
       (SELECT count(*)::int FROM ${template} WHERE workspace_id = ${workspaceId}) AS templates,
       (SELECT count(*)::int FROM ${annual} WHERE workspace_id = ${workspaceId}) AS annuals,
+      (SELECT count(*)::int FROM month_actual_expense a JOIN ${month} m ON m.id = a.month_id
+        WHERE m.workspace_id = ${workspaceId}) AS actuals,
       (SELECT count(*)::int FROM ${workspaceMember} WHERE workspace_id = ${workspaceId}) AS members
   `);
   return {
@@ -226,6 +310,7 @@ export async function countWorkspaceContents(
     categories: row?.categories ?? 0,
     templates: row?.templates ?? 0,
     annuals: row?.annuals ?? 0,
+    actuals: row?.actuals ?? 0,
     members: row?.members ?? 0,
   };
 }

@@ -29,11 +29,12 @@ import {
   type TransferCandidate,
 } from "./ownership-transfer";
 import { CheckCircle2 } from "lucide-react";
+import { MakePrivateFlow, type MakePrivateView } from "../convert-workspace";
 
 // ============================================================================
 // Workspace details (UC-31 §7.2): members + role controls and add form
 // (Admin+), rename + currency (Admin+), leave (non-owner), delete with typed
-// name (Owner). Controls a role cannot use are not rendered (§3); the server
+// name (Owner), make this my private workspace (Owner, UC-33). Controls a role cannot use are not rendered (§3); the server
 // re-checks every action.
 // ============================================================================
 
@@ -72,6 +73,8 @@ export function WorkspaceDetailsScreen({
   can,
   offer,
   transferCandidates,
+  justShared = false,
+  makePrivate = null,
 }: {
   workspaceId: string;
   name: string;
@@ -88,13 +91,27 @@ export function WorkspaceDetailsScreen({
   offer: OfferView | null;
   /** UC-32: members the Owner may offer ownership to (everyone but the Owner). */
   transferCandidates: TransferCandidate[];
+  /** UC-33: first visit after sharing the private workspace. */
+  justShared?: boolean;
+  /** UC-33: the make-private confirmation data (Owner only). */
+  makePrivate?: MakePrivateView | null;
 }) {
+  const tc = useTranslations("workspaces.convert.share");
   const tt = useTranslations("workspaces.transfer");
   // Survives the post-accept revalidation (same route, same component).
   const [justAccepted, setJustAccepted] = useState(false);
   const incoming = offer && offer.toUserId === viewerId ? offer : null;
   return (
     <div className="flex flex-col gap-6">
+      {justShared && (
+        <p
+          role="status"
+          className="bg-success/10 text-foreground flex items-center gap-2 rounded-lg border px-4 py-3 text-sm"
+        >
+          <CheckCircle2 className="text-success-foreground size-4 shrink-0" aria-hidden />
+          {tc("done")}
+        </p>
+      )}
       {justAccepted && viewerRole === "owner" && (
         <p
           role="status"
@@ -138,7 +155,16 @@ export function WorkspaceDetailsScreen({
         />
       )}
       <LeaveSection workspaceId={workspaceId} name={name} canLeave={can.leave} isOwner={viewerRole === "owner"} />
-      {can.delete && <DeleteSection workspaceId={workspaceId} name={name} counts={counts} />}
+      {(makePrivate || can.delete) && (
+        <div className="flex flex-col gap-2">
+          {makePrivate && (
+            <div className="border-destructive/30 bg-card rounded-lg border">
+              <MakePrivateFlow workspaceId={workspaceId} name={name} view={makePrivate} />
+            </div>
+          )}
+          {can.delete && <DeleteSection workspaceId={workspaceId} name={name} counts={counts} />}
+        </div>
+      )}
     </div>
   );
 }

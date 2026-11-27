@@ -153,7 +153,8 @@ export class InvalidWorkspaceCurrencyError extends Error {
 export { WORKSPACE_NAME_MAX, matchesWorkspaceName };
 const CURRENCY_RE = /^[A-Z]{3}$/;
 
-function normalizeName(raw: string): string {
+/** Trimmed, inner spaces collapsed, 1–60 characters (UC-31 §4.2; reused by UC-33). */
+export function normalizeWorkspaceName(raw: string): string {
   const name = raw.trim().replace(/\s+/g, " ");
   if (name.length === 0) throw new InvalidWorkspaceNameError("required");
   if (name.length > WORKSPACE_NAME_MAX) throw new InvalidWorkspaceNameError("tooLong");
@@ -232,7 +233,7 @@ export async function createSharedWorkspace(
   userId: string,
   input: { name: string; currency?: string | null },
 ): Promise<Workspace> {
-  const name = normalizeName(input.name);
+  const name = normalizeWorkspaceName(input.name);
   return db.transaction(async (tx) => {
     const inherited = input.currency ?? (await getProfileSettings(userId, tx))?.currency ?? "EUR";
     const currency = normalizeCurrency(inherited);
@@ -293,7 +294,7 @@ export async function renameWorkspace(
 ): Promise<Workspace> {
   const workspaceId = authorize(access, "manageWorkspace");
   assertShared(access);
-  const updated = await updateWorkspace(workspaceId, { name: normalizeName(input.name) });
+  const updated = await updateWorkspace(workspaceId, { name: normalizeWorkspaceName(input.name) });
   if (!updated) throw new WorkspaceNotFoundError();
   return updated;
 }

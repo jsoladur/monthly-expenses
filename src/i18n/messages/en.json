@@ -1008,6 +1008,68 @@
       "confirmAccept": "Yes, become the Owner",
       "decline": "Decline",
       "done": "You are now the Owner of {workspace}."
+    },
+    "convert": {
+      "share": {
+        "action": "Share this workspace",
+        "title": "Share your private workspace",
+        "explain": "All months, categories, fixed expenses and annuals of your private workspace move to a new shared workspace. You get a new, empty private workspace.",
+        "countsLead": "Moves to the shared workspace:",
+        "counts": {
+          "months": "{count, plural, one {# month} other {# months}}",
+          "categories": "{count, plural, one {# category} other {# categories}}",
+          "templates": "{count, plural, one {# fixed expense} other {# fixed expenses}}",
+          "annuals": "{count, plural, one {# annual} other {# annuals}}",
+          "actuals": "{count, plural, one {# expense} other {# expenses}}"
+        },
+        "empty": "Your private workspace has no data yet.",
+        "nameLabel": "Name of the shared workspace",
+        "nameHelp": "Members see this name. You can add them after sharing.",
+        "continue": "Continue",
+        "typePrompt": "Type <b>{name}</b> to confirm",
+        "typeLabel": "Type the name to confirm",
+        "confirm": "Share",
+        "pending": "Sharing…",
+        "done": "Your private workspace is now shared. You have a new, empty private workspace.",
+        "step": "Step {current} of {total}"
+      },
+      "private": {
+        "action": "Make this my private workspace…",
+        "title": "Make this your private workspace",
+        "step1": {
+          "lead": "Your current private workspace will be <b>permanently deleted</b> and replaced by <b>{name}</b>.",
+          "countsLead": "Your current private workspace holds:",
+          "counts": {
+            "months": "{count, plural, one {# month} other {# months}}",
+            "categories": "{count, plural, one {# category} other {# categories}}",
+            "templates": "{count, plural, one {# fixed expense} other {# fixed expenses}}",
+            "annuals": "{count, plural, one {# annual} other {# annuals}}",
+            "actuals": "{count, plural, one {# expense} other {# expenses}}"
+          },
+          "empty": "Your current private workspace has no data. Nothing of yours is lost.",
+          "export": "Export my private workspace first",
+          "exporting": "Exporting…",
+          "exported": "Downloaded."
+        },
+        "step2": {
+          "lead": "They will no longer see this workspace. Their own private workspaces are not affected.",
+          "membersList": "Members who lose access",
+          "invitationsList": "Invitations that are cancelled",
+          "none": "No one else is in this workspace.",
+          "acknowledge": "I understand my current private data will be deleted and cannot be recovered"
+        },
+        "step3": {
+          "typePrompt": "Type <b>{name}</b> to confirm",
+          "typeLabel": "Type the name to confirm",
+          "confirm": "Make private",
+          "pending": "Making private…"
+        },
+        "done": "{name} is now your private workspace."
+      },
+      "back": "Back",
+      "continue": "Continue",
+      "cancel": "Cancel",
+      "error": "Could not convert the workspace."
     }
   }
 }

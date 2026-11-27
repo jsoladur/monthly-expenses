@@ -1008,6 +1008,68 @@
       "confirmAccept": "Sí, ser el Propietario",
       "decline": "Rechazar",
       "done": "Ahora eres el Propietario de {workspace}."
+    },
+    "convert": {
+      "share": {
+        "action": "Compartir este espacio",
+        "title": "Compartir tu espacio privado",
+        "explain": "Todos los meses, categorías, gastos fijos y anuales de tu espacio privado pasan a un nuevo espacio compartido. Recibes un espacio privado nuevo y vacío.",
+        "countsLead": "Pasa al espacio compartido:",
+        "counts": {
+          "months": "{count, plural, one {# mes} other {# meses}}",
+          "categories": "{count, plural, one {# categoría} other {# categorías}}",
+          "templates": "{count, plural, one {# gasto fijo} other {# gastos fijos}}",
+          "annuals": "{count, plural, one {# anual} other {# anuales}}",
+          "actuals": "{count, plural, one {# gasto} other {# gastos}}"
+        },
+        "empty": "Tu espacio privado aún no tiene datos.",
+        "nameLabel": "Nombre del espacio compartido",
+        "nameHelp": "Los miembros ven este nombre. Puedes añadirlos después de compartir.",
+        "continue": "Continuar",
+        "typePrompt": "Escribe <b>{name}</b> para confirmar",
+        "typeLabel": "Escribe el nombre para confirmar",
+        "confirm": "Compartir",
+        "pending": "Compartiendo…",
+        "done": "Tu espacio privado ahora es compartido. Tienes un espacio privado nuevo y vacío.",
+        "step": "Paso {current} de {total}"
+      },
+      "private": {
+        "action": "Convertir en mi espacio privado…",
+        "title": "Convertir en tu espacio privado",
+        "step1": {
+          "lead": "Tu espacio privado actual se <b>eliminará para siempre</b> y lo sustituirá <b>{name}</b>.",
+          "countsLead": "Tu espacio privado actual contiene:",
+          "counts": {
+            "months": "{count, plural, one {# mes} other {# meses}}",
+            "categories": "{count, plural, one {# categoría} other {# categorías}}",
+            "templates": "{count, plural, one {# gasto fijo} other {# gastos fijos}}",
+            "annuals": "{count, plural, one {# anual} other {# anuales}}",
+            "actuals": "{count, plural, one {# gasto} other {# gastos}}"
+          },
+          "empty": "Tu espacio privado actual no tiene datos. No pierdes nada tuyo.",
+          "export": "Exportar antes mi espacio privado",
+          "exporting": "Exportando…",
+          "exported": "Descargado."
+        },
+        "step2": {
+          "lead": "Dejarán de ver este espacio. Sus propios espacios privados no cambian.",
+          "membersList": "Miembros que pierden el acceso",
+          "invitationsList": "Invitaciones que se cancelan",
+          "none": "No hay nadie más en este espacio.",
+          "acknowledge": "Entiendo que mis datos privados actuales se eliminarán y no se pueden recuperar"
+        },
+        "step3": {
+          "typePrompt": "Escribe <b>{name}</b> para confirmar",
+          "typeLabel": "Escribe el nombre para confirmar",
+          "confirm": "Convertir en privado",
+          "pending": "Convirtiendo…"
+        },
+        "done": "{name} ahora es tu espacio privado."
+      },
+      "back": "Atrás",
+      "continue": "Continuar",
+      "cancel": "Cancelar",
+      "error": "No se pudo convertir el espacio."
     }
   }
 }

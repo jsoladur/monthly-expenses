@@ -3,9 +3,12 @@
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
-import { WorkspaceForbiddenError } from "@/lib/workspace-roles";
-import { monthSchema, yearSchema } from "@/server/validators";
+import {
+  requireWorkspaceAccess,
+  resolveActiveWorkspace,
+} from "@/server/auth/require-workspace-access";
+import { WorkspaceForbiddenError, WorkspaceNotFoundError } from "@/lib/workspace-roles";
+import { monthSchema, uuidSchema, yearSchema } from "@/server/validators";
 import {
   NothingToExportError,
   exportExpenses as serviceExport,
@@ -39,8 +42,13 @@ const exportSchema = z.discriminatedUnion("mode", [
   }),
 ]);
 
+// UC-33: make-private step 1 exports the caller's PRIVATE workspace while the
+// shared one is active, so an explicit workspace may be named (membership is
+// checked like any other workspace action). Omitted → the active workspace.
+const targetSchema = z.object({ workspaceId: uuidSchema.optional() });
+
 export type ExportActionError = "nothingToExport" | "validation"
-  | "workspaceForbidden";
+  | "workspaceForbidden" | "workspaceNotFound";
 
 export type ExportActionResult =
   | { ok: true; filename: string; base64: string }
@@ -53,12 +61,18 @@ export async function exportExpensesAction(
   if (!parsed.success) {
     return { ok: false, error: "validation" };
   }
+  const target = targetSchema.safeParse(input);
+  if (!target.success) {
+    return { ok: false, error: "validation" };
+  }
   const locale = await getLocaleFromHeaders();
-  const access = await resolveActiveWorkspace(locale);
   const copy = await loadExportCopy(locale);
 
   let result;
   try {
+    const access = target.data.workspaceId
+      ? await requireWorkspaceAccess(target.data.workspaceId, "read", locale)
+      : await resolveActiveWorkspace(locale);
     result = await serviceExport(access, parsed.data as ExportSelection, {
       locale: isAppLocale(locale) ? locale : routing.defaultLocale,
       copy,
@@ -66,6 +80,9 @@ export async function exportExpensesAction(
   } catch (err) {
     if (err instanceof WorkspaceForbiddenError) {
       return { ok: false, error: "workspaceForbidden" };
+    }
+    if (err instanceof WorkspaceNotFoundError) {
+      return { ok: false, error: "workspaceNotFound" };
     }
     if (err instanceof NothingToExportError) {
       return { ok: false, error: "nothingToExport" };
