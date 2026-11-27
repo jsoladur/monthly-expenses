@@ -185,8 +185,6 @@
   }
   body {
     @apply bg-background text-foreground overflow-x-hidden;
-    /* No rubber-band bounce exposing the area behind the fixed bars. */
-    overscroll-behavior-y: none;
     font-family: "Pilat Wide Bold", "Pilat Wide Bold Fallback", -apple-system,
       BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     letter-spacing: -0.01em;

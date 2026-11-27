@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { devices, expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { buildSessionCookie, ensureUser } from "./_helpers/auth";
 import { uniqueId } from "./_helpers/unique";
 
@@ -15,6 +15,11 @@ import { uniqueId } from "./_helpers/unique";
 //   - chromium: no top bar on desktop; the inline profile button stays.
 //   - chromium + iPhone insets (CDP Emulation.setSafeAreaInsetsOverride):
 //     nothing interactive sits under the status bar or the home indicator.
+//   - chromium + Android phone: a real finger swipe (CDP touch scroll gesture)
+//     scrolls the page, and the mouse wheel does on desktop. v0.17.2 put
+//     `overscroll-behavior-y: none` on <body>, which (body being a
+//     non-scrolling scroll container because of overflow-x: hidden) stopped
+//     touch scrolls from chaining to the page on Android.
 // ============================================================================
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
@@ -142,4 +147,63 @@ test.describe("iPhone app shell", () => {
     await page.screenshot({ path: test.info().outputPath("iphone-safe-areas.png") });
     await context.close();
   });
+
+  test("a finger swipe scrolls the page on an Android phone", async ({ browser, browserName }) => {
+    test.skip(browserName !== "chromium", "touch scroll gestures are a Chromium CDP feature");
+
+    const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } = devices["Pixel 7"];
+    const context = await browser.newContext({
+      viewport,
+      userAgent,
+      deviceScaleFactor,
+      isMobile,
+      hasTouch,
+    });
+    await seedSignedIn(context);
+    const page = await context.newPage();
+    await page.goto(`${BASE_URL}/en`);
+    await makePageTall(page);
+
+    const cdp = await context.newCDPSession(page);
+    const { width, height } = page.viewportSize()!;
+    // Start the swipe on page content between the top bar and bottom nav:
+    // once on the "Create a month" card, once on plain page space.
+    for (const startY of [0.35, 0.6]) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await cdp.send("Input.synthesizeScrollGesture", {
+        x: Math.round(width / 2),
+        y: Math.round(height * startY),
+        yDistance: -600, // negative = finger moves up = page scrolls down
+        gestureSourceType: "touch",
+        speed: 1200,
+      });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    }
+    await context.close();
+  });
+
+  test("the mouse wheel scrolls the page on desktop", async ({ context, page, browserName }) => {
+    test.skip(browserName !== "chromium", "desktop project only");
+
+    await seedSignedIn(context);
+    await page.goto(`${BASE_URL}/en`);
+    await makePageTall(page);
+    const { width, height } = page.viewportSize()!;
+    await page.mouse.move(width / 2, height / 2);
+    await page.mouse.wheel(0, 800);
+
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  });
 });
+
+// Home has little content for a fresh user; add a tall block inside the page
+// column so there is something to scroll, without changing the scroll chain.
+async function makePageTall(page: Page): Promise<void> {
+  await page.locator("main > div").evaluate((el) => {
+    const spacer = document.createElement("div");
+    spacer.style.height = "4000px";
+    spacer.dataset.testid = "scroll-spacer";
+    el.appendChild(spacer);
+  });
+  await expect(page.getByTestId("scroll-spacer")).toBeAttached();
+}

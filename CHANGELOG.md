@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.3] - 2026-11-27
+
+### Fixed
+- Pages scroll again when you swipe with a finger on Android phones, and with the mouse wheel on desktop. Version 0.17.2 turned off the bounce at the top and bottom of pages in a way that also blocked normal scrolling. The bounce is back, and scrolling works as it did before 0.17.2.
+
 ## [0.17.2] - 2026-11-27
 
 ### Fixed
@@ -19,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - On iPhone, taps no longer flash grey, pages no longer bounce past their top or bottom, and text keeps its size in landscape.
+
 ## [0.17.1] - 2026-11-26
 
 ### Fixed
