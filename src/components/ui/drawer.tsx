@@ -77,7 +77,7 @@ function DrawerContent({ className, ...props }: DrawerPrimitive.Content.Props) {
   return (
     <DrawerPrimitive.Content
       data-slot="drawer-content"
-      className={cn("flex flex-col gap-3 overflow-y-auto p-4 pb-8", className)}
+      className={cn("flex flex-col gap-3 overflow-y-auto p-4 pb-[max(2rem,calc(1rem+env(safe-area-inset-bottom)))]", className)}
       {...props}
     />
   );

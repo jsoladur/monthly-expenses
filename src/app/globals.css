@@ -159,15 +159,34 @@
   --sidebar-ring: 205 70% 59%;
 }
 
+/*
+ * Height of the fixed mobile top bar (AppShell) including the iOS top safe
+ * area. Content and sticky docks offset by it; no bar on desktop (lg+).
+ */
+:root {
+  --app-top-offset: calc(3.5rem + 1px + env(safe-area-inset-top)); /* h-14 + border-b */
+}
+@media (width >= 64rem) {
+  :root {
+    --app-top-offset: 0px;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   html {
-    @apply font-sans overflow-x-hidden;
+    @apply bg-background font-sans overflow-x-hidden;
+    /* iPhone: no grey tap flash, no font inflation in landscape. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     @apply bg-background text-foreground overflow-x-hidden;
+    /* No rubber-band bounce exposing the area behind the fixed bars. */
+    overscroll-behavior-y: none;
     font-family: "Pilat Wide Bold", "Pilat Wide Bold Fallback", -apple-system,
       BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     letter-spacing: -0.01em;

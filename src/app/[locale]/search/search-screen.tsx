@@ -46,7 +46,7 @@ export function SearchScreen({
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
 
-      <div className="bg-secondary sticky top-0 z-20 rounded-[var(--radius)] border border-border p-4">
+      <div className="bg-secondary sticky top-(--app-top-offset) z-20 rounded-[var(--radius)] border border-border p-4">
         <form
           action={`/${locale}/search`}
           method="GET"

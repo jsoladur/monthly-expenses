@@ -10,6 +10,7 @@
     }
   },
   "profile": {
+    "menu": "Menú de la cuenta",
     "language": "Idioma",
     "signOut": "Cerrar sesión",
     "noName": "Usuario",

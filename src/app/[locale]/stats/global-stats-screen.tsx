@@ -246,7 +246,7 @@ export function GlobalStatsScreen({ page }: { page: GlobalStatsPage }) {
   return (
     <div className="flex flex-col gap-6">
       {meta.tab !== "help" && (
-      <div className="bg-card border-border sticky top-0 z-20 flex flex-col gap-3 rounded-lg border p-3">
+      <div className="bg-card border-border sticky top-(--app-top-offset) z-20 flex flex-col gap-3 rounded-lg border p-3">
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs">
             <span className="text-muted-foreground">{t("filters.from")}</span>

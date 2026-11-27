@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-11-27
+
+### Fixed
+- On iPhone, the profile button can be tapped again. It used to sit behind the status bar (clock, Dynamic Island), where iOS takes the taps. On phones it now lives in a navy top bar that starts below the status bar; desktop keeps the button above the page content.
+- On iPhone, the status bar stays readable in the light theme: the navy top bar sits behind its white text.
+- On iPhone, tapping anywhere outside the profile menu closes it, and Escape closes it on a keyboard.
+- The last rows of a page no longer stay hidden behind the bottom navigation on iPhones with a home indicator, and bottom sheets keep their last item clear of it.
+- In landscape on iPhone, the page and the bottom navigation stay clear of the notch.
+- If iOS 26 shows the bottom navigation slightly above the screen edge, the gap below it now has the navigation's colour instead of a strip of page background.
+
+### Changed
+- On iPhone, taps no longer flash grey, pages no longer bounce past their top or bottom, and text keeps its size in landscape.
 ## [0.17.1] - 2026-11-26
 
 ### Fixed

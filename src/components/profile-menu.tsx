@@ -12,6 +12,11 @@ interface ProfileMenuProps {
   displayName?: string | null;
   avatarUrl?: string | null;
   signOutAction: () => Promise<void>;
+  /**
+   * `inline` — bordered pill used in the desktop content column.
+   * `bar` — round 44pt avatar button for the navy mobile top bar.
+   */
+  variant?: "inline" | "bar";
 }
 
 interface BeforeInstallPromptEvent extends Event {
@@ -19,7 +24,13 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: ProfileMenuProps) {
+export function ProfileMenu({
+  email,
+  displayName,
+  avatarUrl,
+  signOutAction,
+  variant = "inline",
+}: ProfileMenuProps) {
   const t = useTranslations("profile");
   const tPwa = useTranslations("pwa");
   const current = useLocale() as AppLocale;
@@ -38,15 +49,25 @@ export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: Pr
     return ios ? "ios" : "prompt";
   });
 
+  // iOS Safari fires no mouse events when tapping a non-interactive area, so
+  // `mousedown` never closed the menu on iPhone; pointer events cover touch.
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    if (!isOpen) return;
+    function handlePointerDownOutside(event: PointerEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDownOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDownOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (installState !== "prompt") return;
@@ -80,30 +101,59 @@ export function ProfileMenu({ email, displayName, avatarUrl, signOutAction }: Pr
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium transition-colors hover:bg-muted cursor-pointer"
-        aria-expanded={isOpen}
-        aria-haspopup="true"
-      >
-        {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt={displayName || email}
-            width={20}
-            height={20}
-            className="rounded-full"
-          />
-        ) : (
-          <User className="size-4 opacity-70" />
-        )}
-        <span className="hidden sm:inline max-w-32 truncate">{displayName || email}</span>
-        <ChevronDown className={`size-4 opacity-70 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
+      {variant === "bar" ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          data-testid="profile-menu-trigger"
+          className="hover:bg-sidebar-accent focus-visible:ring-sidebar-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+          aria-label={t("menu")}
+        >
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt=""
+              width={32}
+              height={32}
+              className="ring-sidebar-foreground/30 size-8 rounded-full ring-1"
+            />
+          ) : (
+            <span className="bg-sidebar-accent ring-sidebar-foreground/30 flex size-8 items-center justify-center rounded-full ring-1">
+              <User className="size-4" />
+            </span>
+          )}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium transition-colors hover:bg-muted cursor-pointer"
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+        >
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt={displayName || email}
+              width={20}
+              height={20}
+              className="rounded-full"
+            />
+          ) : (
+            <User className="size-4 opacity-70" />
+          )}
+          <span className="hidden sm:inline max-w-32 truncate">{displayName || email}</span>
+          <ChevronDown className={`size-4 opacity-70 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+      )}
 
       {isOpen && (
-        <div className="bg-card border-border absolute right-0 z-50 mt-2 w-80 rounded-lg border shadow-lg">
+        <div
+          data-testid="profile-menu"
+          className="bg-card text-card-foreground border-border absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
+        >
           <div className="border-border flex flex-col gap-1 border-b p-3">
             <p className="text-sm font-medium truncate">{displayName || t("noName")}</p>
             <p className="text-muted-foreground text-xs truncate">{email}</p>

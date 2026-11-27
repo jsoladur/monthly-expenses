@@ -139,9 +139,48 @@ export function AppShell({ children, email, displayName, avatarUrl, signOutActio
         </nav>
       </aside>
 
-      <main className="flex-1 pb-20 lg:pb-0 lg:pl-60">
-        <div className={`mx-auto w-full px-4 py-6 md:px-6 md:py-8 ${wide ? "max-w-6xl" : "max-w-4xl"}`}>
-          <div className="mb-4 flex justify-end">
+      {/*
+        Mobile top bar. The page draws edge to edge (viewport-fit=cover) under a
+        translucent iOS status bar, so the bar pads itself down by the top safe
+        area: the profile button sits below the clock/Dynamic Island, where taps
+        reach the page. Navy in both themes so the white status-bar text stays
+        readable.
+      */}
+      <header
+        className="bg-sidebar text-sidebar-foreground border-sidebar-border fixed inset-x-0 top-0 z-40 border-b lg:hidden"
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
+        }}
+        data-testid="mobile-top-bar"
+      >
+        <div className="flex h-14 items-center justify-between gap-3 pr-2 pl-4">
+          <Link href="/" className="flex min-h-11 min-w-0 items-center gap-2">
+            <Image
+              src="/images/logo.png"
+              alt=""
+              width={28}
+              height={28}
+              className="shrink-0 rounded-md"
+            />
+            <span className="truncate text-base font-semibold">{tApp("name")}</span>
+          </Link>
+          <ProfileMenu
+            variant="bar"
+            email={email}
+            displayName={displayName}
+            avatarUrl={avatarUrl}
+            signOutAction={signOutAction}
+          />
+        </div>
+      </header>
+
+      <main className="flex-1 pt-(--app-top-offset) pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-60">
+        <div
+          className={`mx-auto w-full py-6 pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] md:py-8 md:pr-[max(1.5rem,env(safe-area-inset-right))] md:pl-[max(1.5rem,env(safe-area-inset-left))] ${wide ? "max-w-6xl" : "max-w-4xl"}`}
+        >
+          <div className="mb-4 hidden justify-end lg:flex">
             <ProfileMenu
               email={email}
               displayName={displayName}
@@ -154,8 +193,15 @@ export function AppShell({ children, email, displayName, avatarUrl, signOutActio
       </main>
 
       <nav
-        className="bg-card border-border fixed inset-x-0 bottom-0 z-50 flex border-t lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        // `after:` paints the bar colour below its edge: some iOS 26 releases
+        // place `bottom: 0` too high in home-screen web apps, which otherwise
+        // leaves a strip of page background under the bar.
+        className="bg-card border-border after:bg-card fixed inset-x-0 bottom-0 z-50 flex border-t after:absolute after:inset-x-0 after:top-full after:h-24 lg:hidden"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
+        }}
         data-testid="mobile-nav"
       >
         {MOBILE_PRIMARY.map((item) => {
