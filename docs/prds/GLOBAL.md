@@ -661,7 +661,7 @@ Implementation slice: `docs/usecases/UC-31-collaborative-workspaces.md`. Product
 - The Owner and Admins pick people from `ALLOWED_EMAILS` and add them as **Reader**, **Editor** or **Admin**. Someone who has not signed in yet is invited and joins at their first sign-in. The matrix is in `docs/usecases/UC-31-collaborative-workspaces.md` §3.
 - A shared workspace has its own categories, templates, annuals, months, incomes, reserved lines, actuals, currency, Stats, Search, Export, estimate check and annual reminders.
 - Editors create months, categories and expenses, and delete or edit only expenses they created. Readers see everything and change nothing.
-- **Home:** with one workspace, unchanged. With several, the workspace list comes first (role and active marker); selecting one makes it active for every section. The header shows the active workspace name.
+- **Home:** unchanged in every mode; it shows the active workspace. With several workspaces, a header dropdown lists them (role, check on the active one) and picking one makes it active for every section (PO decision 2026-11-27).
 - With only a private workspace, no workspace name, switcher, role or "Added by" text appears on Home or any data screen. **Workspaces** is its own section in every mode (desktop sidebar, mobile More, a link row in Settings), where a first shared workspace is created (PO decision 2026-11-27).
 - Removing a member ends their access on the next request; their past tickets stay, attributed to them.
 - The Owner deletes a shared workspace behind a typed name. Other workspaces are untouched.
@@ -693,7 +693,7 @@ Implementation slice: `docs/usecases/UC-32-workspace-ownership-transfer.md`. Pro
 12. Search — find actual tickets by name or note, any year  
 13. Home export picker — All / year / specific months → Excel download
 14. Workspaces — create shared workspace; members and roles; leave; rename and currency (Admin+); delete (Owner, typed name); ownership offer (Owner offers, member accepts or declines). Shared workspaces only; private workspace has no member controls.
-15. Workspace switcher — with several workspaces: Home lists them first (role, active marker, "Private" tag on private); header shows the active workspace name. With one workspace: not shown (C30, slice UC-31 §4.11). The Workspaces screen (14) is a nav section in every mode.  
+15. Workspace switcher — with several workspaces: a header dropdown lists them (role, check on the active one, "Private" / "Shared" tag) plus "Manage workspaces" and "New shared workspace". With one workspace: not shown (C30, slice UC-31 §4.11–§4.12). The Workspaces screen (14) is a nav section in every mode.
 
 Mobile-first: add an actual from the month workspace. The add-actual name field autocompletes recent names after two characters (inline list, max five). Search is first-mobile: field + button, then a year-banded ticket list. Export is a Home header button that opens a bottom sheet.
 
@@ -913,7 +913,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 | Annual reminder added | Read-time match: same category + folded name prefix. Collapses to Added; never dismissed; nothing stored. |
 | Excel export | Home picker. All / one or more years with data / specific created months. One sheet per month. No charts. Tenant-scoped. |
 | Tenancy | Workspace, not user (C30). Every user has a private workspace; shared workspaces carry roles (C31); ownership moves only by an offer the target accepts (C32). |
-| Workspace in the UI | Hidden while a user has only their private workspace. With several, the Home list and the header name carry it; forms never get a workspace field (slice UC-31 §4.11–4.12). |
+| Workspace in the UI | Hidden while a user has only their private workspace. With several, the header dropdown carries it; forms never get a workspace field (slice UC-31 §4.11–4.12). |
 
 No blocking product questions remain for V1 money behavior.
 

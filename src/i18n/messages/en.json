@@ -975,7 +975,8 @@
     "addedBy": "Added by {name}",
     "switcher": {
       "open": "Switch workspace (current: {name})",
-      "current": "Current workspace"
+      "current": "Current workspace",
+      "manage": "Manage workspaces"
     },
     "back": "All workspaces"
   }

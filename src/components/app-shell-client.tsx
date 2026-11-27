@@ -14,11 +14,11 @@ import {
   DollarSign,
   MoreHorizontal,
   Users,
-  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { ProfileMenu } from "./profile-menu";
+import { WorkspaceSwitcher, type SwitcherWorkspace } from "./workspace-switcher";
 import {
   Drawer,
   DrawerBackdrop,
@@ -44,7 +44,8 @@ export interface AppShellProps {
  * (PO decision 2026-11-27).
  */
 export interface WorkspaceSwitcherInfo {
-  activeName: string;
+  activeId: string;
+  workspaces: SwitcherWorkspace[];
 }
 
 interface NavItem {
@@ -131,21 +132,13 @@ export function AppShellClient({
 }: AppShellProps & { workspace: WorkspaceSwitcherInfo | null }) {
   const t = useTranslations("nav");
   const tApp = useTranslations("app");
-  const tw = useTranslations("workspaces");
   const pathname = usePathname();
   const wide = pathname.startsWith("/stats");
-  // The quiet header control that opens the Home workspace list (§4.12).
-  const switcher = workspace ? (
-    <Link
-      href="/#workspaces"
-      aria-label={tw("switcher.open", { name: workspace.activeName })}
-      data-testid="workspace-switcher"
-      className="inline-flex min-h-11 max-w-[14rem] items-center gap-1 rounded-full px-3 text-sm font-medium"
-    >
-      <span className="truncate">{workspace.activeName}</span>
-      <ChevronDown className="size-4 shrink-0 opacity-70" aria-hidden />
-    </Link>
-  ) : null;
+  // The header workspace picker (§4.12, PO decision 2026-11-27).
+  const switcher = (tone: "bar" | "page") =>
+    workspace ? (
+      <WorkspaceSwitcher workspaces={workspace.workspaces} activeId={workspace.activeId} tone={tone} />
+    ) : null;
 
   return (
     <div className="flex min-h-svh">
@@ -208,11 +201,7 @@ export function AppShellClient({
             />
             <span className="truncate text-base font-semibold">{tApp("name")}</span>
           </Link>
-          {switcher && (
-            <div className="text-sidebar-foreground/90 hover:bg-sidebar-accent/40 ml-auto min-w-0 rounded-full">
-              {switcher}
-            </div>
-          )}
+          {workspace && <div className="ml-auto min-w-0">{switcher("bar")}</div>}
           <ProfileMenu
             variant="bar"
             email={email}
@@ -227,12 +216,8 @@ export function AppShellClient({
         <div
           className={`mx-auto w-full py-6 pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] md:py-8 md:pr-[max(1.5rem,env(safe-area-inset-right))] md:pl-[max(1.5rem,env(safe-area-inset-left))] ${wide ? "max-w-6xl" : "max-w-4xl"}`}
         >
-          <div className={`mb-4 hidden items-center lg:flex ${switcher ? "justify-between" : "justify-end"}`}>
-            {switcher && (
-              <div className="text-foreground bg-card hover:bg-accent rounded-full border">
-                {switcher}
-              </div>
-            )}
+          <div className={`mb-4 hidden items-center lg:flex ${workspace ? "justify-between" : "justify-end"}`}>
+            {switcher("page")}
             <ProfileMenu
               email={email}
               displayName={displayName}

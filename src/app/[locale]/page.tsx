@@ -3,9 +3,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { auth, signOut } from "@/auth";
 import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { getMonthList } from "@/server/services/months";
-import { listMyWorkspaces } from "@/server/services/workspaces";
 import { roleAllows } from "@/lib/workspace-roles";
-import { WorkspaceList } from "@/app/[locale]/workspace-list";
 import { isAppLocale, monthYear, monthName } from "@/i18n/format";
 import { routing, type AppLocale } from "@/i18n/routing";
 import { MonthCreateForm } from "@/app/[locale]/month-create-form";
@@ -35,13 +33,9 @@ export default async function LocaleHome({
   const tm = await getTranslations({ locale, namespace: "months" });
   const tv = await getTranslations({ locale, namespace: "validation" });
 
-  const [allMonths, myWorkspaces] = await Promise.all([
-    getMonthList(access),
-    listMyWorkspaces(access.userId),
-  ]);
-  // UC-31 §4.11: with one workspace Home is unchanged; with several, the
-  // workspace list comes first (§4.12).
-  const multiWorkspace = myWorkspaces.length > 1;
+  // Home shows the active workspace's months; the workspace is picked in the
+  // header switcher (UC-31 §4.12, PO decision 2026-11-27).
+  const allMonths = await getMonthList(access);
   const canCreateMonth = roleAllows(access.role, "createMonth");
   // UC-27: one-shot note after a month delete (`?deleted=YYYY-M`). Shown only
   // when that period really is gone for this tenant.
@@ -82,18 +76,6 @@ export default async function LocaleHome({
           </h1>
           <ExportExpensesDrawer years={exportYears} months={exportMonths} />
         </div>
-
-        {multiWorkspace && (
-          <WorkspaceList
-            activeId={access.workspaceId}
-            workspaces={myWorkspaces.map((w) => ({
-              id: w.id,
-              kind: w.kind,
-              name: w.name,
-              role: w.role,
-            }))}
-          />
-        )}
 
         {deletedLabel && (
           <p

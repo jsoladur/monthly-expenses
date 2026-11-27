@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import postgres from "postgres";
 import { buildSessionCookie, ensureUser, type E2EUser } from "./_helpers/auth";
 import { uniqueId } from "./_helpers/unique";
@@ -78,22 +78,15 @@ test.describe("UC-31 collaborative workspaces", () => {
     }
 
     await page.goto(`${BASE_URL}/en`);
-    const list = page.getByRole("region", { name: "Workspaces" });
-    await expect(list).toBeVisible();
-    await expect(list.getByRole("button", { name: /My private workspace/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    // No workspace cards on Home: the header switcher is the picker.
+    await expect(page.getByRole("region", { name: "Workspaces" })).toHaveCount(0);
+    await expect(switcher(page)).toHaveAccessibleName(/current: My private workspace/);
     await expect(page.getByRole("link", { name: new RegExp(`January ${YEAR}`) })).toBeVisible();
 
-    await list.getByRole("button", { name: new RegExp(name) }).click();
-    await expect(list.getByRole("button", { name: new RegExp(name) })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await switchTo(page, name);
+    await expect(switcher(page)).toHaveAccessibleName(new RegExp(`current: ${name}`));
     await expect(page.getByRole("link", { name: new RegExp(`February ${YEAR}`) })).toBeVisible();
     await expect(page.getByRole("link", { name: new RegExp(`January ${YEAR}`) })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: new RegExp(`Switch workspace.*${name}`) }).first()).toBeVisible();
 
     await page.goto(`${BASE_URL}/en/categories`);
     await expect(page.getByText("SharedOnlyCat")).toBeVisible();
@@ -107,7 +100,7 @@ test.describe("UC-31 collaborative workspaces", () => {
 
     // Back to the private one.
     await page.goto(`${BASE_URL}/en`);
-    await page.getByRole("region", { name: "Workspaces" }).getByRole("button", { name: /My private workspace/ }).click();
+    await switchTo(page, "My private workspace");
     await expect(page.getByRole("link", { name: new RegExp(`January ${YEAR}`) })).toBeVisible();
   });
 
@@ -140,7 +133,7 @@ test.describe("UC-31 collaborative workspaces", () => {
     memberPage.once("dialog", (d) => void d.accept());
     await memberPage.getByRole("button", { name: "Leave workspace" }).click();
     await expect(memberPage).toHaveURL(new RegExp(`/en/?$`));
-    await expect(memberPage.getByRole("region", { name: "Workspaces" })).toHaveCount(0);
+    await expect(memberPage.getByTestId("workspace-switcher")).toHaveCount(0);
 
     // Access ended: the details page is now not found.
     const res = await memberPage.goto(`${BASE_URL}/en/workspaces/${wsId}`);
@@ -190,7 +183,7 @@ test.describe("UC-31 collaborative workspaces", () => {
       .toBe(encodeURIComponent(`${YEAR}-4`));
 
     await page.goto(`${BASE_URL}/en`);
-    await page.getByRole("region", { name: "Workspaces" }).getByRole("button", { name: new RegExp(name) }).click();
+    await switchTo(page, name);
     await expect(page.getByRole("link", { name: new RegExp(`May ${YEAR}`) })).toBeVisible();
     await expect
       .poll(async () => (await context.cookies()).some((c) => c.name === "last_opened_month"))
@@ -201,7 +194,7 @@ test.describe("UC-31 collaborative workspaces", () => {
     expect(res?.status()).toBe(404);
   });
 
-  test("Spanish variant — workspace list, labels and roles", async ({ context, page }) => {
+  test("Spanish variant — workspace switcher labels and roles", async ({ context, page }) => {
     const owner = await seedUser("es-o");
     const user = await seedUser("es");
     await attachSessionCookie(context, user);
@@ -215,17 +208,29 @@ test.describe("UC-31 collaborative workspaces", () => {
     }
 
     await page.goto(`${BASE_URL}/es`);
-    const list = page.getByRole("region", { name: "Espacios de trabajo" });
-    await expect(list).toBeVisible();
-    await expect(list.getByRole("button", { name: /Mi espacio privado/ })).toBeVisible();
-    await expect(list.getByRole("button", { name: new RegExp(name) })).toContainText("Lector");
-    await expect(list.getByRole("button", { name: new RegExp(name) })).toContainText("Compartido");
+    await switcher(page).click();
+    const menu = page.getByRole("menu");
+    await expect(menu).toContainText("Espacios de trabajo");
+    await expect(page.getByRole("menuitemradio", { name: /Mi espacio privado/ })).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("menuitemradio", { name: new RegExp(name) })).toContainText("Lector");
+    await expect(page.getByRole("menuitemradio", { name: new RegExp(name) })).toContainText("Compartido");
   });
 });
 
 // ----------------------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------------------
+
+/** The header switcher that is visible in this viewport (mobile bar or desktop header). */
+function switcher(page: Page) {
+  return page.getByTestId("workspace-switcher").filter({ visible: true }).first();
+}
+
+async function switchTo(page: Page, name: string) {
+  await switcher(page).click();
+  await page.getByRole("menuitemradio", { name: new RegExp(name) }).click();
+  await expect(switcher(page)).toHaveAccessibleName(new RegExp(`current: ${name}`));
+}
 
 async function seedUser(tag: string): Promise<E2EUser> {
   const id = uniqueId();

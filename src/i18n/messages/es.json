@@ -975,7 +975,8 @@
     "addedBy": "Añadido por {name}",
     "switcher": {
       "open": "Cambiar de espacio (actual: {name})",
-      "current": "Espacio actual"
+      "current": "Espacio actual",
+      "manage": "Gestionar espacios"
     },
     "back": "Todos los espacios"
   }

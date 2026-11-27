@@ -1,4 +1,3 @@
-import { getTranslations } from "next-intl/server";
 import { resolveActiveWorkspace } from "@/server/auth/require-workspace-access";
 import { listMyWorkspaces } from "@/server/services/workspaces";
 import {
@@ -21,10 +20,9 @@ export async function AppShell(props: AppShellProps) {
   const workspaces = await listMyWorkspaces(access.userId);
   let workspace: WorkspaceSwitcherInfo | null = null;
   if (workspaces.length > 1) {
-    const active = workspaces.find((w) => w.id === access.workspaceId);
-    const t = await getTranslations("workspaces");
     workspace = {
-      activeName: active?.kind === "shared" && active.name ? active.name : t("privateLabel"),
+      activeId: access.workspaceId,
+      workspaces: workspaces.map((w) => ({ id: w.id, kind: w.kind, name: w.name, role: w.role })),
     };
   }
   return <AppShellClient {...props} workspace={workspace} />;

@@ -36,7 +36,7 @@ Two people who share a household want one ledger for the common bills, while eac
 - Create shared workspace; rename and currency (Admin+).
 - Member management: add, change role, remove (Admin+); leave (any non-owner).
 - Delete shared workspace (Owner only, typed name).
-- Active-workspace cookie, switcher, Home workspace list, Workspaces screen.
+- Active-workspace cookie, header switcher dropdown, Workspaces screen.
 - Scoping of every existing screen, server action and report to the active workspace.
 - `created_by_user_id` on actual expenses, with "Added by" shown only in shared workspaces.
 
@@ -156,15 +156,15 @@ Member rules that come with the matrix:
 When the user is a member of **exactly one** workspace (their private one), the app is the current version:
 
 - Home shows the same month list, empty state and create form as today.
-- No Home workspace list, no workspace chip or switcher in the header, no role badge, no "shared", "Added by" or workspace name text in any screen or form.
+- No workspace switcher in the header, no role badge, no "shared", "Added by" or workspace name text in any screen or form.
 - No workspace field in any form. Forms never gain a workspace picker in any mode; the active workspace is always implicit.
 - The Settings currency control keeps its current label and position.
-- **Workspaces is its own section (PO decision 2026-11-27, amends the original "Share with others" exception):** the nav always has a **Workspaces** entry — desktop sidebar before Settings, last item of the mobile **More** sheet — and Settings shows a **Workspaces** link row to the same screen. In single-workspace mode that screen lists only "My private workspace" plus the create-shared form. No other screen shows workspace text in this mode: no Home list, no header chip, no role badge, no "Added by".
+- **Workspaces is its own section (PO decision 2026-11-27, amends the original "Share with others" exception):** the nav always has a **Workspaces** entry — desktop sidebar before Settings, last item of the mobile **More** sheet — and Settings shows a **Workspaces** link row to the same screen. In single-workspace mode that screen lists only "My private workspace" plus the create-shared form. No other screen shows workspace text in this mode: no header switcher, no role badge, no "Added by".
 
 ### 4.12 Multi-workspace mode
 
-- **Home** shows, first, a list of the user's workspaces (§7.1). Selecting one makes it active and reloads Home with that workspace's months. The active workspace is always highlighted; there is no "no workspace" state.
-- **Header:** the active workspace name appears as a quiet control that opens the Home workspace list. It is the only workspace-level indicator on screens.
+- **Header switcher (PO decision 2026-11-27, replaces the Home workspace list):** the active workspace name is a dropdown in the header (mobile top bar and desktop content header). It lists every workspace of the user — name (or "My private workspace"), "Shared · {role}" or "Private", a check on the active one — plus "Manage workspaces" and "New shared workspace". Picking one calls `setActiveWorkspaceAction`, then refreshes the current screen, or goes Home from a month screen (that month belongs to the previous workspace). There is no "no workspace" state. It is the only workspace-level indicator on screens.
+- **Home** shows the active workspace's months exactly as in single-workspace mode; it has no workspace list.
 - Every section (Home, History, Categories, Fixed, Annuals, Stats, Search, Export, Settings, month workspaces) shows only the active workspace's data.
 - Shared-workspace rows show "Added by {name}" on actual expenses. Private workspaces never show it.
 
@@ -269,38 +269,13 @@ Migrations 0002–0007 are not edited.
 ### 7.1 Home (`/[locale]`)
 
 - **Single-workspace mode:** unchanged (§4.11).
-- **Multi-workspace mode:** a **Workspaces** block at the top, then the active workspace's month list (or its empty state) below it.
-  - Workspace card: name (or "My private workspace"), role badge (Owner / Admin / Editor / Reader — hidden for the private workspace), "Active" marker, and a "Shared" tag on shared ones.
-  - Tapping a card calls `setActiveWorkspaceAction` and reloads Home.
-  - "New shared workspace" link → Workspaces screen create form.
-
-Design direction (layout only; visuals follow `docs/styles/STYLE-GUIDE.md` tokens, no new colours):
-
-```
-┌──────────────────────────────────┐
-│ Home budget ▾             (chip) │   header: active workspace, opens Home list
-├──────────────────────────────────┤
-│ WORKSPACES                       │
-│ ┌──────────────────────────────┐ │
-│ │ ● Home budget       Editor   │ │   active: sky-tint surface, navy text
-│ └──────────────────────────────┘ │
-│ ┌──────────────────────────────┐ │
-│ │   My private workspace       │ │   no role badge
-│ └──────────────────────────────┘ │
-│ + New shared workspace           │
-├──────────────────────────────────┤
-│ 2026 and later                   │   the existing month list, unchanged
-│ …                                │
-└──────────────────────────────────┘
-```
-
-On desktop the cards sit in a row above the month list. The active workspace name is the only workspace indicator on the month workspace screens; no other label is added there.
+- **Multi-workspace mode:** the same Home, showing the active workspace's months (or its empty state). The workspace is picked in the header switcher (§4.12). *(PO decision 2026-11-27: the original Workspaces card block on Home was removed; the cards did not line up and duplicated the switcher.)*
 
 ### 7.2 Workspaces (`/[locale]/workspaces`) — new screen
 
 - Lists the user's workspaces and the create-shared form (name, currency).
 - `/[locale]/workspaces/[workspaceId]` (shared only; private → 404): details, members list with role controls (Admin+), add-member form (email + role), leave (non-owner), rename + currency (Admin+), delete with typed name (Owner). Ownership transfer controls arrive in UC-32.
-- Reachable in **every mode** from the sidebar on desktop and the **More** menu on mobile, and from the Settings link row (PO decision 2026-11-27). In multi-workspace mode also from the Home block and the header chip (§4.12).
+- Reachable in **every mode** from the sidebar on desktop and the **More** menu on mobile, and from the Settings link row (PO decision 2026-11-27). In multi-workspace mode also from the header switcher's "Manage workspaces" item (§4.12).
 
 ### 7.3 Settings (`/[locale]/settings`)
 
