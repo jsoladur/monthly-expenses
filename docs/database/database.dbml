@@ -99,6 +99,22 @@ Table workspace_member {
   Note: 'One role per member per workspace. Private workspaces have only their user, as owner (service-enforced).'
 }
 
+Table workspace_invitation {
+  workspace_id uuid [not null, ref: > workspace.id, note: 'ON DELETE CASCADE']
+  email text [not null, note: 'Allowlist-normalized (trim + lowercase). Check workspace_invitation_email_ck.']
+  role workspace_role [not null, note: 'reader | editor | admin. Check workspace_invitation_role_ck: never owner.']
+  invited_by_user_id uuid [not null, ref: > app_user.id, note: 'Admin+ who invited (ON DELETE CASCADE)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (workspace_id, email) [pk, name: 'workspace_invitation_pk']
+    email [name: 'workspace_invitation_email_idx', note: 'Sign-in lookup']
+  }
+
+  Note: 'Pending share with an allowlisted person who has not signed in yet (PO decision 2026-11-27, migration 0008). At their first sign-in every row for their email becomes a workspace_member with that role and is deleted, in the sign-in transaction.'
+}
+
 // ----------- Global per-workspace catalogs (SOFT delete, PRD §13) -----------
 
 Table category {

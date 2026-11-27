@@ -26,10 +26,13 @@ import {
   WORKSPACE_NAME_MAX,
   WorkspaceEmailNotAllowedError,
   WorkspaceMemberExistsError,
-  WorkspaceMemberNeverSignedInError,
+  WorkspaceInvitationExistsError,
+  WorkspaceInvitationNotFoundError,
   WorkspaceMemberNotFoundError,
   WorkspaceNameMismatchError,
   addMember,
+  cancelInvitation,
+  changeInvitationRole,
   changeMemberRole,
   createSharedWorkspace,
   deleteWorkspace,
@@ -58,7 +61,8 @@ export type WorkspaceActionError =
   | "currencyInvalid"
   | "workspaceEmailInvalid"
   | "workspaceEmailNotAllowed"
-  | "workspaceMemberNeverSignedIn"
+  | "workspaceInvitationExists"
+  | "workspaceInvitationNotFound"
   | "workspaceMemberExists"
   | "workspaceMemberNotFound"
   | "cannotRemoveOwner"
@@ -82,7 +86,8 @@ function toError(err: unknown): WorkspaceActionError | null {
   }
   if (err instanceof InvalidWorkspaceCurrencyError) return "currencyInvalid";
   if (err instanceof WorkspaceEmailNotAllowedError) return "workspaceEmailNotAllowed";
-  if (err instanceof WorkspaceMemberNeverSignedInError) return "workspaceMemberNeverSignedIn";
+  if (err instanceof WorkspaceInvitationExistsError) return "workspaceInvitationExists";
+  if (err instanceof WorkspaceInvitationNotFoundError) return "workspaceInvitationNotFound";
   if (err instanceof WorkspaceMemberExistsError) return "workspaceMemberExists";
   if (err instanceof WorkspaceMemberNotFoundError) return "workspaceMemberNotFound";
   if (err instanceof CannotRemoveOwnerError) return "cannotRemoveOwner";
@@ -167,20 +172,65 @@ const addSchema = z.object({
   role: roleSchema,
 });
 
+export type AddMemberActionResult =
+  | { ok: true; status: "member" | "invited" }
+  | { ok: false; error: WorkspaceActionError };
+
+/** Adds a signed-in person, or invites one who has not signed in yet. */
 export async function addWorkspaceMemberAction(input: {
   workspaceId: string;
   email: string;
   role: string;
-}): Promise<WorkspaceActionResult> {
+}): Promise<AddMemberActionResult> {
   const parsed = addSchema.safeParse(input);
   if (!parsed.success) {
     const emailIssue = parsed.error.issues.some((i) => i.path[0] === "email");
     return { ok: false, error: emailIssue ? "workspaceEmailInvalid" : "validation" };
   }
   const locale = await getLocaleFromHeaders();
+  let status: "member" | "invited" = "member";
+  const result = await run(async () => {
+    const access = await requireWorkspaceAccess(parsed.data.workspaceId, "read", locale);
+    status = (await addMember(access, { email: parsed.data.email, role: parsed.data.role })).status;
+  });
+  return result.ok ? { ok: true, status } : result;
+}
+
+const invitationRoleSchema = z.object({
+  workspaceId: uuidSchema,
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  role: roleSchema,
+});
+
+export async function changeWorkspaceInvitationRoleAction(input: {
+  workspaceId: string;
+  email: string;
+  role: string;
+}): Promise<WorkspaceActionResult> {
+  const parsed = invitationRoleSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "validation" };
+  const locale = await getLocaleFromHeaders();
   return run(async () => {
     const access = await requireWorkspaceAccess(parsed.data.workspaceId, "read", locale);
-    await addMember(access, { email: parsed.data.email, role: parsed.data.role });
+    await changeInvitationRole(access, { email: parsed.data.email, role: parsed.data.role });
+  });
+}
+
+const invitationSchema = z.object({
+  workspaceId: uuidSchema,
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+});
+
+export async function cancelWorkspaceInvitationAction(input: {
+  workspaceId: string;
+  email: string;
+}): Promise<WorkspaceActionResult> {
+  const parsed = invitationSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "validation" };
+  const locale = await getLocaleFromHeaders();
+  return run(async () => {
+    const access = await requireWorkspaceAccess(parsed.data.workspaceId, "read", locale);
+    await cancelInvitation(access, { email: parsed.data.email });
   });
 }
 

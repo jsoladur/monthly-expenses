@@ -6,7 +6,7 @@ import { Link, redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { AppShell } from "@/components/app-shell";
 import { requireWorkspaceAccess } from "@/server/auth/require-workspace-access";
-import { getWorkspaceDetails } from "@/server/services/workspaces";
+import { getWorkspaceDetails, listMemberCandidates } from "@/server/services/workspaces";
 import { WorkspaceNotFoundError, roleAllows } from "@/lib/workspace-roles";
 import { SUPPORTED_CURRENCIES } from "@/lib/workspace-name";
 import { WorkspaceDetailsScreen } from "./workspace-details-screen";
@@ -37,8 +37,10 @@ export default async function WorkspaceDetailsPage({
   }
   if (access.kind !== "shared") notFound();
 
-  const [details, t, session] = await Promise.all([
+  const canManageMembers = roleAllows(access.role, "manageMembers");
+  const [details, candidates, t, session] = await Promise.all([
     getWorkspaceDetails(access),
+    canManageMembers ? listMemberCandidates(access) : Promise.resolve([]),
     getTranslations({ locale, namespace: "workspaces" }),
     auth(),
   ]);
@@ -76,10 +78,12 @@ export default async function WorkspaceDetailsPage({
           viewerId={access.userId}
           viewerRole={access.role}
           members={details.members}
+          invitations={details.invitations.map((i) => ({ email: i.email, role: i.role }))}
+          candidates={candidates}
           counts={details.counts}
           can={{
             manageWorkspace: roleAllows(access.role, "manageWorkspace"),
-            manageMembers: roleAllows(access.role, "manageMembers"),
+            manageMembers: canManageMembers,
             leave: roleAllows(access.role, "leaveWorkspace"),
             delete: roleAllows(access.role, "deleteWorkspace"),
           }}

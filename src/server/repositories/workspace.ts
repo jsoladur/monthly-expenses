@@ -8,6 +8,7 @@ import {
   month,
   template,
   workspace,
+  workspaceInvitation,
   workspaceMember,
   type Workspace,
   type WorkspaceKind,
@@ -182,6 +183,7 @@ export async function deleteWorkspaceCascade(
   await tx.delete(template).where(eq(template.workspaceId, workspaceId));
   await tx.delete(annual).where(eq(annual.workspaceId, workspaceId));
   await tx.delete(category).where(eq(category.workspaceId, workspaceId));
+  await tx.delete(workspaceInvitation).where(eq(workspaceInvitation.workspaceId, workspaceId));
   await tx.delete(workspaceMember).where(eq(workspaceMember.workspaceId, workspaceId));
   const deleted = await tx
     .delete(workspace)
@@ -317,4 +319,105 @@ export async function countOwners(
     .from(workspaceMember)
     .where(and(eq(workspaceMember.workspaceId, workspaceId), eq(workspaceMember.role, "owner")));
   return row?.n ?? 0;
+}
+
+// ----------------------------------------------------------------------------
+// Pending invitations (PO decision 2026-11-27): an allowlisted person who has
+// not signed in yet. `email` is allowlist-normalized (trim + lowercase).
+// ----------------------------------------------------------------------------
+
+export interface InvitationRow {
+  email: string;
+  role: WorkspaceRoleValue;
+  createdAt: Date;
+}
+
+export async function listInvitations(
+  workspaceId: string,
+  tx: Tx | typeof db = db,
+): Promise<InvitationRow[]> {
+  return tx
+    .select({
+      email: workspaceInvitation.email,
+      role: workspaceInvitation.role,
+      createdAt: workspaceInvitation.createdAt,
+    })
+    .from(workspaceInvitation)
+    .where(eq(workspaceInvitation.workspaceId, workspaceId))
+    .orderBy(asc(workspaceInvitation.email));
+}
+
+export async function findInvitation(
+  workspaceId: string,
+  email: string,
+  tx: Tx | typeof db = db,
+): Promise<InvitationRow | null> {
+  const rows = await tx
+    .select({
+      email: workspaceInvitation.email,
+      role: workspaceInvitation.role,
+      createdAt: workspaceInvitation.createdAt,
+    })
+    .from(workspaceInvitation)
+    .where(and(eq(workspaceInvitation.workspaceId, workspaceId), eq(workspaceInvitation.email, email)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function insertInvitation(
+  workspaceId: string,
+  row: { email: string; role: WorkspaceRoleValue; invitedByUserId: string },
+  tx: Tx | typeof db = db,
+): Promise<void> {
+  await tx.insert(workspaceInvitation).values({ workspaceId, ...row });
+}
+
+export async function updateInvitationRole(
+  workspaceId: string,
+  email: string,
+  role: WorkspaceRoleValue,
+  tx: Tx | typeof db = db,
+): Promise<boolean> {
+  const rows = await tx
+    .update(workspaceInvitation)
+    .set({ role, updatedAt: sql`now()` })
+    .where(and(eq(workspaceInvitation.workspaceId, workspaceId), eq(workspaceInvitation.email, email)))
+    .returning({ email: workspaceInvitation.email });
+  return rows.length > 0;
+}
+
+export async function deleteInvitation(
+  workspaceId: string,
+  email: string,
+  tx: Tx | typeof db = db,
+): Promise<boolean> {
+  const rows = await tx
+    .delete(workspaceInvitation)
+    .where(and(eq(workspaceInvitation.workspaceId, workspaceId), eq(workspaceInvitation.email, email)))
+    .returning({ email: workspaceInvitation.email });
+  return rows.length > 0;
+}
+
+/**
+ * Sign-in: every pending invitation for this (normalized) email becomes a
+ * membership of `userId`, then the invitations are deleted. Identity-keyed
+ * like `findPrivateWorkspaceByUser`; runs inside the sign-in transaction.
+ */
+export async function acceptInvitationsForUser(
+  userId: string,
+  normalizedEmail: string,
+  tx: Tx | typeof db = db,
+): Promise<number> {
+  const accepted = await tx.execute<{ workspace_id: string }>(sql`
+    WITH taken AS (
+      DELETE FROM ${workspaceInvitation}
+      WHERE email = ${normalizedEmail}
+      RETURNING workspace_id, role
+    )
+    INSERT INTO ${workspaceMember} (workspace_id, user_id, role)
+    SELECT workspace_id, ${userId}, role FROM taken
+    ON CONFLICT (workspace_id, user_id) DO NOTHING
+    RETURNING workspace_id
+  `);
+  return accepted.length;
 }

@@ -57,7 +57,7 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | C28 | **Annual reminder "added" state.** When the open month already holds a reserved line or actual in the annual's category whose folded name equals or starts with the annual's folded name, the reminder collapses to an **Added** row. Computed at read time; nothing links a line to an annual; the reminder never disappears. |
 | C29 | **Last payment month (loans & instalments).** A **committed** template may carry an optional last payment month (month + year). Creating a month copies the template only when that month is **not after** it, and **deactivates** (soft, never deletes) every template whose last payment month is that month or earlier — so a skipped month still ends it. Reactivating a template clears its last payment month. Existing months are never rewritten. |
 | C30 | **Workspaces (tenant).** Every tenant row — categories, templates, annuals, months and everything inside a month — belongs to a **workspace**, not directly to a user. Each allowlisted user has exactly one **private workspace**, created at first sign-in and backfilled for existing users. It cannot be deleted, shared or transferred. A user may also belong to **shared workspaces**. Each workspace has its own categories, templates, annuals, months, currency and reports; nothing is shared across workspaces. This replaces the per-user wording of C1, C9, C10 and §6. A user with only a private workspace sees the app unchanged (UC-33). |
-| C31 | **Shared workspace roles & membership.** The creator of a shared workspace is its **Owner**. Members are added only from `ALLOWED_EMAILS` and only after they have signed in once — no invitations for people who have not signed in. Roles: **Reader** reads everything; **Editor** (Read/Write) creates months, categories and expenses and deletes or edits only the expenses they created; **Admin** has full access except deleting the workspace and transferring ownership, and manages every member except the Owner; **Owner** has full access, deletes the workspace and offers ownership. The matrix in slice UC-31 §3 is normative. Deleting a shared workspace is a hard delete behind a typed name and removes only that workspace's rows. |
+| C31 | **Shared workspace roles & membership.** The creator of a shared workspace is its **Owner**. Members are added only from `ALLOWED_EMAILS`, picked from that list. A person who has not signed in yet gets a **pending invitation** that becomes a membership at their first sign-in (PO decision 2026-11-27). Roles: **Reader** reads everything; **Editor** (Read/Write) creates months, categories and expenses and deletes or edits only the expenses they created; **Admin** has full access except deleting the workspace and transferring ownership, and manages every member except the Owner; **Owner** has full access, deletes the workspace and offers ownership. The matrix in slice UC-31 §3 is normative. Deleting a shared workspace is a hard delete behind a typed name and removes only that workspace's rows. |
 | C32 | **Ownership transfer.** The Owner may offer ownership to one current member. Nothing changes until the member accepts. On acceptance the member becomes Owner and the previous Owner becomes Admin, in one transaction; no data changes. An offer is cancelled when its target leaves, is removed, or is no longer allowlisted. Private workspaces cannot be transferred (UC-34). |
 
 ---
@@ -71,7 +71,7 @@ Home can **export** created months to an Excel workbook (one sheet per month). I
 | User | Allowlisted. Owns a **private workspace** and profile settings; may create shared workspaces; is a member of zero or more shared workspaces, each with a role (C31). |
 | Coding agent / implementer | Builds exactly this spec. Must not share data across users. |
 
-Tenancy = **workspace** (C30). Every user has a private workspace. Sharing happens only through **shared workspaces** with roles (C31–C32), and only with users in `ALLOWED_EMAILS` who have signed in once.
+Tenancy = **workspace** (C30). Every user has a private workspace. Sharing happens only through **shared workspaces** with roles (C31–C32), and only with users in `ALLOWED_EMAILS` (people who have not signed in yet are invited and join at their first sign-in).
 
 ---
 
@@ -244,7 +244,7 @@ Deleting a **shared** workspace is a hard delete by its Owner, behind a typed na
 
 | Field | Rules |
 | --- | --- |
-| workspace, user | Unique together. The user must be in `ALLOWED_EMAILS` and must have signed in once. |
+| workspace, user | Unique together. The user must be in `ALLOWED_EMAILS`. Someone who has not signed in yet is held as a pending invitation (workspace, email, role) until their first sign-in. |
 | role | `owner` \| `admin` \| `editor` \| `reader`. Exactly one `owner` per shared workspace. Private workspaces have only their own `owner`. |
 
 ### 6.11 Ownership offer (C32)
@@ -658,7 +658,7 @@ Implementation slice: `docs/usecases/UC-31-collaborative-workspaces.md`. Product
 
 - Every allowlisted user has a **private workspace**, created at sign-in and backfilled for existing users. It behaves exactly like the app today and cannot be deleted, shared or transferred.
 - Any allowlisted user may create a **shared workspace** and becomes its Owner.
-- The Owner and Admins add allowlisted users who have signed in once, as **Reader**, **Editor** or **Admin**. The matrix is in `docs/usecases/UC-31-collaborative-workspaces.md` §3.
+- The Owner and Admins pick people from `ALLOWED_EMAILS` and add them as **Reader**, **Editor** or **Admin**. Someone who has not signed in yet is invited and joins at their first sign-in. The matrix is in `docs/usecases/UC-31-collaborative-workspaces.md` §3.
 - A shared workspace has its own categories, templates, annuals, months, incomes, reserved lines, actuals, currency, Stats, Search, Export, estimate check and annual reminders.
 - Editors create months, categories and expenses, and delete or edit only expenses they created. Readers see everything and change nothing.
 - **Home:** with one workspace, unchanged. With several, the workspace list comes first (role and active marker); selecting one makes it active for every section. The header shows the active workspace name.
@@ -736,7 +736,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 
 ## 14. Explicit non-goals (V1)
 
-- Sharing outside the workspace model: public or link-based sharing, invitations to emails outside `ALLOWED_EMAILS`, invitations for people who have not signed in, per-category or per-month permissions, custom roles (shared workspaces with roles are in scope, C30–C32)
+- Sharing outside the workspace model: public or link-based sharing, invitations to emails outside `ALLOWED_EMAILS`, invitation emails or notifications, per-category or per-month permissions, custom roles (shared workspaces with roles are in scope, C30–C32)
 - Admin UI for allowlist
 - Offline-first sync
 - Autocomplete on the **edit**-ticket name field, or filling category/amount from a suggestion
@@ -850,7 +850,7 @@ Mobile-first: add an actual from the month workspace. The add-actual name field 
 79. First sign-in creates exactly one private workspace with an Owner membership; a second sign-in creates no second one.
 80. A user with only the private workspace sees the current Home and screens; no workspace list, chip, switcher, role or “Added by” appears in the page content. The nav has a Workspaces entry and Settings links to it (amended 2026-11-27).
 81. Creating a shared workspace makes the creator its Owner and leaves the private workspace untouched.
-82. Adding a member: an allowlisted user who has signed in is added; a non-allowlisted email is rejected and nothing is stored; an allowlisted user who never signed in is rejected with the sign-in-first message; a duplicate is rejected; the Owner role cannot be assigned.
+82. Adding a member: the picker lists allowlisted people only (minus you, members and pending invitations); an allowlisted user who has signed in is added; an allowlisted user who never signed in gets a pending invitation that becomes a membership at their first sign-in; a non-allowlisted email is rejected and nothing is stored; a duplicate member or invitation is rejected; the Owner role cannot be assigned.
 83. Reader: sees every report and screen of the workspace; every write is rejected by the server; the UI shows no write control.
 84. Editor: creates a month and a category, adds an actual; cannot delete a month, rename or deactivate a category, or touch incomes, templates, annuals or reserved lines; can edit and delete only the actuals they created.
 85. Admin: full data access except deleting the workspace and transferring ownership; adds, re-roles and removes members; cannot touch the Owner.
@@ -974,7 +974,7 @@ No blocking product questions remain for V1 money behavior.
 - Annual reminder added: “Added: {line name} · {amount}.”
 - Workspace list (Home): “Your workspaces. Pick one to show it everywhere.”
 - Private workspace: “Only you can see this workspace.”
-- Member add, not signed in: “This person has not signed in yet. Ask them to sign in once, then add them again.”
+- Member add, not signed in: “Invitation saved. They join this workspace the first time they sign in.”
 - Editor delete on someone else’s ticket: “Only Admins can change tickets added by someone else.”
 - Delete shared workspace confirm: “Delete {workspace} and everything in it for everyone? This cannot be undone. Type the workspace name to confirm.”
 - Ownership offer sent: “Offered to {name}. Nothing changes until they accept.”

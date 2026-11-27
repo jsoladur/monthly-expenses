@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Shared workspaces: besides your private ledger, you can create a shared workspace and add people who are on the app's allowlist and have signed in once, as Reader, Editor or Admin. Each workspace has its own months, categories, fixed expenses, annuals, currency and reports; nothing is shared between workspaces (UC-31).
+- Shared workspaces: besides your private ledger, you can create a shared workspace and add people from the app's allowlist as Reader, Editor or Admin. Pick them from a list; someone who has not signed in yet is invited and joins the workspace the first time they sign in. Each workspace has its own months, categories, fixed expenses, annuals, currency and reports; nothing is shared between workspaces (UC-31).
 - With more than one workspace, Home lists them first and the header shows the active one; picking a workspace switches every screen to it and forgets the last opened month. A Workspaces screen manages members, roles, the name and currency, leaving, and deleting a shared workspace after typing its name (UC-31).
 - In shared workspaces each expense shows who added it. Editors can edit or delete only their own expenses; Readers see everything and change nothing (UC-31).
 - Workspaces has its own section: in the sidebar on desktop and under More on mobile, plus a link in Settings. Start your first shared workspace there (UC-31).

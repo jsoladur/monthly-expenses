@@ -2,17 +2,20 @@
 
 import { useActionState, useId, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Trash2, UserMinus } from "lucide-react";
+import { Trash2, UserMinus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import {
   addWorkspaceMemberAction,
+  cancelWorkspaceInvitationAction,
+  changeWorkspaceInvitationRoleAction,
   changeWorkspaceMemberRoleAction,
   deleteWorkspaceAction,
   leaveWorkspaceAction,
   removeWorkspaceMemberAction,
   renameWorkspaceAction,
   setWorkspaceCurrencyAction,
+  type AddMemberActionResult,
   type WorkspaceActionResult,
 } from "@/actions/workspaces";
 import { ASSIGNABLE_ROLES, type WorkspaceRole } from "@/lib/workspace-roles";
@@ -25,6 +28,17 @@ import { workspaceErrorMessage } from "../workspace-error";
 // name (Owner). Controls a role cannot use are not rendered (§3); the server
 // re-checks every action.
 // ============================================================================
+
+interface Invitation {
+  email: string;
+  role: WorkspaceRole;
+}
+
+interface Candidate {
+  email: string;
+  displayName: string | null;
+  signedIn: boolean;
+}
 
 interface Member {
   userId: string;
@@ -44,6 +58,8 @@ export function WorkspaceDetailsScreen({
   viewerId,
   viewerRole,
   members,
+  invitations,
+  candidates,
   counts,
   can,
 }: {
@@ -54,6 +70,8 @@ export function WorkspaceDetailsScreen({
   viewerId: string;
   viewerRole: WorkspaceRole;
   members: Member[];
+  invitations: Invitation[];
+  candidates: Candidate[];
   counts: { months: number; categories: number; templates: number; annuals: number; members: number };
   can: { manageWorkspace: boolean; manageMembers: boolean; leave: boolean; delete: boolean };
 }) {
@@ -63,9 +81,10 @@ export function WorkspaceDetailsScreen({
         workspaceId={workspaceId}
         viewerId={viewerId}
         members={members}
+        invitations={invitations}
         canManage={can.manageMembers}
       />
-      {can.manageMembers && <AddMemberForm workspaceId={workspaceId} />}
+      {can.manageMembers && <AddMemberForm workspaceId={workspaceId} candidates={candidates} />}
       {can.manageWorkspace && (
         <SettingsSection
           workspaceId={workspaceId}
@@ -88,11 +107,13 @@ function MembersSection({
   workspaceId,
   viewerId,
   members,
+  invitations,
   canManage,
 }: {
   workspaceId: string;
   viewerId: string;
   members: Member[];
+  invitations: Invitation[];
   canManage: boolean;
 }) {
   const t = useTranslations("workspaces");
@@ -173,6 +194,59 @@ function MembersSection({
             </li>
           );
         })}
+        {/* Pending invitations: allowlisted people who have not signed in yet. */}
+        {invitations.map((inv) => (
+          <li
+            key={`inv-${inv.email}`}
+            data-testid="workspace-invitation"
+            className="bg-card text-card-foreground flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-4 py-3"
+          >
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm font-medium">{inv.email}</span>
+              <span className="text-muted-foreground text-xs">
+                {t("members.invited")} · {t("members.invitedHelp")}
+              </span>
+            </span>
+            {canManage ? (
+              <>
+                <select
+                  aria-label={t("members.inviteRole", { email: inv.email })}
+                  value={inv.role}
+                  disabled={pending}
+                  onChange={(e) =>
+                    run(() =>
+                      changeWorkspaceInvitationRoleAction({
+                        workspaceId,
+                        email: inv.email,
+                        role: e.target.value,
+                      }),
+                    )
+                  }
+                  className={`${inputClass} h-9`}
+                >
+                  {ASSIGNABLE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {t(`roles.${r}`)}
+                    </option>
+                  ))}
+                </select>
+                <IconButton
+                  icon={<X className="size-4" />}
+                  label={t("members.cancelInvite")}
+                  disabled={pending}
+                  onClick={() => {
+                    if (!window.confirm(t("members.confirmCancelInvite", { email: inv.email }))) return;
+                    run(() => cancelWorkspaceInvitationAction({ workspaceId, email: inv.email }));
+                  }}
+                />
+              </>
+            ) : (
+              <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs">
+                {t(`roles.${inv.role}`)}
+              </span>
+            )}
+          </li>
+        ))}
       </ul>
       {error && (
         <p role="alert" className="text-destructive text-sm">
@@ -190,12 +264,18 @@ function MembersSection({
   );
 }
 
-function AddMemberForm({ workspaceId }: { workspaceId: string }) {
+function AddMemberForm({
+  workspaceId,
+  candidates,
+}: {
+  workspaceId: string;
+  candidates: Candidate[];
+}) {
   const t = useTranslations("workspaces.members");
   const tr = useTranslations("workspaces.roles");
   const tv = useTranslations("validation");
   const [formKey, setFormKey] = useState(0);
-  const [state, action, pending] = useActionState<WorkspaceActionResult | null, FormData>(
+  const [state, action, pending] = useActionState<AddMemberActionResult | null, FormData>(
     async (_prev, formData) => {
       const result = await addWorkspaceMemberAction({
         workspaceId,
@@ -218,30 +298,52 @@ function AddMemberForm({ workspaceId }: { workspaceId: string }) {
         {t("add")}
       </h2>
       <p className="text-muted-foreground text-xs leading-relaxed">{t("addHelp")}</p>
-      <div className="flex flex-col gap-3 md:flex-row">
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium">{t("email")}</span>
-          <input name="email" type="email" required autoComplete="off" className={inputClass} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">{t("role")}</span>
-          <select name="role" defaultValue="editor" className={inputClass}>
-            {ASSIGNABLE_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {tr(r)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {candidates.length === 0 ? (
+        <p className="text-muted-foreground text-sm">{t("noCandidates")}</p>
+      ) : (
+        <>
+          <div className="flex flex-col gap-3 md:flex-row">
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              <span className="font-medium">{t("person")}</span>
+              {/* Allowlisted people, minus you, members and pending invitations. */}
+              <select name="email" required defaultValue="" className={inputClass}>
+                <option value="" disabled>
+                  {t("choose")}
+                </option>
+                {candidates.map((c) => (
+                  <option key={c.email} value={c.email}>
+                    {c.displayName ? `${c.displayName} · ${c.email}` : c.email}
+                    {c.signedIn ? "" : ` (${t("notSignedIn")})`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">{t("role")}</span>
+              <select name="role" defaultValue="editor" className={inputClass}>
+                {ASSIGNABLE_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {tr(r)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <Button type="submit" disabled={pending} className="h-11 self-start">
+            {pending ? t("adding") : t("add")}
+          </Button>
+        </>
+      )}
       {state && !state.ok && (
         <p role="alert" className="text-destructive text-sm">
           {workspaceErrorMessage(state.error, tv)}
         </p>
       )}
-      <Button type="submit" disabled={pending} className="h-11 self-start">
-        {pending ? t("adding") : t("add")}
-      </Button>
+      {state?.ok && (
+        <p aria-live="polite" className="text-sm">
+          {state.status === "invited" ? t("invitedNotice") : t("added")}
+        </p>
+      )}
     </form>
   );
 }

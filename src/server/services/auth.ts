@@ -7,7 +7,7 @@ import {
   type Tx,
 } from "@/server/repositories/user";
 import { insertProfileSettings } from "@/server/repositories/profile-settings";
-import { ensurePrivateWorkspace } from "@/server/services/workspaces";
+import { acceptPendingInvitations, ensurePrivateWorkspace } from "@/server/services/workspaces";
 import type { AppUser } from "@/server/db/schema";
 
 // ============================================================================
@@ -52,6 +52,8 @@ export async function upsertUserOnSignIn(identity: GoogleIdentity): Promise<AppU
     if (upserted) {
       await insertProfileSettings({ userId: upserted.id, currency: "EUR" }, tx);
       await ensurePrivateWorkspace(upserted.id, tx);
+      // Pending shares for this email become memberships (PO 2026-11-27).
+      await acceptPendingInvitations(upserted.id, upserted.email, tx);
       return upserted;
     }
 
@@ -60,6 +62,7 @@ export async function upsertUserOnSignIn(identity: GoogleIdentity): Promise<AppU
       throw new Error("User not found after upsert conflict");
     }
     await ensurePrivateWorkspace(existing.id, tx);
+    await acceptPendingInvitations(existing.id, identity.email, tx);
     return existing;
   });
 }

@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import { appUser, type AppUser, type NewAppUser } from "@/server/db/schema";
 
@@ -88,4 +88,17 @@ export async function findUserByNormalizedEmail(
     .orderBy(asc(appUser.createdAt))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/** UC-31 add-member picker: signed-in users among these normalized emails. */
+export async function findUsersByNormalizedEmails(
+  normalizedEmails: readonly string[],
+  tx: Tx | typeof db = db,
+): Promise<AppUser[]> {
+  if (normalizedEmails.length === 0) return [];
+  return tx
+    .select()
+    .from(appUser)
+    .where(inArray(sql`lower(trim(${appUser.email}))`, [...normalizedEmails]))
+    .orderBy(asc(appUser.createdAt));
 }

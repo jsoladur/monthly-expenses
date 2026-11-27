@@ -98,14 +98,15 @@
     "workspaceNameTooLong": "Usa 60 caracteres como máximo.",
     "workspaceEmailInvalid": "Escribe un correo electrónico válido.",
     "workspaceEmailNotAllowed": "Este correo no tiene permiso para usar la aplicación. Pide al administrador que lo añada primero.",
-    "workspaceMemberNeverSignedIn": "Esta persona aún no ha iniciado sesión. Pídele que entre una vez y vuelve a añadirla.",
     "workspaceMemberExists": "Esta persona ya es miembro.",
     "workspaceMemberNotFound": "Ese miembro ya no está en este espacio. Recarga la página.",
     "workspaceForbidden": "Tu rol en este espacio no permite hacer esto.",
     "workspaceNotFound": "Ese espacio no existe o no eres miembro.",
     "cannotRemoveOwner": "El propietario no se puede cambiar ni quitar aquí.",
     "ownerCannotLeave": "Transfiere la propiedad o elimina este espacio primero.",
-    "workspaceNameMismatch": "Escribe el nombre del espacio tal como aparece."
+    "workspaceNameMismatch": "Escribe el nombre del espacio tal como aparece.",
+    "workspaceInvitationExists": "Esta persona ya está invitada.",
+    "workspaceInvitationNotFound": "Esa invitación ya no existe. Recarga la página."
   },
   "warnings": {
     "title": "Avisos",
@@ -921,11 +922,22 @@
       "role": "Rol",
       "add": "Añadir miembro",
       "adding": "Añadiendo…",
-      "addHelp": "Solo se pueden añadir personas de la lista de acceso de la aplicación que hayan iniciado sesión al menos una vez.",
+      "addHelp": "Elige a alguien de la lista de acceso de la aplicación. Quien aún no haya iniciado sesión queda invitado y se une al entrar por primera vez.",
       "remove": "Quitar",
       "confirmRemove": "¿Quitar a {name} de este espacio? Sus gastos se quedan.",
       "changeRole": "Rol de {name}",
-      "saved": "Guardado."
+      "saved": "Guardado.",
+      "person": "Persona",
+      "choose": "Elige a una persona",
+      "noCandidates": "Todas las personas de la lista de acceso ya son miembros o están invitadas.",
+      "notSignedIn": "aún no ha iniciado sesión",
+      "added": "Miembro añadido.",
+      "invitedNotice": "Invitación guardada. Se unirá a este espacio la primera vez que inicie sesión.",
+      "invited": "Invitado",
+      "invitedHelp": "Se une al iniciar sesión por primera vez",
+      "cancelInvite": "Cancelar invitación",
+      "confirmCancelInvite": "¿Cancelar la invitación de {email}?",
+      "inviteRole": "Rol para {email}"
     },
     "leave": {
       "action": "Salir del espacio",

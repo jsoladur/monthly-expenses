@@ -12,7 +12,7 @@ Migration 0008 changes tenancy from `user_id` to `workspace_id`. It is forward-o
 
 1. **Stop both app instances** and keep them stopped until the new build runs (old code writes `user_id`, which 0008 drops).
 2. **Take a full backup** and check it restores (`pg_dump` of the whole database, schema + data).
-3. Start the new build; the migrator (`scripts/migrate.mjs`) applies 0008 once, in one transaction. It creates a private workspace + Owner membership for every `app_user`, re-points `category`, `template`, `annual`, `month` to it, fills `month_actual_expense.created_by_user_id`, and fails (rolling everything back) if any per-user row count changes.
+3. Start the new build; the migrator (`scripts/migrate.mjs`) applies 0008 once, in one transaction. It creates `workspace`, `workspace_member` and `workspace_invitation`, a private workspace + Owner membership for every `app_user`, re-points `category`, `template`, `annual`, `month` to it, fills `month_actual_expense.created_by_user_id`, and fails (rolling everything back) if any per-user row count changes.
 
 ## Restoring a tenant dump
 
@@ -22,7 +22,7 @@ To restore a dump in `prod/backup.sql`:
 2. Sign in once so exactly one `app_user` (+ `profile_settings` + its private `workspace` and `workspace_member`) exists.
 3. `psql "$DATABASE_URL" -f docs/database/prod/backup.sql`
 
-The dump is **data only** for catalog/money tables. It does **not** write `app_user`, `profile_settings`, `workspace`, `workspace_member` or `drizzle.__drizzle_migrations` — it remaps the dumped tenant ids onto the signed-in local user's **private workspace** (`workspace_id`) and dumped `created_by_user_id` values onto that user. Catalog/money tables must be empty or primary keys will collide.
+The dump is **data only** for catalog/money tables. It does **not** write `app_user`, `profile_settings`, `workspace`, `workspace_member`, `workspace_invitation` or `drizzle.__drizzle_migrations` — it remaps the dumped tenant ids onto the signed-in local user's **private workspace** (`workspace_id`) and dumped `created_by_user_id` values onto that user. Catalog/money tables must be empty or primary keys will collide.
 
 The remap footer (post-0008 dump) must target `workspace_id`:
 

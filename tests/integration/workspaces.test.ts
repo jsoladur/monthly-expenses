@@ -14,14 +14,18 @@ import {
   PrivateWorkspaceImmutableError,
   WorkspaceEmailNotAllowedError,
   WorkspaceMemberExistsError,
-  WorkspaceMemberNeverSignedInError,
+  WorkspaceInvitationExistsError,
+  WorkspaceInvitationNotFoundError,
   WorkspaceNameMismatchError,
   addMember,
+  cancelInvitation,
+  changeInvitationRole,
   createSharedWorkspace,
   deleteWorkspace,
   ensurePrivateWorkspace,
   getWorkspaceDetails,
   leaveWorkspace,
+  listMemberCandidates,
   listMyWorkspaces,
   removeMember,
   resolveActiveWorkspaceFor,
@@ -29,7 +33,11 @@ import {
 } from "@/server/services/workspaces";
 import { loadWorkspaceAccess } from "@/server/auth/workspace-access";
 import { updateMemberRole } from "@/server/repositories/workspace";
-import { WorkspaceNotFoundError, type WorkspaceAccess } from "@/lib/workspace-roles";
+import {
+  WorkspaceForbiddenError,
+  WorkspaceNotFoundError,
+  type WorkspaceAccess,
+} from "@/lib/workspace-roles";
 import { createCategory } from "@/server/services/categories";
 import { createTemplate } from "@/server/services/templates";
 import { createAnnual } from "@/server/services/annuals";
@@ -118,7 +126,7 @@ suite("UC-31 workspaces", () => {
   });
 
   // -------------------------------------------------------------------------
-  it("82 — adding members: allowlisted + signed in is added; not allowlisted, never signed in, duplicate and Owner role are rejected", async () => {
+  it("82 — adding members: allowlisted + signed in becomes a member; allowlisted + never signed in is invited; not allowlisted, duplicate and Owner role are rejected", async () => {
     const owner = await seedOwnerAccess("s82o", { email: "owner@example.com" });
     const member = await seedOwnerAccess("s82m", { email: "member@example.com" });
     await seedOwnerAccess("s82x", { email: "stranger@example.com" });
@@ -126,20 +134,29 @@ suite("UC-31 workspaces", () => {
     const ownerShared = await loadWorkspaceAccess(owner.userId, shared.id);
 
     // Normalized like the allowlist (trim + lowercase).
-    await addMember(ownerShared, { email: "  MEMBER@example.com ", role: "editor" }, ALLOW);
+    const added = await addMember(ownerShared, { email: "  MEMBER@example.com ", role: "editor" }, ALLOW);
+    expect(added.status).toBe("member");
     const asMember = await loadWorkspaceAccess(member.userId, shared.id);
     expect(asMember.role).toBe("editor");
+
+    // Allowlisted, never signed in → pending invitation, not a membership.
+    const invited = await addMember(ownerShared, { email: "Never@example.com", role: "reader" }, ALLOW);
+    expect(invited.status).toBe("invited");
+    const details = await getWorkspaceDetails(ownerShared);
+    expect(details.invitations).toEqual([
+      expect.objectContaining({ email: "never@example.com", role: "reader" }),
+    ]);
 
     const before = await countMembers(shared.id);
     await expect(
       addMember(ownerShared, { email: "stranger@example.com", role: "reader" }, ALLOW),
     ).rejects.toBeInstanceOf(WorkspaceEmailNotAllowedError);
     await expect(
-      addMember(ownerShared, { email: "never@example.com", role: "reader" }, ALLOW),
-    ).rejects.toBeInstanceOf(WorkspaceMemberNeverSignedInError);
-    await expect(
       addMember(ownerShared, { email: "member@example.com", role: "admin" }, ALLOW),
     ).rejects.toBeInstanceOf(WorkspaceMemberExistsError);
+    await expect(
+      addMember(ownerShared, { email: "never@example.com", role: "admin" }, ALLOW),
+    ).rejects.toBeInstanceOf(WorkspaceInvitationExistsError);
     await expect(
       addMember(
         ownerShared,
@@ -148,6 +165,60 @@ suite("UC-31 workspaces", () => {
       ),
     ).rejects.toBeInstanceOf(InvalidWorkspaceRoleError);
     expect(await countMembers(shared.id)).toBe(before);
+  });
+
+  // -------------------------------------------------------------------------
+  it("82b — the add-member picker lists allowlisted people only, minus you, members and pending invitations", async () => {
+    const owner = await seedOwnerAccess("s82bo", { email: "owner@example.com", displayName: "Olga" });
+    await seedOwnerAccess("s82bm", { email: "member@example.com", displayName: "Marta" });
+    await seedOwnerAccess("s82bx", { email: "stranger@example.com" }); // signed in, not allowlisted
+    const shared = await createSharedWorkspace(owner.userId, { name: "Shared", currency: "EUR" });
+    const ownerShared = await loadWorkspaceAccess(owner.userId, shared.id);
+
+    expect(await listMemberCandidates(ownerShared, ALLOW)).toEqual([
+      { email: "member@example.com", displayName: "Marta", signedIn: true },
+      { email: "never@example.com", displayName: null, signedIn: false },
+      { email: "other@example.com", displayName: null, signedIn: false },
+    ]);
+
+    await addMember(ownerShared, { email: "member@example.com", role: "reader" }, ALLOW);
+    await addMember(ownerShared, { email: "never@example.com", role: "reader" }, ALLOW);
+    expect((await listMemberCandidates(ownerShared, ALLOW)).map((c) => c.email)).toEqual([
+      "other@example.com",
+    ]);
+
+    // Readers and Editors cannot manage members, so they get no picker.
+    const asMember = await loadWorkspaceAccess(
+      (await getWorkspaceDetails(ownerShared)).members.find((m) => m.email === "member@example.com")!.userId,
+      shared.id,
+    );
+    await expect(listMemberCandidates(asMember, ALLOW)).rejects.toBeInstanceOf(WorkspaceForbiddenError);
+  });
+
+  // -------------------------------------------------------------------------
+  it("82c — a pending invitation can be re-roled or cancelled, and becomes a membership at the person's first sign-in", async () => {
+    const owner = await seedOwnerAccess("s82co", { email: "owner@example.com" });
+    const shared = await createSharedWorkspace(owner.userId, { name: "Shared", currency: "EUR" });
+    const ownerShared = await loadWorkspaceAccess(owner.userId, shared.id);
+
+    await addMember(ownerShared, { email: "never@example.com", role: "reader" }, ALLOW);
+    await changeInvitationRole(ownerShared, { email: "never@example.com", role: "admin" });
+    await addMember(ownerShared, { email: "other@example.com", role: "editor" }, ALLOW);
+    await cancelInvitation(ownerShared, { email: "other@example.com" });
+    await expect(
+      cancelInvitation(ownerShared, { email: "other@example.com" }),
+    ).rejects.toBeInstanceOf(WorkspaceInvitationNotFoundError);
+
+    // First sign-in (email as Google returns it) turns the invitation into a membership.
+    const newcomer = await upsertUserOnSignIn({ googleSub: "s82c-never", email: "Never@Example.com" });
+    const access = await loadWorkspaceAccess(newcomer.id, shared.id);
+    expect(access.role).toBe("admin");
+    expect((await getWorkspaceDetails(ownerShared)).invitations).toEqual([]);
+    // The cancelled one does nothing.
+    const other = await upsertUserOnSignIn({ googleSub: "s82c-other", email: "other@example.com" });
+    await expect(loadWorkspaceAccess(other.id, shared.id)).rejects.toBeInstanceOf(WorkspaceNotFoundError);
+    // Their private workspace exists as usual.
+    expect((await listMyWorkspaces(newcomer.id)).map((w) => w.kind)).toEqual(["private", "shared"]);
   });
 
   // -------------------------------------------------------------------------
@@ -287,13 +358,14 @@ suite("UC-31 workspaces", () => {
     const shared = await createSharedWorkspace(owner.userId, { name: "Shared", currency: "EUR" });
     const ownerShared = await loadWorkspaceAccess(owner.userId, shared.id);
     const added = await addMember(ownerShared, { email: "member@example.com", role: "admin" }, ALLOW);
+    if (added.status !== "member") throw new Error("expected a membership");
 
     await expect(leaveWorkspace(ownerShared)).rejects.toBeInstanceOf(OwnerCannotLeaveError);
     await expect(leaveWorkspace(owner)).rejects.toBeInstanceOf(PrivateWorkspaceImmutableError);
 
-    const asMember = await loadWorkspaceAccess(added.userId, shared.id);
+    const asMember = await loadWorkspaceAccess(added.member.userId, shared.id);
     await leaveWorkspace(asMember);
-    await expect(loadWorkspaceAccess(added.userId, shared.id)).rejects.toBeInstanceOf(
+    await expect(loadWorkspaceAccess(added.member.userId, shared.id)).rejects.toBeInstanceOf(
       WorkspaceNotFoundError,
     );
   });

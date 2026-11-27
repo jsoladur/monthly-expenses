@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/server/db/client";
 import type { Workspace } from "@/server/db/schema";
 import type { Tx } from "@/server/repositories/user";
-import { findUserByNormalizedEmail } from "@/server/repositories/user";
+import { findUserByNormalizedEmail, findUsersByNormalizedEmails } from "@/server/repositories/user";
 import { getProfileSettings, updateCurrency } from "@/server/repositories/profile-settings";
 import {
   countOwners,
@@ -18,6 +18,13 @@ import {
   listActualAuthors,
   listMembers,
   listWorkspacesForUser,
+  listInvitations,
+  findInvitation,
+  insertInvitation,
+  updateInvitationRole,
+  deleteInvitation,
+  acceptInvitationsForUser,
+  type InvitationRow,
   updateMemberRole,
   updateWorkspace,
   type MemberRow,
@@ -53,11 +60,19 @@ export class WorkspaceEmailNotAllowedError extends Error {
   }
 }
 
-export class WorkspaceMemberNeverSignedInError extends Error {
-  readonly code = "workspace_member_never_signed_in" as const;
+export class WorkspaceInvitationExistsError extends Error {
+  readonly code = "workspace_invitation_exists" as const;
   constructor() {
-    super("That person has not signed in yet");
-    this.name = "WorkspaceMemberNeverSignedInError";
+    super("That person is already invited");
+    this.name = "WorkspaceInvitationExistsError";
+  }
+}
+
+export class WorkspaceInvitationNotFoundError extends Error {
+  readonly code = "workspace_invitation_not_found" as const;
+  constructor() {
+    super("Invitation not found");
+    this.name = "WorkspaceInvitationNotFoundError";
   }
 }
 
@@ -228,6 +243,7 @@ export interface WorkspaceDetails {
   workspace: Workspace;
   role: WorkspaceAccess["role"];
   members: MemberRow[];
+  invitations: InvitationRow[];
   counts: WorkspaceCounts;
   /** userId → "Added by" label for every ticket author, former members too. */
   authors: Record<string, string>;
@@ -235,9 +251,10 @@ export interface WorkspaceDetails {
 
 export async function getWorkspaceDetails(access: WorkspaceAccess): Promise<WorkspaceDetails> {
   const workspaceId = authorize(access, "read");
-  const [found, members, counts, authors] = await Promise.all([
+  const [found, members, invitations, counts, authors] = await Promise.all([
     findWorkspaceById(workspaceId),
     listMembers(workspaceId),
+    listInvitations(workspaceId),
     countWorkspaceContents(workspaceId),
     listActualAuthors(workspaceId),
   ]);
@@ -246,6 +263,7 @@ export async function getWorkspaceDetails(access: WorkspaceAccess): Promise<Work
     workspace: found,
     role: access.role,
     members,
+    invitations,
     counts,
     authors: Object.fromEntries(authors.map((a) => [a.userId, a.label])),
   };
@@ -322,27 +340,122 @@ export async function deleteWorkspace(
 // Members
 // ----------------------------------------------------------------------------
 
+export type AddMemberResult =
+  | { status: "member"; member: MemberRow }
+  | { status: "invited"; invitation: InvitationRow };
+
+/**
+ * UC-31 §4.3 as amended by the PO (2026-11-27): the allowlist is the only
+ * gate. A person who has signed in becomes a member at once; one who has not
+ * gets a pending invitation that turns into a membership at their first
+ * sign-in (`upsertUserOnSignIn` → `acceptPendingInvitations`).
+ */
 export async function addMember(
   access: WorkspaceAccess,
   input: { email: string; role: AssignableRole },
   allowlist: ReadonlySet<string> = parseAllowlist(process.env.ALLOWED_EMAILS),
-): Promise<MemberRow> {
+): Promise<AddMemberResult> {
   const workspaceId = authorize(access, "manageMembers");
   assertShared(access);
   assertAssignable(input.role);
   const email = normalizeEmail(input.email);
-  // Rejection order: allowlist → signed in once → not already a member.
+  // Rejection order: allowlist → not already a member → not already invited.
   if (!allowlist.has(email)) throw new WorkspaceEmailNotAllowedError();
   const user = await findUserByNormalizedEmail(email);
-  if (!user) throw new WorkspaceMemberNeverSignedInError();
-  if (await findMembership(workspaceId, user.id)) throw new WorkspaceMemberExistsError();
   try {
-    await insertMember(workspaceId, { userId: user.id, role: input.role });
+    if (user) {
+      if (await findMembership(workspaceId, user.id)) throw new WorkspaceMemberExistsError();
+      await insertMember(workspaceId, { userId: user.id, role: input.role });
+      return {
+        status: "member",
+        member: { userId: user.id, email: user.email, displayName: user.displayName, role: input.role },
+      };
+    }
+    if (await findInvitation(workspaceId, email)) throw new WorkspaceInvitationExistsError();
+    await insertInvitation(workspaceId, { email, role: input.role, invitedByUserId: access.userId });
+    const invitation = await findInvitation(workspaceId, email);
+    if (!invitation) throw new WorkspaceInvitationNotFoundError();
+    return { status: "invited", invitation };
   } catch (err) {
-    if (isUniqueViolation(err)) throw new WorkspaceMemberExistsError();
+    if (isUniqueViolation(err)) {
+      throw user ? new WorkspaceMemberExistsError() : new WorkspaceInvitationExistsError();
+    }
     throw err;
   }
-  return { userId: user.id, email: user.email, displayName: user.displayName, role: input.role };
+}
+
+export interface MemberCandidate {
+  email: string;
+  displayName: string | null;
+  signedIn: boolean;
+}
+
+/**
+ * The add-member picker: every allowlisted email except the caller's, current
+ * members' and pending invitations', sorted by email, labelled with the name
+ * of the person when they have signed in. Admin+ only.
+ */
+export async function listMemberCandidates(
+  access: WorkspaceAccess,
+  allowlist: ReadonlySet<string> = parseAllowlist(process.env.ALLOWED_EMAILS),
+): Promise<MemberCandidate[]> {
+  const workspaceId = authorize(access, "manageMembers");
+  assertShared(access);
+  const [members, invitations] = await Promise.all([
+    listMembers(workspaceId),
+    listInvitations(workspaceId),
+  ]);
+  const taken = new Set([
+    ...members.map((m) => normalizeEmail(m.email)),
+    ...invitations.map((i) => i.email),
+  ]);
+  const emails = [...allowlist].filter((e) => !taken.has(e)).sort();
+  const users = await findUsersByNormalizedEmails(emails);
+  const byEmail = new Map<string, (typeof users)[number]>();
+  for (const u of users) {
+    const key = normalizeEmail(u.email);
+    if (!byEmail.has(key)) byEmail.set(key, u);
+  }
+  return emails
+    .filter((e) => byEmail.get(e)?.id !== access.userId)
+    .map((email) => {
+      const u = byEmail.get(email);
+      return {
+        email,
+        displayName: u?.displayName?.trim() ? u.displayName : null,
+        signedIn: Boolean(u),
+      };
+    });
+}
+
+export async function changeInvitationRole(
+  access: WorkspaceAccess,
+  input: { email: string; role: AssignableRole },
+): Promise<void> {
+  const workspaceId = authorize(access, "manageMembers");
+  assertShared(access);
+  assertAssignable(input.role);
+  const updated = await updateInvitationRole(workspaceId, normalizeEmail(input.email), input.role);
+  if (!updated) throw new WorkspaceInvitationNotFoundError();
+}
+
+export async function cancelInvitation(
+  access: WorkspaceAccess,
+  input: { email: string },
+): Promise<void> {
+  const workspaceId = authorize(access, "manageMembers");
+  assertShared(access);
+  const deleted = await deleteInvitation(workspaceId, normalizeEmail(input.email));
+  if (!deleted) throw new WorkspaceInvitationNotFoundError();
+}
+
+/** Sign-in hook: pending invitations for this email become memberships. */
+export async function acceptPendingInvitations(
+  userId: string,
+  email: string,
+  tx: Tx | typeof db = db,
+): Promise<number> {
+  return acceptInvitationsForUser(userId, normalizeEmail(email), tx);
 }
 
 async function requireNonOwnerMember(workspaceId: string, userId: string, tx: Tx | typeof db) {

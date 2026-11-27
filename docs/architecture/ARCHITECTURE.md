@@ -208,6 +208,7 @@ Invariants enforced by the schema and service layer:
 
 - `workspace_member(workspace_id, user_id)` unique; partial unique `workspace_member(workspace_id) WHERE role = 'owner'` — exactly one Owner per shared workspace (UC-31 §4.7). `workspace.personal_user_id` unique; private workspaces only.
 - Every tenant table has `workspace_id NOT NULL` with `ON DELETE CASCADE`, so deleting a shared workspace removes exactly its rows (PRD C31).
+- `workspace_invitation(workspace_id, email)` primary key; role never `owner` (check); email stored normalized (check). Holds a share with an allowlisted person who has not signed in yet; converted to `workspace_member` at their first sign-in (PRD C31 as amended 2026-11-27).
 - `workspace_transfer` has at most one row per workspace (PRD C32, UC-32).
 - `unique(workspace_id, year, month)` on `MONTHS` — duplicate month creation is rejected (PRD UC-08).
 - Category name unique per `(workspace_id, kind)` **among active rows** (partial unique index `WHERE active`) (PRD §6.2).

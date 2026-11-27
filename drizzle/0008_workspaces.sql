@@ -43,6 +43,23 @@ CREATE UNIQUE INDEX "workspace_personal_user_uk" ON "workspace" USING btree ("pe
 CREATE UNIQUE INDEX "workspace_member_owner_uk" ON "workspace_member" USING btree ("workspace_id") WHERE "workspace_member"."role" = 'owner';--> statement-breakpoint
 CREATE INDEX "workspace_member_user_idx" ON "workspace_member" USING btree ("user_id");--> statement-breakpoint
 
+-- 2b. Pending invitations for allowlisted people who have not signed in yet
+--     (PO decision 2026-11-27). Converted to workspace_member at first sign-in.
+CREATE TABLE "workspace_invitation" (
+	"workspace_id" uuid NOT NULL,
+	"email" text NOT NULL,
+	"role" "workspace_role" NOT NULL,
+	"invited_by_user_id" uuid NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "workspace_invitation_pk" PRIMARY KEY("workspace_id","email"),
+	CONSTRAINT "workspace_invitation_role_ck" CHECK ("workspace_invitation"."role" <> 'owner'),
+	CONSTRAINT "workspace_invitation_email_ck" CHECK ("workspace_invitation"."email" = lower(trim("workspace_invitation"."email")))
+);--> statement-breakpoint
+ALTER TABLE "workspace_invitation" ADD CONSTRAINT "workspace_invitation_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "workspace_invitation" ADD CONSTRAINT "workspace_invitation_invited_by_user_id_app_user_id_fk" FOREIGN KEY ("invited_by_user_id") REFERENCES "public"."app_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "workspace_invitation_email_idx" ON "workspace_invitation" USING btree ("email");--> statement-breakpoint
+
 -- Snapshot of the per-user row counts BEFORE anything is re-pointed (step 7).
 CREATE TEMP TABLE "_uc31_before" ON COMMIT DROP AS
 SELECT u.id AS user_id, x.t, x.n FROM "app_user" u

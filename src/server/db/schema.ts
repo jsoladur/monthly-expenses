@@ -120,6 +120,32 @@ export const workspaceMember = pgTable(
   ],
 );
 
+// Pending share with an allowlisted person who has not signed in yet (PO
+// decision 2026-11-27, amends UC-31 decision 4). Turned into a
+// `workspace_member` row at that person's first sign-in, then deleted. The
+// email is stored allowlist-normalized (trim + lowercase).
+export const workspaceInvitation = pgTable(
+  "workspace_invitation",
+  {
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: workspaceRoleEnum("role").notNull(),
+    invitedByUserId: uuid("invited_by_user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ name: "workspace_invitation_pk", columns: [table.workspaceId, table.email] }),
+    index("workspace_invitation_email_idx").on(table.email),
+    check("workspace_invitation_role_ck", sql`${table.role} <> 'owner'`),
+    check("workspace_invitation_email_ck", sql`${table.email} = lower(trim(${table.email}))`),
+  ],
+);
+
 // ============================================================================
 // Global per-workspace catalogs — SOFT delete only (PRD §13)
 // ============================================================================
@@ -346,6 +372,7 @@ export type ProfileSettings = typeof profileSettings.$inferSelect;
 export type Workspace = typeof workspace.$inferSelect;
 export type NewWorkspace = typeof workspace.$inferInsert;
 export type WorkspaceMember = typeof workspaceMember.$inferSelect;
+export type WorkspaceInvitation = typeof workspaceInvitation.$inferSelect;
 export type NewProfileSettings = typeof profileSettings.$inferInsert;
 export type Category = typeof category.$inferSelect;
 export type NewCategory = typeof category.$inferInsert;

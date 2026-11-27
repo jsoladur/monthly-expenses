@@ -1,5 +1,5 @@
 {
-  "id": "44e10fbe-3eb5-46f4-8575-b35c7bd34a87",
+  "id": "c0f13d3b-d296-4f03-8427-88f2313c1565",
   "prevId": "e15da018-b093-4a45-98b8-f164d8d9a9d7",
   "version": "7",
   "dialect": "postgresql",
@@ -1189,6 +1189,118 @@
         "workspace_shared_name_ck": {
           "name": "workspace_shared_name_ck",
           "value": "\"workspace\".\"kind\" = 'private' OR \"workspace\".\"name\" IS NOT NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.workspace_invitation": {
+      "name": "workspace_invitation",
+      "schema": "",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "workspace_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invited_by_user_id": {
+          "name": "invited_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workspace_invitation_email_idx": {
+          "name": "workspace_invitation_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "workspace_invitation_workspace_id_workspace_id_fk": {
+          "name": "workspace_invitation_workspace_id_workspace_id_fk",
+          "tableFrom": "workspace_invitation",
+          "tableTo": "workspace",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workspace_invitation_invited_by_user_id_app_user_id_fk": {
+          "name": "workspace_invitation_invited_by_user_id_app_user_id_fk",
+          "tableFrom": "workspace_invitation",
+          "tableTo": "app_user",
+          "columnsFrom": [
+            "invited_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "workspace_invitation_pk": {
+          "name": "workspace_invitation_pk",
+          "columns": [
+            "workspace_id",
+            "email"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "workspace_invitation_role_ck": {
+          "name": "workspace_invitation_role_ck",
+          "value": "\"workspace_invitation\".\"role\" <> 'owner'"
+        },
+        "workspace_invitation_email_ck": {
+          "name": "workspace_invitation_email_ck",
+          "value": "\"workspace_invitation\".\"email\" = lower(trim(\"workspace_invitation\".\"email\"))"
         }
       },
       "isRLSEnabled": false

@@ -98,14 +98,15 @@
     "workspaceNameTooLong": "Use 60 characters or fewer.",
     "workspaceEmailInvalid": "Enter a valid email address.",
     "workspaceEmailNotAllowed": "This email is not allowed to use the app. Ask the administrator to add it first.",
-    "workspaceMemberNeverSignedIn": "This person has not signed in yet. Ask them to sign in once, then add them again.",
     "workspaceMemberExists": "This person is already a member.",
     "workspaceMemberNotFound": "That member is no longer in this workspace. Reload the page.",
     "workspaceForbidden": "Your role in this workspace does not allow this.",
     "workspaceNotFound": "That workspace does not exist or you are not a member.",
     "cannotRemoveOwner": "The owner cannot be changed or removed here.",
     "ownerCannotLeave": "Transfer ownership or delete this workspace first.",
-    "workspaceNameMismatch": "Type the workspace name exactly as shown."
+    "workspaceNameMismatch": "Type the workspace name exactly as shown.",
+    "workspaceInvitationExists": "This person is already invited.",
+    "workspaceInvitationNotFound": "That invitation no longer exists. Reload the page."
   },
   "warnings": {
     "title": "Warnings",
@@ -921,11 +922,22 @@
       "role": "Role",
       "add": "Add member",
       "adding": "Adding…",
-      "addHelp": "Only people on the app's allowlist who have signed in at least once can be added.",
+      "addHelp": "Pick someone from the app's allowlist. People who have not signed in yet are invited and join at their first sign-in.",
       "remove": "Remove",
       "confirmRemove": "Remove {name} from this workspace? Their expenses stay.",
       "changeRole": "Role of {name}",
-      "saved": "Saved."
+      "saved": "Saved.",
+      "person": "Person",
+      "choose": "Choose a person",
+      "noCandidates": "Everyone on the app's allowlist is already a member or invited.",
+      "notSignedIn": "not signed in yet",
+      "added": "Member added.",
+      "invitedNotice": "Invitation saved. They join this workspace the first time they sign in.",
+      "invited": "Invited",
+      "invitedHelp": "Joins at first sign-in",
+      "cancelInvite": "Cancel invitation",
+      "confirmCancelInvite": "Cancel the invitation for {email}?",
+      "inviteRole": "Role for {email}"
     },
     "leave": {
       "action": "Leave workspace",

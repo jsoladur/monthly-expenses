@@ -1,7 +1,7 @@
 # UC-31 — Collaborative workspaces (private by default, shared with roles)
 
 > **PRD status:** Product Owner decision 2026-11-27. Specified in `docs/prds/GLOBAL.md` as **UC-33** / **C30**, **C31** (amends C1, C9, C10, §3, §5.1, §5.3, §6, §13, §14). This file is the detailed implementation slice.
-> **Database:** **the tenancy change.** Migration **0008** adds `workspace`, `workspace_member`, `category.workspace_id`, `template.workspace_id`, `annual.workspace_id`, `month.workspace_id`, `month_actual_expense.created_by_user_id`, backfills every existing user into a private workspace, and drops the old `user_id` columns of the four catalog/month tables. Full rules in §4.
+> **Database:** **the tenancy change.** Migration **0008** adds `workspace`, `workspace_member`, `workspace_invitation` (PO 2026-11-27), `category.workspace_id`, `template.workspace_id`, `annual.workspace_id`, `month.workspace_id`, `month_actual_expense.created_by_user_id`, backfills every existing user into a private workspace, and drops the old `user_id` columns of the four catalog/month tables. Full rules in §4.
 > **PRD refs:** UC-33, C1, C9, C10, C30, C31, §3, §5.1–5.4, §6.2–6.4, §6.8, §10 (screens 3, 5–8, 11–13), §13, §14, §15 (scenarios 78–93).
 > **ARCH refs:** §3.2 (rules 3–4), §4, §5 (rules 1–3), ADR-12 (new: workspace-scoped tenancy).
 > **Next slice:** UC-32 (ownership transfer) builds on this one and adds migration 0009.
@@ -20,7 +20,7 @@ Two people who share a household want one ledger for the common bills, while eac
 
 1. Every allowlisted user has **one private workspace**, created at first sign-in (and backfilled for existing users). It cannot be deleted, shared, or transferred.
 2. Any allowlisted user can create a **shared workspace** and becomes its **Owner**.
-3. The Owner (and Admins) add other **allowlisted users who have signed in at least once** with a role: **Reader**, **Editor** (Read/Write), or **Admin**.
+3. The Owner (and Admins) add other **allowlisted users** with a role (people who have not signed in yet are invited and join at their first sign-in — PO decision 2026-11-27): **Reader**, **Editor** (Read/Write), or **Admin**.
 4. A workspace has its own categories, fixed/estimated templates, annuals, months, incomes, reserved lines, actuals, currency and every report that exists today. Nothing is shared across workspaces.
 5. A user with only one workspace sees **exactly the current app**. No workspace wording appears anywhere.
 6. A user with several workspaces picks one; every section then shows that workspace.
@@ -43,7 +43,7 @@ Two people who share a household want one ledger for the common bills, while eac
 **Out (see §11 for the non-goals list)**
 
 - Ownership transfer — UC-32.
-- Invitations to people who have never signed in (pending invites).
+- Invitations to emails outside `ALLOWED_EMAILS`, invitation emails.
 - Email or push notifications.
 - Per-category or per-month permissions, custom roles, audit-log screen.
 - Moving rows between workspaces, copying a workspace, merging workspaces.
@@ -98,13 +98,15 @@ Member rules that come with the matrix:
 
 ### 4.3 Adding members
 
-1. Input: an email address. Normalized (trim, lowercase) exactly like the allowlist (ARCH §3.2 rule 1).
+*Amended by the PO on 2026-11-27: picker from the allowlist, and pending invitations for people who have not signed in.*
+
+1. Input: a person picked from a list built from `ALLOWED_EMAILS` (normalized trim + lowercase, ARCH §3.2 rule 1), minus the caller, current members and pending invitations, labelled with the person's name when they have signed in and "not signed in yet" otherwise (`listMemberCandidates`, Admin+). The `app_user` table is not the source: only allowlisted people may be added.
 2. Rejected, in this order:
    - Not in `ALLOWED_EMAILS` at the time of the action → `workspaceEmailNotAllowed`. The allowlist remains the only gate; nothing is stored for the address.
-   - Allowlisted but no `app_user` row yet (never signed in) → `workspaceMemberNeverSignedIn`. The copy asks the person to sign in once first. No pending invitation is created.
-   - Already a member → `workspaceMemberExists`.
-3. Role on add: Reader, Editor or Admin. Never Owner.
-4. Adding a member never copies or changes data. The new member sees the workspace on their next request.
+   - Already a member → `workspaceMemberExists`. Already invited → `workspaceInvitationExists`.
+3. Signed in (an `app_user` row exists) → a `workspace_member` row at once. Not signed in yet → a `workspace_invitation(workspace_id, email, role, invited_by_user_id)` row. The members list shows it as "Invited"; Admin+ can change its role or cancel it (`changeInvitationRole`, `cancelInvitation`). At that person's first sign-in, `upsertUserOnSignIn` turns every invitation for their email into a membership with the invited role and deletes the invitations, in the sign-in transaction. Deleting the workspace deletes its invitations.
+4. Role on add: Reader, Editor or Admin. Never Owner (also a database check on `workspace_invitation.role`).
+5. Adding a member never copies or changes data. The new member sees the workspace on their next request.
 
 ### 4.4 Changing roles and removing members
 
@@ -191,7 +193,7 @@ See §6 for the exact order. Also: `profile_settings.currency` stays (it is the 
 
 - **Every tenant repository function takes `workspaceId` as its first argument** and applies it in every `WHERE` (ARCH §4 / ADR-12). This replaces the `userId`-first rule for tenant data. Identity repositories (`user.ts`, `profile-settings.ts`) keep `userId`.
 - `category`, `template`, `annual`, `month`: filter `workspace_id`. `month_income`, `month_fixed_line`, `month_actual_expense`: join `month` and filter `month.workspace_id` (same pattern as today's `month.user_id`).
-- New `src/server/repositories/workspace.ts`: `findPrivateWorkspaceByUser`, `insertPrivateWorkspace`, `listWorkspacesForUser`, `findMembership(workspaceId, userId)`, `insertWorkspace`, `updateWorkspace`, `deleteWorkspaceCascade` (children first, one statement per table, inside the caller's transaction), `insertMember`, `updateMemberRole`, `deleteMember`, `countOwners`.
+- New `src/server/repositories/workspace.ts`: `findPrivateWorkspaceByUser`, `insertPrivateWorkspace`, `listWorkspacesForUser`, `findMembership(workspaceId, userId)`, `insertWorkspace`, `updateWorkspace`, `deleteWorkspaceCascade` (children first, one statement per table, inside the caller's transaction), `insertMember`, `updateMemberRole`, `deleteMember`, `countOwners`; invitations: `listInvitations`, `findInvitation`, `insertInvitation`, `updateInvitationRole`, `deleteInvitation`, `acceptInvitationsForUser`.
 - `actual.ts`: `insertActual` sets `created_by_user_id`; `updateActual` / `deleteActual` take the acting user for the Editor own-only check.
 - `profile-settings.ts`: unchanged.
 
@@ -204,16 +206,16 @@ See §6 for the exact order. Also: `profile_settings.currency` stays (it is the 
 
 ### 5.4 Services
 
-- `src/server/services/workspaces.ts`: `ensurePrivateWorkspace` (used by sign-in and migration verification), `createSharedWorkspace`, `renameWorkspace`, `setWorkspaceCurrency`, `addMember`, `changeMemberRole`, `removeMember`, `leaveWorkspace`, `deleteWorkspace`, `listMyWorkspaces`, `getWorkspaceDetails`.
+- `src/server/services/workspaces.ts`: `ensurePrivateWorkspace` (used by sign-in and migration verification), `createSharedWorkspace`, `renameWorkspace`, `setWorkspaceCurrency`, `addMember`, `listMemberCandidates`, `changeInvitationRole`, `cancelInvitation`, `acceptPendingInvitations`, `changeMemberRole`, `removeMember`, `leaveWorkspace`, `deleteWorkspace`, `listMyWorkspaces`, `getWorkspaceDetails`.
 - Existing services (`months`, `categories`, `templates`, `annuals`, `actuals`, `incomes`, `reserved-lines`, `pass-to-actual`, `pass-to-upcoming`, `move-actual`, `summary`, `estimate-check`, `global-stats`, `search`, `export`, `annuals`) change their first argument from `userId` to `WorkspaceAccess` and call the matrix action they need (§3). Domain rules do not change.
-- Error classes: `WorkspaceNotFoundError`, `WorkspaceForbiddenError`, `WorkspaceEmailNotAllowedError`, `WorkspaceMemberNeverSignedInError`, `WorkspaceMemberExistsError`, `WorkspaceMemberNotFoundError`, `CannotRemoveOwnerError`, `OwnerCannotLeaveError`, `PrivateWorkspaceImmutableError`, `WorkspaceNameMismatchError`, `InvalidWorkspaceNameError`.
+- Error classes: `WorkspaceNotFoundError`, `WorkspaceForbiddenError`, `WorkspaceEmailNotAllowedError`, `WorkspaceInvitationExistsError`, `WorkspaceInvitationNotFoundError`, `WorkspaceMemberExistsError`, `WorkspaceMemberNotFoundError`, `CannotRemoveOwnerError`, `OwnerCannotLeaveError`, `PrivateWorkspaceImmutableError`, `WorkspaceNameMismatchError`, `InvalidWorkspaceNameError`.
 
 ### 5.5 Actions
 
 Thin server actions (Zod → `requireUserId()` → service → `revalidatePath('/[locale]', 'layout')`):
 
 - `createSharedWorkspaceAction`, `renameWorkspaceAction`, `setWorkspaceCurrencyAction`
-- `addWorkspaceMemberAction`, `changeWorkspaceMemberRoleAction`, `removeWorkspaceMemberAction`, `leaveWorkspaceAction`
+- `addWorkspaceMemberAction` (member or invitation), `changeWorkspaceInvitationRoleAction`, `cancelWorkspaceInvitationAction`, `changeWorkspaceMemberRoleAction`, `removeWorkspaceMemberAction`, `leaveWorkspaceAction`
 - `deleteWorkspaceAction` (redirects to Home; clears the active cookie if it pointed there)
 - `setActiveWorkspaceAction`
 
@@ -321,9 +323,9 @@ Namespace `workspaces` (both locales; parity test applies):
 - `workspaces.delete.*` (lead, counts as ICU plurals, typed-name prompt, confirm, cancel, pending, error)
 - `workspaces.addedBy` ("Added by {name}")
 - `workspaces.switcher.*` (open list, current)
-- `validation.workspaceNameRequired`, `validation.workspaceNameTooLong`, `validation.workspaceEmailInvalid`, `validation.workspaceEmailNotAllowed`, `validation.workspaceMemberNeverSignedIn`, `validation.workspaceMemberExists`, `validation.workspaceMemberNotFound`, `validation.workspaceForbidden`, `validation.workspaceNotFound`, `validation.cannotRemoveOwner`, `validation.ownerCannotLeave`, `validation.workspaceNameMismatch`
+- `validation.workspaceNameRequired`, `validation.workspaceNameTooLong`, `validation.workspaceEmailInvalid`, `validation.workspaceEmailNotAllowed`, `validation.workspaceInvitationExists`, `validation.workspaceInvitationNotFound`, `validation.workspaceMemberExists`, `validation.workspaceMemberNotFound`, `validation.workspaceForbidden`, `validation.workspaceNotFound`, `validation.cannotRemoveOwner`, `validation.ownerCannotLeave`, `validation.workspaceNameMismatch`
 
-Copy rules: plain verbs, sentence case, errors say what happened and what to do (e.g. "This person has not signed in yet. Ask them to sign in once, then add them again.").
+Copy rules: plain verbs, sentence case, errors say what happened and what to do (e.g. "This person is already invited.").
 
 ---
 
@@ -351,7 +353,7 @@ Scenarios:
 79. First sign-in creates exactly one private workspace with an Owner membership; a second sign-in creates no second one.
 80. A user with only the private workspace sees the current Home and screens; no workspace list, chip, switcher, role or "Added by" appears in the page content. The nav has a Workspaces entry and Settings links to it (amended 2026-11-27).
 81. Creating a shared workspace makes the creator its Owner and leaves the private workspace untouched.
-82. Adding a member: an allowlisted user who has signed in is added; a non-allowlisted email is rejected and nothing is stored; an allowlisted user who never signed in is rejected with the sign-in-first message; a duplicate is rejected; the Owner role cannot be assigned.
+82. Adding a member (amended 2026-11-27): the picker lists allowlisted people only (minus you, members and pending invitations); an allowlisted user who has signed in is added; an allowlisted user who never signed in gets a pending invitation that becomes a membership at their first sign-in; a non-allowlisted email is rejected and nothing is stored; a duplicate member or invitation is rejected; the Owner role cannot be assigned. *(Original text: an allowlisted user who never signed in is rejected with the sign-in-first message; a duplicate is rejected; the Owner role cannot be assigned.)*
 83. Reader: sees every report and screen of the workspace; every write is rejected by the server; the UI shows no write control.
 84. Editor: creates a month and a category, adds an actual; cannot delete a month, rename or deactivate a category, or touch incomes, templates, annuals or reserved lines; can edit and delete only the actuals they created.
 85. Admin: full data access except delete-workspace and ownership transfer; adds, re-roles and removes members; cannot touch the Owner.
@@ -373,7 +375,7 @@ The request fixed the four roles and the "private by default" rule. These detail
 1. **Editor cannot change categories** (no rename, deactivate or savings flag). Strict reading of "create new categories (not deleted categories)".
 2. **Editor manages only its own expenses** (edit and delete). The request names delete; edit is treated the same way.
 3. **Incomes, templates, annuals, reserved lines and move/undo stay Admin+.** The request lists only months, categories and expenses for Read/Write.
-4. **Members must have signed in once.** No pending invitations in V1.
+4. **~~Members must have signed in once.~~ Replaced by the PO on 2026-11-27:** people who have not signed in get a pending invitation that becomes a membership at their first sign-in (§4.3).
 5. **Admin can remove another Admin** (but never the Owner).
 6. **The Owner cannot leave**; they transfer ownership (UC-32) or delete the workspace.
 7. **Currency is per workspace** (confirmed by the PO 2026-11-27). It is stored on `workspace.currency` and inherited from `profile_settings.currency` at creation. `profile_settings.currency` mirrors the private workspace's currency and is the default for new shared workspaces. A shared workspace keeps its currency across owner changes (UC-32). See §4.2.4.
@@ -384,7 +386,7 @@ The request fixed the four roles and the "private by default" rule. These detail
 
 ## 12. Non-goals (this slice)
 
-- Invitations or memberships for people who have not signed in.
+- Invitation emails or notifications; invitations to people outside `ALLOWED_EMAILS`.
 - Public or link-based sharing; sharing with anyone outside `ALLOWED_EMAILS`.
 - Custom roles, per-category or per-month permissions.
 - Audit log screen (only `created_by_user_id` is stored).
